@@ -32,4 +32,4 @@ jobs:
       with:
         args: my-image.tar
       env:
-        GITHUB_TOKEN: ${{ secrets.PUB }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
