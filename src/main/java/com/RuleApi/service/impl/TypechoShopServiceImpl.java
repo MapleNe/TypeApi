@@ -18,33 +18,33 @@ import java.util.List;
 @Service
 public class TypechoShopServiceImpl implements TypechoShopService {
 
-    @Autowired
+	@Autowired
 	TypechoShopDao dao;
 
-    @Override
-    public int insert(TypechoShop typechoShop) {
-        return dao.insert(typechoShop);
-    }
+	@Override
+	public int insert(TypechoShop typechoShop) {
+		return dao.insert(typechoShop);
+	}
 
-    @Override
-    public int batchInsert(List<TypechoShop> list) {
-    	return dao.batchInsert(list);
-    }
+	@Override
+	public int batchInsert(List<TypechoShop> list) {
+		return dao.batchInsert(list);
+	}
 
-    @Override
-    public int update(TypechoShop typechoShop) {
-    	return dao.update(typechoShop);
-    }
+	@Override
+	public int update(TypechoShop typechoShop) {
+		return dao.update(typechoShop);
+	}
 
-    @Override
-    public int delete(Object key) {
-    	return dao.delete(key);
-    }
+	@Override
+	public int delete(Object key) {
+		return dao.delete(key);
+	}
 
-    @Override
-    public int batchDelete(List<Object> keys) {
-        return dao.batchDelete(keys);
-    }
+	@Override
+	public int batchDelete(List<Object> keys) {
+		return dao.batchDelete(keys);
+	}
 
 	@Override
 	public TypechoShop selectByKey(Object key) {
@@ -57,10 +57,10 @@ public class TypechoShopServiceImpl implements TypechoShopService {
 	}
 
 	@Override
-	public PageList<TypechoShop> selectPage(TypechoShop typechoShop, Integer offset, Integer pageSize,String searchKey) {
+	public PageList<TypechoShop> selectPage(TypechoShop typechoShop, Integer offset, Integer pageSize,String searchKey,String order) {
 		PageList<TypechoShop> pageList = new PageList<>();
 
-		int total = this.total(typechoShop);
+		int total = this.total(typechoShop,searchKey);
 
 		Integer totalPage;
 		if (total % pageSize != 0) {
@@ -71,7 +71,7 @@ public class TypechoShopServiceImpl implements TypechoShopService {
 
 		int page = (offset - 1) * pageSize;
 
-		List<TypechoShop> list = dao.selectPage(typechoShop, page, pageSize,searchKey);
+		List<TypechoShop> list = dao.selectPage(typechoShop, page, pageSize,searchKey,order);
 
 		pageList.setList(list);
 		pageList.setStartPageNo(offset);
@@ -82,7 +82,7 @@ public class TypechoShopServiceImpl implements TypechoShopService {
 	}
 
 	@Override
-	public int total(TypechoShop typechoShop) {
-		return dao.total(typechoShop);
+	public int total(TypechoShop typechoShop,String searchKey) {
+		return dao.total(typechoShop,searchKey);
 	}
 }

@@ -81,29 +81,36 @@ public class TypechoMetasController {
         if(limit>50){
             limit = 50;
         }
+        String sqlParams = "null";
         if (StringUtils.isNotBlank(searchParams)) {
             JSONObject object = JSON.parseObject(searchParams);
-            Integer mid = Integer.parseInt(object.get("mid").toString());
+            Integer mid = 0;
+            if(object.get("mid")!=null){
+                mid = Integer.parseInt(object.get("mid").toString());
+            }
+
             query.setMid(mid);
             TypechoContents contents = new TypechoContents();
             contents.setType("post");
             contents.setStatus("publish");
             query.setContents(contents);
+            Map paramsJson = JSONObject.parseObject(JSONObject.toJSONString(query), Map.class);
+            sqlParams = paramsJson.toString();
         }
         List jsonList = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix+"_"+"selectContents_"+page+"_"+limit+"_"+searchParams,redisTemplate);
+        List cacheList = redisHelp.getList(this.dataprefix+"_"+"selectContents_"+page+"_"+limit+"_"+sqlParams,redisTemplate);
 
         try{
             if(cacheList.size()>0){
                 jsonList = cacheList;
             }else{
-                TypechoApiconfig apiconfig = apiconfigService.selectByKey(1);
+                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
                 //首先查询typechoRelationships获取映射关系
                 PageList<TypechoRelationships> pageList = relationshipsService.selectPage(query, page, limit);
                 List<TypechoRelationships> list = pageList.getList();
                 if(list.size() < 1){
                     JSONObject noData = new JSONObject();
-                    noData.put("code" , 0);
+                    noData.put("code" , 1);
                     noData.put("msg"  , "");
                     noData.put("data" , new ArrayList());
                     noData.put("count", 0);
@@ -165,16 +172,27 @@ public class TypechoMetasController {
                     //处理文章内容为简介
 
                     String text = contentsInfo.get("text").toString();
+                    boolean status = text.contains("<!--markdown-->");
+                    if(status){
+                        contentsInfo.put("markdown",1);
+                    }else{
+                        contentsInfo.put("markdown",0);
+                    }
                     List imgList = baseFull.getImageSrc(text);
                     text = baseFull.toStrByChinese(text);
                     contentsInfo.put("text",text.length()>400 ? text.substring(0,400) : text);
+
                     contentsInfo.put("images",imgList);
                     //加入自定义字段，分类和标签
                     //加入自定义字段信息，这里取消注释即可开启，但是数据库查询会消耗性能
-                    List<TypechoFields> fields = fieldsService.selectByKey(cid);
+                    TypechoFields f = new TypechoFields();
+                    f.setCid(cid);
+                    List<TypechoFields> fields = fieldsService.selectList(f);
                     contentsInfo.put("fields",fields);
 
-                    List<TypechoRelationships> relationships = relationshipsService.selectByKey(cid);
+                    TypechoRelationships rs = new TypechoRelationships();
+                    rs.setCid(cid);
+                    List<TypechoRelationships> relationships = relationshipsService.selectList(rs);
 
                     List metas = new ArrayList();
                     List tags = new ArrayList();
@@ -206,10 +224,11 @@ public class TypechoMetasController {
                     //存入redis
 
                 }
-                redisHelp.delete(this.dataprefix+"_"+"selectContents_"+page+"_"+limit+"_"+searchParams,redisTemplate);
-                redisHelp.setList(this.dataprefix+"_"+"selectContents_"+page+"_"+limit+"_"+searchParams,jsonList,this.contentCache,redisTemplate);
+                redisHelp.delete(this.dataprefix+"_"+"selectContents_"+page+"_"+limit+"_"+sqlParams,redisTemplate);
+                redisHelp.setList(this.dataprefix+"_"+"selectContents_"+page+"_"+limit+"_"+sqlParams,jsonList,this.contentCache,redisTemplate);
             }
         }catch (Exception e){
+            e.printStackTrace();
             if(cacheList.size()>0){
                 jsonList = cacheList;
             }
@@ -233,22 +252,26 @@ public class TypechoMetasController {
     @RequestMapping(value = "/metasList")
     @ResponseBody
     public String metasList (@RequestParam(value = "searchParams", required = false) String  searchParams,
-                            @RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                            @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit,
+                             @RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
+                             @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit,
                              @RequestParam(value = "searchKey"        , required = false, defaultValue = "") String searchKey,
                              @RequestParam(value = "order"        , required = false, defaultValue = "") String order) {
         TypechoMetas query = new TypechoMetas();
+        String sqlParams = "null";
         if(limit>50){
             limit = 50;
         }
         Integer total = 0;
         List jsonList = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix+"_"+"metasList_"+page+"_"+limit+"_"+searchParams,redisTemplate);
 
         if (StringUtils.isNotBlank(searchParams)) {
             JSONObject object = JSON.parseObject(searchParams);
             query = object.toJavaObject(TypechoMetas.class);
+            Map paramsJson = JSONObject.parseObject(JSONObject.toJSONString(query), Map.class);
+            sqlParams = paramsJson.toString();
         }
+        List cacheList = redisHelp.getList(this.dataprefix+"_"+"metasList_"+page+"_"+limit+"_"+searchKey+"_"+sqlParams,redisTemplate);
+
         total = service.total(query);
         try {
             if (cacheList.size() > 0) {
@@ -256,11 +279,19 @@ public class TypechoMetasController {
             } else {
                 PageList<TypechoMetas> pageList = service.selectPage(query, page, limit, searchKey, order);
                 jsonList = pageList.getList();
-                redisHelp.delete(this.dataprefix+"_"+"metasList_"+page+"_"+limit+"_"+searchParams,redisTemplate);
-                redisHelp.setList(this.dataprefix+"_"+"metasList_"+page+"_"+limit+"_"+searchParams,jsonList,10,redisTemplate);
+                if(jsonList.size() < 1){
+                    JSONObject noData = new JSONObject();
+                    noData.put("code" , 1);
+                    noData.put("msg"  , "");
+                    noData.put("data" , new ArrayList());
+                    noData.put("count", 0);
+                    return noData.toString();
+                }
+                redisHelp.delete(this.dataprefix+"_"+"metasList_"+page+"_"+limit+"_"+searchKey+"_"+sqlParams,redisTemplate);
+                redisHelp.setList(this.dataprefix+"_"+"metasList_"+page+"_"+limit+"_"+searchKey+"_"+sqlParams,jsonList,10,redisTemplate);
             }
         }catch (Exception e){
-            System.err.println(e);
+            e.printStackTrace();
             if(cacheList.size()>0){
                 jsonList = cacheList;
             }
@@ -398,6 +429,44 @@ public class TypechoMetasController {
             response.put("msg"  , rows > 0 ? "操作成功" : "操作失败");
             return response.toString();
         }catch (Exception e){
+            JSONObject response = new JSONObject();
+            response.put("code" , 0);
+            response.put("msg"  , "操作失败");
+            return response.toString();
+        }
+
+    }
+
+    /***
+     * 删除分类和标签
+     */
+    @RequestMapping(value = "/deleteMeta")
+    @ResponseBody
+    public String deleteMeta(@RequestParam(value = "id", required = false) String  id,
+                             @RequestParam(value = "token", required = false) String  token) {
+        try{
+            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+            if (uStatus == 0) {
+                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+            }
+            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+            String group = map.get("group").toString();
+            String logUid = map.get("uid").toString();
+            if (!group.equals("administrator")) {
+                return Result.getResultJson(0, "你没有操作权限", null);
+            }
+            TypechoMetas meta = service.selectByKey(id);
+            if(meta==null){
+                return Result.getResultJson(0, "数据不存在", null);
+            }
+            int rows = service.delete(id);
+            editFile.setLog("管理员"+logUid+"请求删除分类"+id);
+            JSONObject response = new JSONObject();
+            response.put("code" , rows);
+            response.put("msg"  , rows > 0 ? "操作成功" : "操作失败");
+            return response.toString();
+        }catch (Exception e){
+            e.printStackTrace();
             JSONObject response = new JSONObject();
             response.put("code" , 0);
             response.put("msg"  , "操作失败");

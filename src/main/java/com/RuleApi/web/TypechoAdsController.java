@@ -90,7 +90,7 @@ public class TypechoAdsController {
             }
 
         }catch (Exception e){
-            System.err.println(e);
+            e.printStackTrace();
         }
         JSONObject adsInfo = JSON.parseObject(JSON.toJSONString(adsInfoJson),JSONObject.class);
         return adsInfo.toJSONString();
@@ -114,6 +114,7 @@ public class TypechoAdsController {
         if(limit>100){
             limit = 50;
         }
+        String sqlParams = "null";
         Integer total = 0;
         List jsonList = new ArrayList();
         List cacheList = new ArrayList();
@@ -142,16 +143,27 @@ public class TypechoAdsController {
                         query.setUid(Integer.parseInt(uid));
                     }
                 }
+                Map paramsJson = JSONObject.parseObject(JSONObject.toJSONString(query), Map.class);
+                sqlParams = paramsJson.toString();
                 total = service.total(query);
                 PageList<TypechoAds> pageList = service.selectPage(query, page, limit,searchKey);
+                List list = pageList.getList();
+                if(list.size() < 1){
+                    JSONObject noData = new JSONObject();
+                    noData.put("code" , 1);
+                    noData.put("msg"  , "");
+                    noData.put("data" , new ArrayList());
+                    noData.put("count", 0);
+                    noData.put("total", total);
+                    return noData.toString();
+                }
                 jsonList = pageList.getList();
-
-                redisHelp.delete(this.dataprefix + "_" + "adsList_" + page + "_" + limit + "_" + searchParams+"_"+searchKey,redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + "adsList_" + page + "_" + limit + "_" + sqlParams+"_"+searchKey,redisTemplate);
                 //为了性能和用户体验，广告数据缓存10分钟
-                redisHelp.setList(this.dataprefix + "_" + "adsList_" + page + "_" + limit + "_" + searchParams+"_"+searchKey,jsonList,600,redisTemplate);
+                redisHelp.setList(this.dataprefix + "_" + "adsList_" + page + "_" + limit + "_" + sqlParams+"_"+searchKey,jsonList,600,redisTemplate);
             }
         }catch (Exception e){
-            System.err.println(e);
+            e.printStackTrace();
         }
         JSONObject response = new JSONObject();
         response.put("code" , 1);
@@ -183,7 +195,7 @@ public class TypechoAdsController {
             Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
             String uid = map.get("uid").toString();
             String group = map.get("group").toString();
-            TypechoApiconfig apiconfig = apiconfigService.selectByKey(1);
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
             Integer price = 0;
             Integer typeNum = 0;
             if (StringUtils.isNotBlank(params)) {
@@ -263,7 +275,7 @@ public class TypechoAdsController {
             response.put("msg"  , rows > 0 ? "添加成功，等待管理员审核" : "添加失败");
             return response.toString();
         }catch (Exception e){
-            System.err.println(e);
+            e.printStackTrace();
             return Result.getResultJson(0,"接口请求异常，请联系管理员",null);
         }
 
@@ -366,6 +378,9 @@ public class TypechoAdsController {
         }
         String uid = map.get("uid").toString();
         TypechoAds ads = service.selectByKey(id);
+        if(ads.getStatus().equals(1)){
+            return Result.getResultJson(0, "该广告已审核通过", null);
+        }
         ads.setStatus(1);
         Integer rows = service.update(ads);
         editFile.setLog("管理员"+uid+"请求审核广告"+id);
@@ -396,7 +411,7 @@ public class TypechoAdsController {
             return Result.getResultJson(0,"购买天数不正确",null);
         }
         TypechoAds ads = service.selectByKey(id);
-        TypechoApiconfig apiconfig = apiconfigService.selectByKey(1);
+        TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
         Integer type = ads.getType();
         Integer price = 0;
         if(type.equals(0)){
@@ -457,7 +472,7 @@ public class TypechoAdsController {
             if(cacheInfo.size()>0){
                 adsConfigJSon = cacheInfo;
             }else{
-                TypechoApiconfig apiconfig = apiconfigService.selectByKey(1);
+                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
                 TypechoAds ads = new TypechoAds();
                 ads.setStatus(1);
                 Integer pushAdsPrice = apiconfig.getPushAdsPrice();
@@ -486,7 +501,7 @@ public class TypechoAdsController {
             }
 
         }catch (Exception e){
-            System.err.println(e);
+            e.printStackTrace();
         }
         JSONObject response = new JSONObject();
         response.put("code" ,1 );

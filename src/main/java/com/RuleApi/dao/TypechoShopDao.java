@@ -53,10 +53,10 @@ public interface TypechoShopDao {
     /**
      * [分页条件查询]
      **/
-    List<TypechoShop> selectPage (@Param("typechoShop") TypechoShop typechoShop, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey);
+    List<TypechoShop> selectPage (@Param("typechoShop") TypechoShop typechoShop, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey,@Param("order") String order);
 
     /**
      * [总量查询]
      **/
-    int total(TypechoShop typechoShop);
+    int total(@Param("typechoShop") TypechoShop typechoShop, @Param("searchKey") String searchKey);
 }

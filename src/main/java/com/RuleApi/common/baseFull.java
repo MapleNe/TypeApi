@@ -30,23 +30,28 @@ public class baseFull {
 
     //获取字符串内图片地址
     public List<String> getImageSrc(String htmlCode) {
-        List<String> containedUrls = new ArrayList<String>();
-        String urlRegex = "((https?|http):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)";
-        Pattern pattern = Pattern.compile(urlRegex, Pattern.CASE_INSENSITIVE);
-        Matcher urlMatcher = pattern.matcher(htmlCode);
+        List<String> urls = extractUrls(htmlCode);
+        List<String> imageUrls = new ArrayList<>();
 
-        while (urlMatcher.find()) {
-            containedUrls.add(htmlCode.substring(urlMatcher.start(0),
-                    urlMatcher.end(0)));
-        }
-        List<String> imageList = new ArrayList<String>();
-        for (int i = 0; i < containedUrls.size(); i++) {
-            String word = containedUrls.get(i);
-            if (word.indexOf(".ico") != -1 || word.indexOf(".jpg") != -1 || word.indexOf(".JPG") != -1 || word.indexOf(".jpeg") != -1 || word.indexOf(".png") != -1 || word.indexOf(".PNG") != -1 || word.indexOf(".bmp") != -1 || word.indexOf(".gif") != -1 || word.indexOf(".GIF") != -1 || word.indexOf(".webp") != -1 || word.indexOf(".WEBP") != -1) {
-                imageList.add(word.replaceAll("\\)", ""));
+        for (String url : urls) {
+            if (url.matches(".+\\.(ico|jpe?g|png|bmp|gif|webp|ICO|JPE?G|PNG|BMP|GIF|WEBP)$")) {
+                imageUrls.add(url.replaceAll("\\)", ""));
             }
         }
-        return imageList;
+
+        return imageUrls;
+    }
+
+    private List<String> extractUrls(String text) {
+        List<String> urls = new ArrayList<>();
+        Pattern pattern = Pattern.compile("\\b(https?|ftp|file)://[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|]", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(text);
+
+        while (matcher.find()) {
+            urls.add(text.substring(matcher.start(0), matcher.end(0)));
+        }
+
+        return urls;
     }
 
     //获取markdown内图片引用
@@ -251,11 +256,44 @@ public class baseFull {
         }
     }
     public static Integer isVideo(String type){
-        if(!type.equals(".mp4")&&!type.equals(".MP4")&&!type.equals(".AVI")&&!type.equals(".avi")&&!type.equals(".MKV")&&!type.equals(".mkv")){
-            return 0;
-        }else{
-            return 1;
+        String lowerCaseType = type.toLowerCase();
+        if (lowerCaseType.equals(".mp4") || lowerCaseType.equals(".avi") || lowerCaseType.equals(".mkv")) {
+            return 1; // 是视频
+        } else {
+            return 0; // 不是视频
         }
+    }
+    public static Integer isMedia(String type){
+        String lowerCaseType = type.toLowerCase();
+        if (lowerCaseType.equals(".mp4") || lowerCaseType.equals(".avi") || lowerCaseType.equals(".mkv") || lowerCaseType.equals(".mp3") || lowerCaseType.equals(".wav")) {
+            return 1; // 是媒体文件
+        } else {
+            return 0; // 不是媒体文件
+        }
+    }
+    //验证字符串是否违规
+    public Integer getForbidden(String forbidden, String text){
+        Integer isForbidden = 0;
+        if(forbidden!=null&&forbidden.length()>0){
+            if(forbidden.indexOf(",") != -1){
+                String[] strarray=forbidden.split(",");
+                for (int i = 0; i < strarray.length; i++){
+                    String str = strarray[i];
+                    if(text.indexOf(str) != -1){
+                        isForbidden = 1;
+                    }
+
+                }
+            }else{
+                if(text.indexOf(forbidden) != -1){
+                    isForbidden = 1;
+                }
+                if(text.equals(forbidden)){
+                    isForbidden = 1;
+                }
+            }
+        }
+        return  isForbidden;
     }
 
 }

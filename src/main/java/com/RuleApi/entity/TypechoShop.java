@@ -78,4 +78,29 @@ public class TypechoShop implements Serializable {
      */
     private String vipDiscount;
 
+    /**
+     * sellNum  卖出数量
+     */
+    private Integer sellNum;
+
+    /**
+     * isMd  是否为markdown文本
+     */
+    private Integer isMd;
+
+    /**
+     * sort  商品大类
+     */
+    private Integer sort;
+
+    /**
+     * subtype  子类型
+     */
+    private Integer subtype;
+
+    /**
+     * isView  是否可见
+     */
+    private Integer isView;
+
 }

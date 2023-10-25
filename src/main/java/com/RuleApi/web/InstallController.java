@@ -215,7 +215,7 @@ public class InstallController {
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8;");
             text+="数据关联表创建完成。";
         }catch (Exception e){
-            System.err.println(e);
+            e.printStackTrace();
             return Result.getResultJson(0,"数据库语句执行失败，请检查数据库版本及服务器性能后重试。",null);
         }
         text+=" ------ 执行结束，独立安装数据表导入完成，请继续安装RuleApi扩展数据表";
@@ -255,7 +255,7 @@ public class InstallController {
             return "Mysql数据库连接失败或未安装";
         }
         //修改请求头
-        jdbcTemplate.execute("ALTER TABLE "+prefix+"_comments MODIFY agent varchar(500);");
+        jdbcTemplate.execute("ALTER TABLE "+prefix+"_comments MODIFY agent varchar(520);");
         //查询文章表是否存在views字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_contents' and column_name = 'views';", Integer.class);
         if (i == 0){
@@ -296,6 +296,22 @@ public class InstallController {
             text+="内容模块，字段isswiper添加完成。";
         }else{
             text+="内容模块，字段isswiper已经存在，无需添加。";
+        }
+        //查询文章表是否存在replyTime字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_contents' and column_name = 'replyTime';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_contents ADD replyTime integer(10) DEFAULT 0;");
+            text+="内容模块，字段replyTime添加完成。";
+        }else{
+            text+="内容模块，字段replyTime已经存在，无需添加。";
+        }
+        //查询文章评论表是否存在likes字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_comments' and column_name = 'likes';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_comments ADD likes integer(11) DEFAULT 0;");
+            text+="文章评论表，字段likes添加完成。";
+        }else{
+            text+="文章评论表，字段likes已经存在，无需添加。";
         }
         //查询用户表是否存在introduce字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_users' and column_name = 'introduce';", Integer.class);
@@ -377,6 +393,14 @@ public class InstallController {
             text+="用户模块，字段bantime添加完成。";
         }else{
             text+="用户模块，字段bantime已经存在，无需添加。";
+        }
+        //查询用户表是否存在posttime字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_users' and column_name = 'posttime';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_users ADD posttime integer(10) DEFAULT 0;");
+            text+="用户模块，字段posttime添加完成。";
+        }else{
+            text+="用户模块，字段posttime已经存在，无需添加。";
         }
 
         //查询分类标签表是否存在imgurl字段
@@ -466,6 +490,7 @@ public class InstallController {
         }else{
             text+="积分商城模块已经存在，无需添加。";
         }
+
         //查询商品表是否存在vipDiscount字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_shop' and column_name = 'vipDiscount';", Integer.class);
         if (i == 0){
@@ -489,6 +514,62 @@ public class InstallController {
             text+="积分商城模块，字段status添加完成。";
         }else{
             text+="积分商城模块，字段status已经存在，无需添加。";
+        }
+        //查询商品表是否存在sellNum字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_shop' and column_name = 'sellNum';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_shop ADD sellNum integer(11) DEFAULT 0;");
+            text+="积分商城模块，字段sellNum添加完成。";
+        }else{
+            text+="积分商城模块，字段sellNum已经存在，无需添加。";
+        }
+        //查询聊天室模块是否存在isMd字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_shop' and column_name = 'isMd';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_shop ADD `isMd` int(2) unsigned DEFAULT '1' COMMENT '是否为Markdown编辑器发布'");
+            text+="积分商城模块，字段isMd添加完成。";
+        }else{
+            text+="积分商城模块，字段isMd已经存在，无需添加。";
+        }
+        //查询聊天室模块是否存在sort字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_shop' and column_name = 'sort';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_shop ADD `sort` int(11) unsigned DEFAULT '0' COMMENT '商品大类'");
+            text+="积分商城模块，字段sort添加完成。";
+        }else{
+            text+="积分商城模块，字段sort已经存在，无需添加。";
+        }
+        //查询聊天室模块是否存在subtype字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_shop' and column_name = 'subtype';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_shop ADD `subtype` int(11) unsigned DEFAULT '0' COMMENT '子类型'");
+            text+="积分商城模块，字段subtype添加完成。";
+        }else{
+            text+="积分商城模块，字段subtype已经存在，无需添加。";
+        }
+        //查询聊天室模块是否存在isView字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_shop' and column_name = 'isView';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_shop ADD `isView` int(2) unsigned DEFAULT '1' COMMENT '是否可见'");
+            text+="积分商城模块，字段isView添加完成。";
+        }else{
+            text+="积分商城模块，字段isView已经存在，无需添加。";
+        }
+        //安装商品分类表
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_shoptype';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("CREATE TABLE `" + prefix + "_shoptype` (" +
+                    "  `id` int(11) NOT NULL AUTO_INCREMENT," +
+                    "  `parent` int(11) DEFAULT '0' COMMENT '上级分类'," +
+                    "  `name` varchar(255) DEFAULT NULL COMMENT '分类名称'," +
+                    "  `pic` varchar(400) DEFAULT NULL COMMENT '分类缩略图'," +
+                    "  `intro` varchar(400) DEFAULT NULL COMMENT '分类简介'," +
+                    "  `orderKey` int(11) DEFAULT '0' COMMENT '分类排序'," +
+                    "  PRIMARY KEY (`id`)" +
+                    ") ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COMMENT='商品分类表';");
+            text += "商品分类表创建完成。";
+        }else{
+            text+="商品分类表已存在，无需安装。";
         }
         //判断充值记录表是否存在
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_paylog';", Integer.class);
@@ -546,7 +627,7 @@ public class InstallController {
                     "  `vipPrice` int(11) NOT NULL DEFAULT '200' COMMENT 'VIP一天价格'," +
                     "  `vipDay` int(11) NOT NULL DEFAULT '300' COMMENT '多少天VIP等于永久'," +
                     "  `vipDiscount` varchar(11) NOT NULL DEFAULT '0.1' COMMENT 'VIP折扣'," +
-                    "  `isEmail` int(2) NOT NULL DEFAULT '1' COMMENT '是否开启邮箱注册（关闭后不再验证邮箱）'," +
+                    "  `isEmail` int(2) NOT NULL DEFAULT '1' COMMENT '邮箱开关（0完全关闭邮箱，1只开启邮箱注册，2邮箱注册和操作通知）'," +
                     "  `isInvite` int(11) NOT NULL DEFAULT '0' COMMENT '注册是否验证邀请码（默认关闭）'," +
                     "  `cosAccessKey` varchar(300) NOT NULL DEFAULT ''," +
                     "  `cosSecretKey` varchar(300) NOT NULL DEFAULT ''," +
@@ -820,11 +901,201 @@ public class InstallController {
         //查询配置中心表是否存在uploadLevel字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'uploadLevel';", Integer.class);
         if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `uploadLevel` int(2) DEFAULT '0' COMMENT '上传限制等级（0只允许图片，2只允许图片视频，3允许所有类型文件）'");
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `uploadLevel` int(2) DEFAULT '0' COMMENT '上传限制等级（0只允许图片，1关闭上传接口，2只允许图片视频，3允许所有类型文件）'");
             text+="配置中心模块，字段uploadLevel添加完成。";
         }else{
             text+="配置中心模块，字段uploadLevel已经存在，无需添加。";
         }
+        //查询配置中心表是否存在clockExp字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'clockExp';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `clockExp` int(11) DEFAULT '5' COMMENT '签到经验'");
+            text+="配置中心模块，字段clockExp添加完成。";
+        }else{
+            text+="配置中心模块，字段clockExp已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在reviewExp字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'reviewExp';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `reviewExp` int(11) DEFAULT '1' COMMENT '每日前三次评论经验'");
+            text+="配置中心模块，字段reviewExp添加完成。";
+        }else{
+            text+="配置中心模块，字段reviewExp已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在postExp字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'postExp';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `postExp` int(11) DEFAULT '10' COMMENT '每日前三次发布内容经验（文章，动态，帖子）'");
+            text+="配置中心模块，字段postExp添加完成。";
+        }else{
+            text+="配置中心模块，字段postExp已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在violationExp字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'violationExp';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `violationExp` int(11) DEFAULT '50' COMMENT '违规扣除经验'");
+            text+="配置中心模块，字段violationExp添加完成。";
+        }else{
+            text+="配置中心模块，字段violationExp已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在deleteExp字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'deleteExp';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `deleteExp` int(11) DEFAULT '20' COMMENT '删除扣除经验（文章，评论，动态，帖子）'");
+            text+="配置中心模块，字段deleteExp添加完成。";
+        }else{
+            text+="配置中心模块，字段deleteExp已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在spaceMinExp字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'spaceMinExp';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `spaceMinExp` int(11) DEFAULT '20' COMMENT '发布动态要求最低经验值'");
+            text+="配置中心模块，字段spaceMinExp添加完成。";
+        }else{
+            text+="配置中心模块，字段spaceMinExp已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在chatMinExp字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'chatMinExp';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `chatMinExp` int(11) DEFAULT '20' COMMENT '聊天要求最低经验值'");
+            text+="配置中心模块，字段chatMinExp添加完成。";
+        }else{
+            text+="配置中心模块，字段chatMinExp已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在qiniuDomain字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'qiniuDomain';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `qiniuDomain` varchar(400) DEFAULT '' COMMENT '七牛云访问域名'");
+            text+="配置中心模块，字段qiniuDomain添加完成。";
+        }else{
+            text+="配置中心模块，字段qiniuDomain已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在qiniuAccessKey字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'qiniuAccessKey';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `qiniuAccessKey` varchar(400) DEFAULT '' COMMENT '七牛云公钥'");
+            text+="配置中心模块，字段qiniuAccessKey添加完成。";
+        }else{
+            text+="配置中心模块，字段qiniuAccessKey已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在qiniuSecretKey字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'qiniuSecretKey';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `qiniuSecretKey` varchar(400) DEFAULT '' COMMENT '七牛云私钥'");
+            text+="配置中心模块，字段qiniuSecretKey添加完成。";
+        }else{
+            text+="配置中心模块，字段qiniuSecretKey已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在qiniuBucketName字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'qiniuBucketName';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `qiniuBucketName` varchar(255) DEFAULT '' COMMENT '七牛云存储桶名称'");
+            text+="配置中心模块，字段qiniuBucketName添加完成。";
+        }else{
+            text+="配置中心模块，字段qiniuBucketName已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在silenceTime字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'silenceTime';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `silenceTime` int(11) DEFAULT '600' COMMENT '疑似攻击自动封禁时间(s)'");
+            text+="配置中心模块，字段silenceTime添加完成。";
+        }else{
+            text+="配置中心模块，字段silenceTime已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在interceptTime字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'interceptTime';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `interceptTime` int(11) DEFAULT '3600' COMMENT '多次触发违规自动封禁时间(s)'");
+            text+="配置中心模块，字段interceptTime添加完成。";
+        }else{
+            text+="配置中心模块，字段interceptTime已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在isLogin字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'isLogin';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `isLogin` int(2) DEFAULT '0' COMMENT '开启全局登录'");
+            text+="配置中心模块，字段isLogin添加完成。";
+        }else{
+            text+="配置中心模块，字段isLogin已经存在，无需添加。";
+        }
+
+        //查询配置中心表是否存在postMax字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'postMax';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `postMax` int(11) DEFAULT '5' COMMENT '每日最大发布'");
+            text+="配置中心模块，字段postMax添加完成。";
+        }else{
+            text+="配置中心模块，字段postMax已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在forumAudit字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'forumAudit';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `forumAudit` int(11) DEFAULT '1' COMMENT '帖子及帖子评论是否需要审核'");
+            text+="配置中心模块，字段forumAudit添加完成。";
+        }else{
+            text+="配置中心模块，字段forumAudit已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在spaceAudit字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'spaceAudit';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `spaceAudit` int(11) DEFAULT '0' COMMENT '动态是否需要审核'");
+            text+="配置中心模块，字段spaceAudit添加完成。";
+        }else{
+            text+="配置中心模块，字段spaceAudit已经存在，无需添加。";
+        }
+        //查询配置中心表是否存在uploadType字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'uploadType';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `uploadType` varchar(100) DEFAULT 'local' COMMENT '上传类型'");
+            text+="配置中心模块，字段uploadType添加完成。";
+        }else{
+            text+="配置中心模块，字段uploadType已经存在，无需添加。";
+        }
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'banRobots';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `banRobots` int(2) DEFAULT '0' COMMENT '是否开启机器人严格限制模式'");
+            text+="配置中心模块，字段banRobots添加完成。";
+        }else{
+            text+="配置中心模块，字段banRobots已经存在，无需添加。";
+        }
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'adsGiftNum';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `adsGiftNum` int(11) DEFAULT '10' COMMENT '每日广告奖励次数'");
+            text+="配置中心模块，字段adsGiftNum添加完成。";
+        }else{
+            text+="配置中心模块，字段adsGiftNum已经存在，无需添加。";
+        }
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'adsGiftAward';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `adsGiftAward` int(11) DEFAULT '5' COMMENT '每日广告奖励额'");
+            text+="配置中心模块，字段adsGiftAward添加完成。";
+        }else{
+            text+="配置中心模块，字段adsGiftAward已经存在，无需添加。";
+        }
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'uploadPicMax';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `uploadPicMax` int(11) DEFAULT '5' COMMENT '图片最大上传大小'");
+            text+="配置中心模块，字段uploadPicMax添加完成。";
+        }else{
+            text+="配置中心模块，字段uploadPicMax已经存在，无需添加。";
+        }
+
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'uploadMediaMax';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `uploadMediaMax` int(11) DEFAULT '50' COMMENT '媒体最大上传大小'");
+            text+="配置中心模块，字段uploadMediaMax添加完成。";
+        }else{
+            text+="配置中心模块，字段uploadMediaMax已经存在，无需添加。";
+        }
+
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'uploadFilesMax';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `uploadFilesMax` int(11) DEFAULT '20' COMMENT '其他文件最大上传大小'");
+            text+="配置中心模块，字段uploadFilesMax添加完成。";
+        }else{
+            text+="配置中心模块，字段uploadFilesMax已经存在，无需添加。";
+        }
+
         try {
             Thread.sleep(500);
         } catch (InterruptedException ie) {
@@ -885,11 +1156,7 @@ public class InstallController {
         }else{
             text+="消息通知模块已经存在，无需添加。";
         }
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        }
+
         //关注模块
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_fan';", Integer.class);
         if (i == 0){
@@ -919,6 +1186,11 @@ public class InstallController {
             text+="违规记录模块创建完成。";
         }else{
             text+="违规记录模块已经存在，无需添加。";
+        }
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
         }
         //聊天室模块
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_chat';", Integer.class);
@@ -953,6 +1225,14 @@ public class InstallController {
         }else{
             text+="聊天室模块，字段pic已经存在，无需添加。";
         }
+        //查询聊天室模块是否存在ban字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_chat' and column_name = 'ban';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_chat ADD `ban` int(11) unsigned DEFAULT '0' COMMENT '屏蔽和全体禁言，存操作人id'");
+            text+="聊天室模块，字段pic添加完成。";
+        }else{
+            text+="聊天室模块，字段pic已经存在，无需添加。";
+        }
         //聊天记录模块
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_chat_msg';", Integer.class);
         if (i == 0){
@@ -969,6 +1249,69 @@ public class InstallController {
             text+="聊天记录模块创建完成。";
         }else{
             text+="聊天记录模块已经存在，无需添加。";
+        }
+        //动态模块
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_space';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("CREATE TABLE `"+prefix+"_space` (" +
+                    "  `id` int(11) NOT NULL AUTO_INCREMENT," +
+                    "  `uid` int(11) DEFAULT '0' COMMENT '发布者'," +
+                    "  `created` int(10) unsigned DEFAULT '0' COMMENT '发布时间'," +
+                    "  `modified` int(10) unsigned DEFAULT '0' COMMENT '修改时间'," +
+                    "  `text` text CHARACTER SET utf8mb4 COMMENT '内容'," +
+                    "  `pic` text COMMENT '图片或视频，自己拆分'," +
+                    "  `type` int(2) DEFAULT NULL COMMENT '0普通动态，1转发和发布文章，2转发动态，3动态评论，4视频，5商品'," +
+                    "  `likes` int(10) DEFAULT '0' COMMENT '喜欢动态的数量'," +
+                    "  `toid` int(10) DEFAULT '0' COMMENT '文章id，动态id等'," +
+                    "  PRIMARY KEY (`id`)" +
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='个人动态表';");
+            text+="动态模块创建完成。";
+        }else{
+            text+="动态模块已经存在，无需添加。";
+        }
+        //查询动态模块是否存在status字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_space' and column_name = 'status';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_space ADD `status` int(2) unsigned DEFAULT '1' COMMENT '动态状态，0审核，1发布，2锁定'");
+            text+="动态模块，字段status添加完成。";
+        }else{
+            text+="动态模块，字段status已经存在，无需添加。";
+        }
+        //安装应用表
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_app';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("CREATE TABLE `" + prefix + "_app` (" +
+                    "  `id` int(11) NOT NULL AUTO_INCREMENT," +
+                    "  `key` varchar(255) DEFAULT NULL COMMENT '链接密钥'," +
+                    "  `name` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT '应用名称'," +
+                    "  `type` varchar(255) CHARACTER SET utf8 DEFAULT 'app' COMMENT '应用类型（web或App）'," +
+                    "  `logo` varchar(500) CHARACTER SET utf8 DEFAULT NULL COMMENT 'logo图标地址'," +
+                    "  `keywords` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT 'web专属，SEO关键词'," +
+                    "  `description` varchar(255) DEFAULT NULL COMMENT '应用简介'," +
+                    "  `announcement` varchar(400) DEFAULT NULL COMMENT '弹窗公告（支持html）'," +
+                    "  `mail` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '邮箱地址（用于通知和显示）'," +
+                    "  `website` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '网址（非Api地址）'," +
+                    "  `currencyName` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT '货币名称'," +
+                    "  `version` varchar(255) CHARACTER SET utf8 DEFAULT 'v1.0.0 beta' COMMENT 'app专属，版本号'," +
+                    "  `versionCode` int(11) DEFAULT '10' COMMENT 'app专属，版本码'," +
+                    "  `versionIntro` varchar(400) DEFAULT NULL COMMENT '版本简介'," +
+                    "  `androidUrl` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '安卓下载地址'," +
+                    "  `iosUrl` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT 'ios下载地址'," +
+                    "  `field1` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '预留字段1'," +
+                    "  `field2` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '预留字段2'," +
+                    "  PRIMARY KEY (`id`)\n" +
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='应用表（web应用和APP应用）';");
+            text += "应用模块创建完成。";
+        }else{
+            text+="应用模块已存在，无需安装。";
+        }
+        //查询应用表是否存在adpid字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_app' and column_name = 'adpid';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_app ADD `adpid` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT '广告联盟ID'");
+            text+="应用表，字段adpid添加完成。";
+        }else{
+            text+="应用表，字段adpid已经存在，无需添加。";
         }
         text+=" ------ 执行结束，安装执行完成";
 
@@ -998,7 +1341,7 @@ public class InstallController {
             jdbcTemplate.execute("alter table `"+prefix+"_comments`  MODIFY COLUMN `text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
             return Result.getResultJson(1,"操作成功",null);
         }catch (Exception e){
-            System.err.println(e);
+            e.printStackTrace();
             return Result.getResultJson(1,"操作失败",null);
         }
 

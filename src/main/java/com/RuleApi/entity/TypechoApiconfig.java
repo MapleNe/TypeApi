@@ -360,10 +360,124 @@ public class TypechoApiconfig implements Serializable {
      */
     private Integer uploadLevel;
 
+    /**
+     * clockExp
+     */
+    private Integer clockExp;
 
+    /**
+     * reviewExp
+     */
+    private Integer reviewExp;
 
+    /**
+     * poshExp
+     */
+    private Integer postExp;
 
+    /**
+     * violationExp
+     */
+    private Integer violationExp;
 
+    /**
+     * deleteExp
+     */
+    private Integer deleteExp;
 
+    /**
+     * 发布动态要求最低经验值
+     */
+    private Integer spaceMinExp;
+
+    /**
+     * 聊天要求最低经验值
+     */
+    private Integer chatMinExp;
+
+    /**
+     * 七牛云访问域名
+     */
+    private String qiniuDomain;
+
+    /**
+     * 七牛云公钥
+     */
+    private String qiniuAccessKey;
+
+    /**
+     * 七牛云私钥
+     */
+    private String qiniuSecretKey;
+
+    /**
+     * 七牛云存储桶名称
+     */
+    private String qiniuBucketName;
+
+    /**
+     * 疑似攻击自动封禁时间(s)
+     */
+    private Integer silenceTime;
+
+    /**
+     * 多次触发违规自动封禁时间(s)
+     */
+    private Integer interceptTime;
+
+    /**
+     * 开启全局登录
+     */
+    private Integer isLogin;
+
+    /**
+     * 每日最大发布
+     */
+    private Integer postMax;
+
+    /**
+     * 帖子及帖子评论是否需要审核
+     */
+    private Integer forumAudit;
+
+    /**
+     * 动态是否需要审核
+     */
+    private Integer spaceAudit;
+
+    /**
+     * 图片上传通道
+     */
+    private String uploadType;
+
+    /**
+     * 是否开启机器人严格限制模式
+     */
+    private Integer banRobots;
+
+    /**
+     * 每日广告奖励次数
+     */
+    private Integer adsGiftNum;
+
+    /**
+     * 看一次广告奖励多少积分
+     */
+    private Integer adsGiftAward;
+
+    /**
+     * 图片最大上传大小
+     */
+    private Integer uploadPicMax;
+
+    /**
+     * 媒体最大上传大小
+     */
+    private Integer uploadMediaMax;
+
+    /**
+     * 其他文件最大上传大小
+     */
+    private Integer uploadFilesMax;
 
 }
