@@ -1434,6 +1434,15 @@ public class TypechoUsersController {
                     Integer isEmail = apiconfig.getIsEmail();
                     if(isEmail>0){
                         String email = jsonToMap.get("mail").toString();
+                        //判断邮箱是否已被其它用户绑定
+                        user.setMail(email);
+                        List<TypechoUsers> ulist = service.selectList(user);
+                        if(ulist.size() > 0){
+                            String oldEmail = ulist.get(0).getMail();
+                            if(oldEmail.equals(email)){
+                                return Result.getResultJson(0, "该邮箱已被绑定", null);
+                            }
+                        }
                         if (redisHelp.getRedis(this.dataprefix + "_" + "sendCode" + email, redisTemplate) != null) {
                             String sendCode = redisHelp.getRedis(this.dataprefix + "_" + "sendCode" + email, redisTemplate);
                             code = jsonToMap.get("code").toString();
@@ -1453,6 +1462,10 @@ public class TypechoUsersController {
                     String p = jsonToMap.get("password").toString();
                     String passwd = phpass.HashPassword(p);
                     jsonToMap.put("password", passwd);
+                }
+
+                if (jsonToMap.get("name") == null) {
+                    return Result.getResultJson(0, "用户不存在", null);
                 }
                 Map keyName = new HashMap<String, String>();
                 keyName.put("name", jsonToMap.get("name").toString());
@@ -1597,15 +1610,16 @@ public class TypechoUsersController {
             }
 
             int rows = service.update(update);
-            //修改后让用户强制重新登陆
-
-            String oldToken = null;
-            if (redisHelp.getRedis(this.dataprefix + "_" + "userkey" + name, redisTemplate) != null) {
-                oldToken = redisHelp.getRedis(this.dataprefix + "_" + "userkey" + name, redisTemplate);
-            }
-            if (oldToken != null) {
-                redisHelp.delete(this.dataprefix + "_" + "userInfo" + oldToken, redisTemplate);
-                redisHelp.delete(this.dataprefix + "_" + "userkey" + name, redisTemplate);
+            //如果修改了密码、权限、头衔，则让用户强制重新登陆
+            if(update.getGroupKey()!=null||update.getExperience()!=null||update.getScreenName()!=null||update.getMail()!=null||update.getPassword()!=null){
+                String oldToken = null;
+                if (redisHelp.getRedis(this.dataprefix + "_" + "userkey" + name, redisTemplate) != null) {
+                    oldToken = redisHelp.getRedis(this.dataprefix + "_" + "userkey" + name, redisTemplate);
+                }
+                if (oldToken != null) {
+                    redisHelp.delete(this.dataprefix + "_" + "userInfo" + oldToken, redisTemplate);
+                    redisHelp.delete(this.dataprefix + "_" + "userkey" + name, redisTemplate);
+                }
             }
             JSONObject response = new JSONObject();
             response.put("code", rows > 0 ? 1 : 0);

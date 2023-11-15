@@ -254,6 +254,8 @@ public class InstallController {
         }catch (Exception e){
             return "Mysql数据库连接失败或未安装";
         }
+        //每次安装和升级都删除配置缓存
+        redisHelp.delete(dataprefix+"_"+"config",redisTemplate);
         //修改请求头
         jdbcTemplate.execute("ALTER TABLE "+prefix+"_comments MODIFY agent varchar(520);");
         //查询文章表是否存在views字段
@@ -401,6 +403,14 @@ public class InstallController {
             text+="用户模块，字段posttime添加完成。";
         }else{
             text+="用户模块，字段posttime已经存在，无需添加。";
+        }
+        //查询用户表是否存在userBg字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_users' and column_name = 'userBg';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_users ADD userBg varchar(400) DEFAULT ''  COMMENT '用户主页背景图链接';");
+            text+="用户模块，字段userBg添加完成。";
+        }else{
+            text+="用户模块，字段userBg已经存在，无需添加。";
         }
 
         //查询分类标签表是否存在imgurl字段
@@ -1276,6 +1286,14 @@ public class InstallController {
             text+="动态模块，字段status添加完成。";
         }else{
             text+="动态模块，字段status已经存在，无需添加。";
+        }
+        //查询动态模块是否存在onlyMe字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_space' and column_name = 'onlyMe';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_space ADD `onlyMe` int(2) unsigned DEFAULT '0' COMMENT '仅自己可见'");
+            text+="动态模块，字段onlyMe添加完成。";
+        }else{
+            text+="动态模块，字段onlyMe已经存在，无需添加。";
         }
         //安装应用表
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_app';", Integer.class);
