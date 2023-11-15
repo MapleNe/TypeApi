@@ -113,6 +113,9 @@ public class InstallController {
                     "  `name` varchar(32) DEFAULT NULL," +
                     "  `password` varchar(64) DEFAULT NULL," +
                     "  `mail` varchar(200) DEFAULT NULL," +
+                    "  `sex` varchar(255)," +
+                    "  `medal` longtext," +
+                    "  `head_pictrue` longtext," +
                     "  `url` varchar(200) DEFAULT NULL," +
                     "  `screenName` varchar(32) DEFAULT NULL," +
                     "  `created` int(10) unsigned DEFAULT '0'," +
@@ -120,6 +123,7 @@ public class InstallController {
                     "  `logged` int(10) unsigned DEFAULT '0'," +
                     "  `group` varchar(16) DEFAULT 'visitor'," +
                     "  `authCode` varchar(64) DEFAULT NULL," +
+                    "  `opt` longtext," +
                     "  PRIMARY KEY (`uid`)," +
                     "  UNIQUE KEY `name` (`name`)," +
                     "  UNIQUE KEY `mail` (`mail`)" +
@@ -152,6 +156,8 @@ public class InstallController {
                     "  `commentsNum` int(10) unsigned DEFAULT '0'," +
                     "  `allowComment` char(1) DEFAULT '0'," +
                     "  `allowPing` char(1) DEFAULT '0'," +
+                    "  `images` varchar(255)," +
+                    "  `opt` longtext," +
                     "  `allowFeed` char(1) DEFAULT '0'," +
                     "  `parent` int(10) unsigned DEFAULT '0'," +
                     "  PRIMARY KEY (`cid`)," +
@@ -174,6 +180,7 @@ public class InstallController {
                     "  `text` text," +
                     "  `type` varchar(16) DEFAULT 'comment'," +
                     "  `status` varchar(16) DEFAULT 'approved'," +
+                    "  `allparent` int(10),"+
                     "  `parent` int(10) unsigned DEFAULT '0'," +
                     "  PRIMARY KEY (`coid`)," +
                     "  KEY `cid` (`cid`)," +
@@ -197,6 +204,7 @@ public class InstallController {
             jdbcTemplate.execute("CREATE TABLE `"+prefix+"_metas` (" +
                     "  `mid` int(10) unsigned NOT NULL AUTO_INCREMENT," +
                     "  `name` varchar(200) DEFAULT NULL," +
+                    "  `avatar` varchar(255)," +
                     "  `slug` varchar(200) DEFAULT NULL," +
                     "  `type` varchar(32) NOT NULL," +
                     "  `description` varchar(200) DEFAULT NULL," +
@@ -412,6 +420,66 @@ public class InstallController {
         }else{
             text+="用户模块，字段userBg已经存在，无需添加。";
         }
+        //查询用户表是否存在sex字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_users' and column_name = 'sex';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_users ADD sex varchar(255) DEFAULT '男'  COMMENT '性别';");
+            text+="用户模块，字段sex添加完成。";
+        }else{
+            text+="用户模块，字段sex已经存在，无需添加。";
+        }
+        //查询用户表是否存在medal字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_users' and column_name = 'medal';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_users ADD medal longtext COMMENT '勋章';");
+            text+="用户模块，字段medal添加完成。";
+        }else{
+            text+="用户模块，字段medal已经存在，无需添加。";
+        }
+        //查询用户表是否存在head_picture字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_users' and column_name = 'head_picture';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_users ADD head_picture longtext  COMMENT '头像框';");
+            text+="用户模块，字段head_picture添加完成。";
+        }else{
+            text+="用户模块，字段head_picture已经存在，无需添加。";
+        }
+
+        // 查询用户表是否存在 opt 字段
+        i = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM information_schema.columns WHERE table_name = '" + prefix + "_users' AND column_name = 'opt';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("ALTER TABLE " + prefix + "_users ADD COLUMN opt longtext COMMENT '自定义字段';");
+            text += "用户模块，字段 opt 添加完成。";
+        } else {
+            text += "用户模块，字段 opt 已经存在，无需添加。";
+        }
+
+        // 查询文章表是否存在opt字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_contents' and column_name = 'opt';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_contents ADD opt longtext  COMMENT '自定义字段';");
+            text+="文章模块，字段opt添加完成。";
+        }else{
+            text+="文章模块，字段opt已经存在，无需添加。";
+        }
+
+        // 查询评论表是否存在images字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_comments' and column_name = 'images';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_comments ADD images longtext COMMENT '图片列表';");
+            text+="评论模块，字段images添加完成。";
+        }else{
+            text+="评论模块，字段images已经存在，无需添加。";
+        }
+        // 查询评论表是否存在allparent字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_comments' and column_name = 'allparent';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_comments ADD allparent int(10) COMMENT '所有评论的父级';");
+            text+="评论模块，字段allparent添加完成。";
+        }else{
+            text+="评论模块，字段allparent已经存在，无需添加。";
+        }
+
 
         //查询分类标签表是否存在imgurl字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_metas' and column_name = 'imgurl';", Integer.class);

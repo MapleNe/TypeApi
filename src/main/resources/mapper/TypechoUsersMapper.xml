@@ -26,6 +26,10 @@
         <result column="bantime" property="bantime" />
         <result column="posttime" property="posttime" />
         <result column="userBg" property="userBg" />
+        <result column="sex" property="sex" />
+        <result column="opt" property="opt" />
+        <result column="medal" property="medal" />
+        <result column="head_picture" property="head_picture" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -51,7 +55,11 @@
         `clientId`,
         `bantime`,
         `posttime`,
-        `userBg`
+        `userBg`,
+        `sex`,
+         `opt`,
+         `medal`,
+         `head_picture`
     </sql>
 
     <!-- 插入数据 -->
@@ -196,6 +204,10 @@
             <if test ='null != bantime'>`bantime` = #{bantime},</if>
             <if test ='null != posttime'>`posttime` = #{posttime},</if>
             <if test ='null != userBg'>`userBg` = #{userBg}</if>
+            <if test ='null != sex'>`sex` = #{sex}</if>
+            <if test ='null != medal'>`medal` = #{medal}</if>
+            <if test ='null != opt'>`opt` = #{opt}</if>
+            <if test ='null != head_picture'>`head_picture` = #{head_picture}</if>
         </set>
         WHERE `uid` = #{uid}
     </update>

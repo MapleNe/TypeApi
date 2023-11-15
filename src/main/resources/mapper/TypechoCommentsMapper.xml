@@ -19,6 +19,8 @@
         <result column="status" property="status" />
         <result column="parent" property="parent" />
         <result column="likes" property="likes" />
+        <result column="allparent" property="allparent" />
+        <result column="images" property="images" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -36,7 +38,9 @@
         `type`,
         `status`,
         `parent`,
-        `likes`
+        `likes`,
+        `images`,
+        `allparent`
     </sql>
 
     <!-- 插入数据 -->
@@ -88,6 +92,15 @@
             <if test ='null != likes'>
                 `likes`
             </if>
+            <if test ='null != opt'>
+                `opt`
+            </if>
+            <if test ='null != images'>
+                `images`
+            </if>
+            <if test ='null != allparent'>
+                `allparent`
+            </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test ='null != coid'>
@@ -134,6 +147,15 @@
             </if>
             <if test ='null != likes'>
                 #{likes}
+            </if>
+            <if test ='null != images'>
+                #{images}
+            </if>
+            <if test ='null != opt'>
+                #{opt}
+            </if>
+            <if test ='null != allparent'>
+                #{allparent}
             </if>
         </trim>
     </insert>
@@ -251,6 +273,9 @@
             <if test ='null != parent'>
                 and `parent` = #{parent}
             </if>
+            <if test ='null != allparent'>
+                and `allparent` = #{allparent}
+            </if>
         </where>
     </select>
 
@@ -300,6 +325,9 @@
             </if>
             <if test ='null != typechoComments.parent'>
                 and `parent` = #{typechoComments.parent}
+            </if>
+            <if test ='null != typechoComments.allparent'>
+                and `allparent` = #{typechoComments.allparent}
             </if>
             <if test ='null != searchKey'>
                 and CONCAT(IFNULL(`text`, '')) LIKE CONCAT('%', #{searchKey}, '%')
@@ -357,6 +385,9 @@
             </if>
             <if test ='null != typechoComments.parent'>
                 and `parent` = #{typechoComments.parent}
+            </if>
+            <if test ='null != typechoComments.allparent'>
+                and `allparent` = #{typechoComments.allparent}
             </if>
             <if test ='null != searchKey'>
                 and CONCAT(IFNULL(`text`, '')) LIKE CONCAT('%', #{searchKey}, '%')
