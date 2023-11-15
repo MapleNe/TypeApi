@@ -127,6 +127,24 @@ public class TypechoUsers implements Serializable {
      */
     private String userBg;
 
+    /**
+     * sex
+     */
+    private String sex;
 
+    /**
+     * medal
+     */
+    private String medal;
+
+    /**
+     * head_picture
+     */
+    private String head_picture;
+
+    /**
+     * opt
+     */
+    private String opt;
 
 }

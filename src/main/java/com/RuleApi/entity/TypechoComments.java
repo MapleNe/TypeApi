@@ -88,4 +88,16 @@ public class TypechoComments implements Serializable {
      * likes
      */
     private Integer likes;
+
+    /**
+     * images
+     */
+    private Integer images;
+
+    /**
+     * images
+     */
+    private Integer allparent;
+
+
 }

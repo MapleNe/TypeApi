@@ -214,8 +214,14 @@ public class TypechoCommentsController {
                                     //avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), author.getMail());
                                 }
                             }
+                            // 格式化对象
+                            JSONObject opt = null;
+                            if (userinfo.getOpt() != null && userinfo.getOpt() != "") {
+                                opt = JSONObject.parseObject(userinfo.getOpt());
+                            }
                             json.put("avatar",avatar);
                             json.put("author",name);
+                            json.put("opt",opt);
                             json.put("mail",userinfo.getMail());
                             json.put("lv",baseFull.getLv(lv));
                             json.put("customize",userinfo.getCustomize());

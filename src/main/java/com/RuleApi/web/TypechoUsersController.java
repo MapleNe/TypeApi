@@ -360,6 +360,14 @@ public class TypechoUsersController {
                     return Result.getResultJson(0, "请传入正确的参数", null);
                 }
                 json = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
+
+                // 格式化 head_picture medal opt 为对象
+                String head_picture = info.getHead_picture();
+                String medal = info.getMedal();
+                String opt = info.getOpt();
+                json.put("head_picture",JSONObject.parseObject(head_picture));
+                json.put("medal",JSONObject.parseObject(medal));
+                json.put("opt",JSONObject.parseObject(opt));
                 //获取用户等级
 
                 Integer uid = Integer.parseInt(key);

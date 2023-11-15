@@ -27,6 +27,7 @@
         <result column="istop" property="istop" />
         <result column="isswiper" property="isswiper" />
         <result column="replyTime" property="replyTime" />
+        <result column="opt" property="opt" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -52,7 +53,8 @@
         `isrecommend`,
         `istop`,
         `isswiper`,
-        `replyTime`
+        `replyTime`,
+        `opt`
     </sql>
 
     <!-- 插入数据 -->
@@ -113,6 +115,9 @@
             <if test ='null != replyTime'>
                 `replyTime`
             </if>
+            <if test ='null != opt'>
+                `opt`
+            </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test ='null != cid'>
@@ -169,6 +174,9 @@
             <if test ='null != replyTime'>
                 #{replyTime}
             </if>
+            <if test ='null != opt'>
+                #{opt}
+            </if>
         </trim>
     </insert>
 
@@ -193,7 +201,8 @@
             #{curr.allowComment},
             #{curr.allowPing},
             #{curr.allowFeed},
-            #{curr.parent}
+            #{curr.parent},
+            #{curr.opt}
             )
         </foreach>
     </insert>
@@ -224,6 +233,7 @@
             <if test ='null != istop'>`istop` = #{istop},</if>
             <if test ='null != isswiper'>`isswiper` = #{isswiper},</if>
             <if test ='null != replyTime'>`replyTime` = #{replyTime}</if>
+            <if test ='null != replyTime'>`opt` = #{opt}</if>
 
         </set>
         WHERE `cid` = #{cid}

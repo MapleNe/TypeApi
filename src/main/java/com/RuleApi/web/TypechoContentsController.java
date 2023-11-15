@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.RuleApi.entity.*;
 import com.RuleApi.service.*;
+import com.qiniu.util.Json;
 import net.dreamlu.mica.core.result.R;
 import net.dreamlu.mica.xss.core.XssCleanIgnore;
 import org.apache.commons.lang3.StringUtils;
@@ -406,11 +407,30 @@ public class TypechoContentsController {
                                     //avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), author.getMail());
                                 }
                             }
+                            // 格式化对象 同时判断不为空
+                            JSONObject head_picture = null;
+                            JSONObject medal = null;
+                            JSONObject opt = null;
+                            if(author.getHead_picture()!=null && author.getHead_picture()!=""){
+                                head_picture = JSONObject.parseObject(author.getHead_picture());
+                            }
+                            if(author.getMedal()!=null && author.getHead_picture()!=""){
+                                medal = JSONObject.parseObject(author.getMedal());
+                            }
+                            if(author.getOpt()!=null && author.getOpt()!=""){
+                                opt = JSONObject.parseObject(author.getOpt());
+                            }
+
+
 
                             authorInfo.put("name",name);
                             authorInfo.put("avatar",avatar);
+                            authorInfo.put("sex",author.getSex().toString());
                             authorInfo.put("customize",author.getCustomize());
                             authorInfo.put("experience",author.getExperience());
+                            authorInfo.put("head_picture",head_picture);
+                            authorInfo.put("medal",medal);
+                            authorInfo.put("opt",opt);
                             //判断是否为VIP
                             authorInfo.put("isvip", 0);
                             Long date = System.currentTimeMillis();
