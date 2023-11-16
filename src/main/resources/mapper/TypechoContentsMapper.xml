@@ -113,7 +113,7 @@
                 `parent`,
             </if>
             <if test ='null != replyTime'>
-                `replyTime`
+                `replyTime`,
             </if>
             <if test ='null != opt'>
                 `opt`
@@ -172,7 +172,7 @@
                 #{parent},
             </if>
             <if test ='null != replyTime'>
-                #{replyTime}
+                #{replyTime},
             </if>
             <if test ='null != opt'>
                 #{opt}
@@ -233,7 +233,7 @@
             <if test ='null != istop'>`istop` = #{istop},</if>
             <if test ='null != isswiper'>`isswiper` = #{isswiper},</if>
             <if test ='null != replyTime'>`replyTime` = #{replyTime}</if>
-            <if test ='null != replyTime'>`opt` = #{opt}</if>
+            <if test ='null != opt'>`opt` = #{opt}</if>
 
         </set>
         WHERE `cid` = #{cid}

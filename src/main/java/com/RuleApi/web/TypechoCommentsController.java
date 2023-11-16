@@ -150,6 +150,13 @@ public class TypechoCommentsController {
                     TypechoComments comments = list.get(i);
                     Integer cid = comments.getCid();
 
+                    // 格式化图片列表为数组
+                    JSONArray images = JSONObject.parseArray(comments.getImages());
+                    if(images instanceof Object){
+                        images = JSONObject.parseArray(comments.getImages());
+                    }else{
+                        images = null;
+                    }
 
                     //如果存在上级评论
                     Map<String, String> parentComments = new HashMap<String, String>();
@@ -222,6 +229,7 @@ public class TypechoCommentsController {
                             json.put("avatar",avatar);
                             json.put("author",name);
                             json.put("opt",opt);
+                            json.put("images",images);
                             json.put("mail",userinfo.getMail());
                             json.put("lv",baseFull.getLv(lv));
                             json.put("customize",userinfo.getCustomize());
@@ -271,7 +279,6 @@ public class TypechoCommentsController {
                     }else{
                         json.put("contenTitle","文章已删除");
                     }
-
 
                     jsonList.add(json);
 

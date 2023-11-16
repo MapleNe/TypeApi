@@ -92,7 +92,7 @@ public class TypechoComments implements Serializable {
     /**
      * images
      */
-    private Integer images;
+    private String images;
 
     /**
      * images
