@@ -58,6 +58,12 @@ public class TypechoMetas implements Serializable {
      * imgurl
      */
     private String imgurl;
+
+    /**
+     * opt
+     */
+    private String opt;
+
     /**
      * isrecommend
      */

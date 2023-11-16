@@ -155,6 +155,64 @@ public class TypechoContentsController {
                     return Result.getResultJson(0,"该文章不存在",null);
                 }
                 String text = typechoContents.getText();
+                Integer uid = typechoContents.getAuthorId();
+                Map authorInfo = new HashMap();
+                if(uid >0 ||uid!=null){
+                    TypechoUsers userinfo = usersService.selectByKey(uid);
+                    if(userinfo!=null){
+                        String name = userinfo.getName();
+                        if(userinfo.getScreenName()!=null&&userinfo.getScreenName()!=""){
+                            name = userinfo.getScreenName();
+                        }
+                        String avatar = apiconfig.getWebinfoAvatar() + "null";
+                        if(userinfo.getAvatar()!=null&&userinfo.getAvatar()!=""){
+                            avatar = userinfo.getAvatar();
+                        }else{
+                            if(userinfo.getMail()!=null&&userinfo.getMail()!=""){
+                                String mail = userinfo.getMail();
+
+                                if(mail.indexOf("@qq.com") != -1){
+                                    String qq = mail.replace("@qq.com","");
+                                    avatar = "https://q1.qlogo.cn/g?b=qq&nk="+qq+"&s=640";
+                                }else{
+                                    avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), userinfo.getMail());
+                                }
+                                //avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), author.getMail());
+                            }
+                        }
+                        JSONObject opt = JSONObject.parseObject(userinfo.getOpt());
+                        if(opt instanceof Object){
+                            opt = JSONObject.parseObject(userinfo.getOpt());
+                        }else{
+                            opt = null;
+                        }
+
+                        authorInfo.remove("password");
+                        authorInfo.put("name",name);
+                        authorInfo.put("avatar",avatar);
+                        authorInfo.put("sex",userinfo.getSex().toString());
+                        authorInfo.put("experience",userinfo.getExperience());
+                        authorInfo.put("customize",userinfo.getCustomize());
+                        authorInfo.put("opt",opt);
+                        authorInfo.put("isvip",0);
+                        Long date = System.currentTimeMillis();
+                        String curTime = String.valueOf(date).substring(0, 10);
+                        Integer viptime  = userinfo.getVip();
+
+                        if(viptime>Integer.parseInt(curTime)||viptime.equals(1)){
+                            authorInfo.put("isvip", 1);
+                        }
+                        if(viptime.equals(1)){
+                            //永久VIP
+                            authorInfo.put("isvip", 2);
+                        }
+
+                    }else {
+                        authorInfo.put("name","用户已注销");
+                        authorInfo.put("avatar",apiconfig.getWebinfoAvatar() + "null");
+                    }
+                }
+
                 String forbidden = apiconfig.getForbidden();
                 Integer textForbidden = baseFull.getForbidden(forbidden,text);
                 if(textForbidden.equals(1)){
@@ -222,6 +280,7 @@ public class TypechoContentsController {
                 contensjson.put("category",metas);
                 contensjson.put("tag",tags);
                 contensjson.put("text",text);
+                contensjson.put("authorInfo",authorInfo);
                 boolean status = oldText.contains("<!--markdown-->");
                 if(status){
                     contensjson.put("markdown",1);
@@ -408,28 +467,18 @@ public class TypechoContentsController {
                                 }
                             }
                             // 格式化对象 同时判断不为空
-                            JSONObject head_picture = null;
-                            JSONObject medal = null;
-                            JSONObject opt = null;
-                            if(author.getHead_picture()!=null && author.getHead_picture()!=""){
-                                head_picture = JSONObject.parseObject(author.getHead_picture());
-                            }
-                            if(author.getMedal()!=null && author.getHead_picture()!=""){
-                                medal = JSONObject.parseObject(author.getMedal());
-                            }
-                            if(author.getOpt()!=null && author.getOpt()!=""){
+                            JSONObject opt = JSONObject.parseObject(author.getOpt());
+                            if(opt instanceof Object){
                                 opt = JSONObject.parseObject(author.getOpt());
+                            }else {
+                                opt = null;
                             }
-
-
 
                             authorInfo.put("name",name);
                             authorInfo.put("avatar",avatar);
                             authorInfo.put("sex",author.getSex().toString());
                             authorInfo.put("customize",author.getCustomize());
                             authorInfo.put("experience",author.getExperience());
-                            authorInfo.put("head_picture",head_picture);
-                            authorInfo.put("medal",medal);
                             authorInfo.put("opt",opt);
                             //判断是否为VIP
                             authorInfo.put("isvip", 0);

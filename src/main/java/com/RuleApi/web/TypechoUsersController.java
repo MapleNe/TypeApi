@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.RuleApi.entity.*;
 import com.RuleApi.service.*;
+import com.alibaba.fastjson.JSONPObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -362,12 +363,13 @@ public class TypechoUsersController {
                 json = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
 
                 // 格式化 head_picture medal opt 为对象
-                String head_picture = info.getHead_picture();
-                String medal = info.getMedal();
-                String opt = info.getOpt();
-                json.put("head_picture",JSONObject.parseObject(head_picture));
-                json.put("medal",JSONObject.parseObject(medal));
-                json.put("opt",JSONObject.parseObject(opt));
+                JSONObject opt = JSONObject.parseObject(info.getOpt());
+                if(opt instanceof Object){
+                    opt = JSONObject.parseObject(info.getOpt());
+                }else{
+                    opt = null;
+                }
+                json.put("opt",opt);
                 //获取用户等级
 
                 Integer uid = Integer.parseInt(key);

@@ -489,6 +489,15 @@ public class InstallController {
         }else{
             text+="标签分类模块，字段imgurl已经存在，无需添加。";
         }
+
+        //查询分类标签表是否存在opt字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_metas' and column_name = 'opt';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_metas ADD opt longtext NULL;");
+            text+="标签分类模块，字段opt添加完成。";
+        }else{
+            text+="标签分类模块，字段opt已经存在，无需添加。";
+        }
         //查询分类标签表是否存在isrecommend字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_metas' and column_name = 'isrecommend';", Integer.class);
         if (i == 0){

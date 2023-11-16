@@ -9,10 +9,12 @@
         <result column="slug" property="slug" />
         <result column="type" property="type" />
         <result column="description" property="description" />
+        <result column="avatar" property="avatar" />
         <result column="count" property="count" />
         <result column="order" property="orderKey" />
         <result column="parent" property="parent" />
         <result column="imgurl" property="imgurl" />
+        <result column="opt" property="opt" />
         <result column="isrecommend" property="isrecommend" />
     </resultMap>
 
@@ -26,6 +28,7 @@
         `order`,
         `parent`,
         `imgurl`,
+        `opt`,
         `isrecommend`
     </sql>
 
@@ -57,6 +60,9 @@
             <if test ='null != parent'>
                 `parent`,
             </if>
+            <if test ='null != opt'>
+                `opt`,
+            </if>
             <if test ='null != imgurl'>
                 `imgurl`
             </if>
@@ -85,6 +91,9 @@
             </if>
             <if test ='null != parent'>
                 #{parent},
+            </if>
+            <if test ='null != opt'>
+                #{opt},
             </if>
             <if test ='null != imgurl'>
                 #{imgurl}
@@ -120,6 +129,7 @@
             <if test ='null != count'>`count` = #{count},</if>
             <if test ='null != orderKey'>`order` = #{orderKey},</if>
             <if test ='null != imgurl'>`imgurl` = #{imgurl},</if>
+            <if test ='null != opt'>`imgurl` = #{opt},</if>
             <if test ='null != isrecommend'>`isrecommend` = #{isrecommend}</if>
         </set>
         WHERE `mid` = #{mid}
