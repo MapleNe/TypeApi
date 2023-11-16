@@ -132,7 +132,7 @@ public class TypechoContents implements Serializable {
     /**
      * replyTime  自定义字段
      */
-    private Integer opt;
+    private String opt;
 
 
 }

@@ -272,7 +272,11 @@ public class TypechoContentsController {
 
                 }
                 contensjson = JSONObject.parseObject(JSONObject.toJSONString(typechoContents), Map.class);
-
+                // 格式化对象
+                JSONObject opt = JSONObject.parseObject(typechoContents.getOpt());
+                if(opt instanceof  Object){
+                    opt = JSONObject.parseObject(typechoContents.getOpt());
+                }
                 //转为map，再加入字段
                 contensjson.remove("password");
                 contensjson.put("images",imgList);
@@ -280,6 +284,7 @@ public class TypechoContentsController {
                 contensjson.put("category",metas);
                 contensjson.put("tag",tags);
                 contensjson.put("text",text);
+                contensjson.put("opt",opt);
                 contensjson.put("authorInfo",authorInfo);
                 boolean status = oldText.contains("<!--markdown-->");
                 if(status){
