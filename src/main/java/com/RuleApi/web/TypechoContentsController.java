@@ -506,7 +506,14 @@ public class TypechoContentsController {
 
                         json.put("authorInfo", authorInfo);
                     }
-
+                    // 格式化文章列表opt信息
+                    String str = json.get("opt").toString();
+                    JSONObject opt = JSONObject.parseObject(str);
+                    if(opt instanceof Object){
+                        opt = JSONObject.parseObject(str);
+                    }else {
+                        opt = null;
+                    }
                     String text = json.get("text").toString();
                     boolean status = text.contains("<!--markdown-->");
                     if (status) {
@@ -522,6 +529,7 @@ public class TypechoContentsController {
                     json.put("text", text.length() > 400 ? text.substring(0, 400) : text);
                     json.put("category", metas);
                     json.put("tag", tags);
+                    json.put("opt",opt);
                     //获取文章挂载的商品
                     TypechoShop shop = new TypechoShop();
                     shop.setCid(Integer.parseInt(cid));
