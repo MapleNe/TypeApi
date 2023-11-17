@@ -471,6 +471,16 @@ public class InstallController {
         }else{
             text+="评论模块，字段images已经存在，无需添加。";
         }
+
+        // 查询评论表是否存在opt字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_comments' and column_name = 'opt';", Integer.class);
+        if (i == 0){
+            jdbcTemplate.execute("alter table "+prefix+"_comments ADD opt longtext COMMENT '自定义字段';");
+            text+="评论模块，字段opt添加完成。";
+        }else{
+            text+="评论模块，字段opt已经存在，无需添加。";
+        }
+
         // 查询评论表是否存在allparent字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_comments' and column_name = 'allparent';", Integer.class);
         if (i == 0){

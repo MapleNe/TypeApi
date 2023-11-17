@@ -95,6 +95,11 @@ public class TypechoComments implements Serializable {
     private String images;
 
     /**
+     * opt
+     */
+    private String opt;
+
+    /**
      * images
      */
     private Integer allparent;
