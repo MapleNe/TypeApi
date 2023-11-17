@@ -166,6 +166,7 @@ public class TypechoCommentsController {
                         if(parent!=null){
                             if(parent.getStatus().equals("approved")){
                                 parentComments.put("author",parent.getAuthor());
+                                parentComments.put("authorId",parent.getAuthorId().toString());
                                 parentComments.put("text",parent.getText());
                                 parentComments.put("created",JSONObject.toJSONString(parent.getCreated()));
 
