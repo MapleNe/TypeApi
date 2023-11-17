@@ -90,16 +90,16 @@
                 `parent`,
             </if>
             <if test ='null != likes'>
-                `likes`
+                `likes`,
             </if>
             <if test ='null != opt'>
-                `opt`
+                `opt`,
             </if>
             <if test ='null != images'>
-                `images`
+                `images`,
             </if>
             <if test ='null != allparent'>
-                `allparent`
+                `allparent`,
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -146,16 +146,16 @@
                 #{parent},
             </if>
             <if test ='null != likes'>
-                #{likes}
+                #{likes},
             </if>
             <if test ='null != images'>
-                #{images}
+                #{images},
             </if>
             <if test ='null != opt'>
-                #{opt}
+                #{opt},
             </if>
             <if test ='null != allparent'>
-                #{allparent}
+                #{allparent},
             </if>
         </trim>
     </insert>
@@ -335,7 +335,7 @@
 
         </where>
         <if test ='"" != order'>
-            order by ${order} desc
+            order by ${order}
         </if>
         limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
     </select>

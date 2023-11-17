@@ -404,7 +404,7 @@
             </if>
         </where>
         <if test ='"" != order'>
-            order by ${order} desc
+            order by ${order}
         </if>
         limit ${page}, ${pageSize}
     </select>
