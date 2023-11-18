@@ -523,7 +523,7 @@ public class TypechoContentsController {
                     json.put("text", text.length() > 400 ? text.substring(0, 400) : text);
                     json.put("category", metas);
                     json.put("tag", tags);
-                    json.put("opt",opt);
+                    json.put("opt", opt);
                     //获取文章挂载的商品
                     TypechoShop shop = new TypechoShop();
                     shop.setCid(Integer.parseInt(cid));
@@ -626,6 +626,7 @@ public class TypechoContentsController {
                 if (text == null) {
                     text = jsonToMap.get("text").toString();
                 }
+
                 //获取发布者信息
                 String uid = map.get("uid").toString();
                 //判断是否开启邮箱验证
