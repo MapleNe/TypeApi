@@ -122,7 +122,7 @@ public class TypechoContentsController {
      */
     @RequestMapping(value = "/contentsInfo")
     @ResponseBody
-    public String contentsInfo(@RequestParam(value = "key", required = false) String key, @RequestParam(value = "isMd", required = false, defaultValue = "0") Integer isMd, @RequestParam(value = "token", required = false) String token, @RequestParam(value = "uid",required = false ) Integer uid, HttpServletRequest request) {
+    public String contentsInfo(@RequestParam(value = "key", required = false) String key, @RequestParam(value = "isMd", required = false, defaultValue = "0") Integer isMd, @RequestParam(value = "token", required = false) String token, @RequestParam(value = "uid", required = false) Integer uid, HttpServletRequest request) {
         TypechoContents typechoContents = null;
 
         //如果开启全局登录，则必须登录才能得到数据
@@ -185,16 +185,23 @@ public class TypechoContentsController {
                     text = renderer.render(document);
 
                 }
-                // 获取是否Islike
-                Integer isLike =0;
-                if(uid!=null) {
+                // 获取是否islike && isMark
+                Integer isLike = 0;
+                Integer isMark = 0;
+                if (uid != null) {
                     TypechoUserlog searchParams = new TypechoUserlog();
                     searchParams.setUid(uid);
                     searchParams.setCid(typechoContents.getCid());
-                    searchParams.setType("likes");
                     List<TypechoUserlog> likeList = userlogService.selectList(searchParams);
-                    if(likeList.size()>0){
-                        isLike = 1;
+                    if (likeList.size() > 0) {
+                        for (int i = 0; i < likeList.size(); i++) {
+                            String type = likeList.get(i).getType().toString();
+                            if (type.equals("likes")) {
+                                isLike = 1;
+                            } else if (type.equals("mark")) {
+                                isMark = 1;
+                            }
+                        }
                     }
                 }
                 //获取文章id，从而获取自定义字段，和分类标签
@@ -240,10 +247,11 @@ public class TypechoContentsController {
                 contensjson.put("images", imgList);
                 contensjson.put("fields", fields);
                 contensjson.put("category", metas);
-                contensjson.put("isLike",isLike);
+                contensjson.put("isLike", isLike);
+                contensjson.put("isMark", isMark);
                 contensjson.put("tag", tags);
                 contensjson.put("text", text);
-                contensjson.put("opt",opt);
+                contensjson.put("opt", opt);
                 boolean status = oldText.contains("<!--markdown-->");
                 if (status) {
                     contensjson.put("markdown", 1);
