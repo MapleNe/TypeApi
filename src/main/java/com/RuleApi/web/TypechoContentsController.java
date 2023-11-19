@@ -479,7 +479,7 @@ public class TypechoContentsController {
 
                     text = baseFull.toStrByChinese(text);
                     // 格式化文章opt
-                    JSONObject opt = JSONObject.parseObject(json.get("opt").toString());
+                    JSONObject opt = JSONObject.parseObject((String) json.get("opt"));
                     if (opt instanceof Object) {
                         opt = JSONObject.parseObject(json.get("opt").toString());
                     } else {
