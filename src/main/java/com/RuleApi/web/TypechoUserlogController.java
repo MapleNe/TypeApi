@@ -334,12 +334,31 @@ public class TypechoUserlogController {
                 if(!type.equals("mark")&&!type.equals("reward")&&!type.equals("likes")&&!type.equals("clock")){
                     return Result.getResultJson(0,"错误的字段类型",null);
                 }
-                //如果是点赞，那么每天只能一次
+                //如果是点赞
                 if(type.equals("likes")){
                     String cid = jsonToMap.get("cid").toString();
                     String isLikes = redisHelp.getRedis(this.dataprefix+"_"+"userlikes"+"_"+ip+"_"+agent+"_"+cid,redisTemplate);
+                    // 如果不为空就取消点赞 并删除对应数据
                     if(isLikes!=null){
-                        return Result.getResultJson(0,"距离上次操作不到24小时！",null);
+                        TypechoContents contensjson = contentsService.selectByKey(cid);
+                        Integer likes = contensjson.getLikes();
+                        likes--;
+                        TypechoContents toContents = new TypechoContents();
+                        toContents.setCid(Integer.parseInt(cid));
+                        toContents.setLikes(likes);
+                        contentsService.update(toContents);
+                       // 然后删除 对应数据日志
+                        TypechoUserlog searchParams = new TypechoUserlog();
+                        searchParams.setCid(Integer.parseInt(cid));
+                        searchParams.setUid(uid);
+
+                        List<TypechoUserlog> likeList = service.selectList(searchParams);
+                        if(likeList.size()>0){
+                            Integer id = likeList.get(0).getId();
+                            service.delete(id);
+                            return Result.getResultJson(0,"已取消点赞",null);
+                        }
+
                     }
                     //添加点赞量
                     TypechoContents contensjson = contentsService.selectByKey(cid);
@@ -524,6 +543,41 @@ public class TypechoUserlogController {
             return Result.getResultJson(0,"接口请求异常，请联系管理员",null);
         }
 
+    }
+    /***
+     * 查询用户是否收藏
+     */
+    @RequestMapping(value = "/isLike")
+    @ResponseBody
+    public String isLike (@RequestParam(value = "cid", required = false) String  cid,
+                          @RequestParam(value = "token", required = false) String  token) {
+        Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
+        if(uStatus==0){
+            return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+        }
+        if(cid.isEmpty()){
+            return Result.getResultJson(0,"cid不可为空",null);
+        }
+        Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
+        Integer uid =Integer.parseInt(map.get("uid").toString());
+        TypechoUserlog userlog = new TypechoUserlog();
+        userlog.setCid(Integer.parseInt(cid));
+        userlog.setUid(uid);
+        userlog.setType("like");
+        Integer isLike = service.total(userlog);
+        Integer logid = -1;
+        if(isLike>0){
+            List<TypechoUserlog> loglist = service.selectList(userlog);
+            logid = loglist.get(0).getId();
+        }
+        Map json = new HashMap();
+        json.put("isLike",isLike);
+        json.put("logid",logid);
+        JSONObject response = new JSONObject();
+        response.put("code" , 1);
+        response.put("msg"  , "");
+        response.put("data" , json);
+        return response.toString();
     }
 
     /***
