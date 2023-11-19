@@ -410,9 +410,13 @@ public class TypechoContentsController {
                                 }
                             }
 
+                            JSONObject opt = JSONObject.parseObject(author.getOpt());
+                            if(opt instanceof Object) opt = JSONObject.parseObject(author.getOpt());
+
                             authorInfo.put("name",name);
                             authorInfo.put("avatar",avatar);
                             authorInfo.put("customize",author.getCustomize());
+                            authorInfo.put("opt",opt);
                             authorInfo.put("experience",author.getExperience());
                             //判断是否为VIP
                             authorInfo.put("isvip", 0);
@@ -446,11 +450,14 @@ public class TypechoContentsController {
                     List imgList = baseFull.getImageSrc(text);
 
                     text = baseFull.toStrByChinese(text);
-
+                    // 格式化文章opt
+                    JSONObject opt = JSONObject.parseObject(json.get("opt").toString());
+                    if(opt instanceof Object) opt = JSONObject.parseObject(json.get("opt").toString());
                     json.put("images",imgList);
                     json.put("text",text.length()>400 ? text.substring(0,400) : text);
                     json.put("category",metas);
                     json.put("tag",tags);
+                    json.put("opt",opt);
                     //获取文章挂载的商品
                     TypechoShop shop = new TypechoShop();
                     shop.setCid(Integer.parseInt(cid));
