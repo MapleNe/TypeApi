@@ -1821,7 +1821,7 @@ public class TypechoUsersController {
             JSONObject object = JSON.parseObject(searchParams);
             TypechoHeadpicture query = new TypechoHeadpicture();
             query.setStatus(object.getInteger("status"));
-            query.setPermission(object.get("type").toString());
+            query.setType(object.getInteger("type"));
 
             total = headpictureService.total(query);
             PageList<TypechoHeadpicture> Pagelist = headpictureService.selectPage(query, page, limit, order);
