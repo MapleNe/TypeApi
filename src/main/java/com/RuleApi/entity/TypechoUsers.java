@@ -1,6 +1,8 @@
 package com.RuleApi.entity;
 
 import java.io.Serializable;
+import java.util.Arrays;
+
 import lombok.Data;
 
 /**

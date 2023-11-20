@@ -1503,6 +1503,8 @@ public class TypechoUsersController {
                 jsonToMap.remove("group");
                 //部分字段不允许修改
                 jsonToMap.remove("customize");
+                jsonToMap.remove("head_picture");
+                jsonToMap.remove("medal");
                 jsonToMap.remove("created");
                 jsonToMap.remove("activated");
                 jsonToMap.remove("logged");
@@ -1802,45 +1804,64 @@ public class TypechoUsersController {
 
     @RequestMapping(value = "/headpictureList")
     @ResponseBody
-    public String headpictureList(@RequestParam(value = "searchParams", required = false) String searchParams,
-                                  @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                                  @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
-                                  @RequestParam(value = "order",required = false,defaultValue = "permission desc") String order
+    public String headpictureList(
+            @RequestParam(value = "searchParams", required = false) String searchParams,
+            @RequestParam(value = "uid", required = false) Integer uid,
+            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+            @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
+            @RequestParam(value = "order", required = false, defaultValue = "permission desc") String order
     ) {
-        if (limit > 50) limit = 50; //限制
-        Integer total = 0; // 总数
-        TypechoHeadpicture query = new TypechoHeadpicture();
-        List jsonList = new ArrayList();
+        // 限制 limit 的范围
+        limit = (limit > 50) ? 50 : limit;
+
+        Integer total = 0;
+        List<Map<String, Object>> jsonList = new ArrayList<>();
+
         if (StringUtils.isNotBlank(searchParams)) {
             JSONObject object = JSON.parseObject(searchParams);
+            TypechoHeadpicture query = new TypechoHeadpicture();
             query.setStatus(object.getInteger("status"));
-            PageList<TypechoHeadpicture> Pagelist = headpictureService.selectPage(query, page, limit,order);
+            query.setPermission(object.get("type").toString());
+
+            total = headpictureService.total(query);
+            PageList<TypechoHeadpicture> Pagelist = headpictureService.selectPage(query, page, limit, order);
             List<TypechoHeadpicture> list = Pagelist.getList();
-            for (int i =0;i<list.size();i++){
-                Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
+
+            for (TypechoHeadpicture headpicture : list) {
+                Map<String, Object> json = new HashMap<>();
+                json.put("id", headpicture.getId());
+                json.put("name", headpicture.getName());
+                json.put("link", headpicture.getLink());
+                json.put("type",headpicture.getType());
+                json.put("permission",headpicture.getPermission());
+                // 添加其他属性...
+
+                // 获取用户拥有的头像框
+                Integer isActive = 0;
+                if (uid != null) {
+                    TypechoUsers userInfo = service.selectByKey(uid);
+                    if (userInfo != null && StringUtils.isNotBlank(userInfo.getHead_picture())) {
+                        List<String> headList = JSONArray.parseArray(userInfo.getHead_picture(), String.class);
+                        if (headList.contains(headpicture.getId().toString())) {
+                            isActive = 1;
+                        }
+                    }
+                }
+
+                json.put("isActive", isActive);
                 jsonList.add(json);
             }
-
-            if(list.size()<1){
-                JSONObject noData = new JSONObject();
-                noData.put("code", 1);
-                noData.put("msg", "");
-                noData.put("data", new ArrayList());
-                noData.put("count", 0);
-                noData.put("total", total);
-                return noData.toString();
-            }
-
-
         }
+
         JSONObject response = new JSONObject();
         response.put("code", 1);
         response.put("msg", "");
-        response.put("data", null != jsonList ? jsonList : new JSONArray());
+        response.put("data", jsonList);
         response.put("count", jsonList.size());
         response.put("total", total);
         return response.toString();
     }
+
 
     /***
      * 提现列表

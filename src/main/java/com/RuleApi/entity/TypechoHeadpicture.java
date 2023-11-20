@@ -37,7 +37,12 @@ public class TypechoHeadpicture implements Serializable {
     private Integer Status;
 
     /***
-     * Integer permission
+     * Integer Status
      ***/
-    private Integer permission;
+    private Integer type;
+
+    /***
+     * String permission
+     ***/
+    private String permission;
 }
