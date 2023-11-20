@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 /**
  * 控制层
  * TypechoUsersController
+ *
  * @author buxia97
  * @date 2021/11/29
  */
@@ -45,6 +46,7 @@ public class TypechoUsersController {
 
     @Autowired
     private TypechoContentsService contentsService;
+
     @Autowired
     private TypechoCommentsService commentsService;
 
@@ -53,6 +55,9 @@ public class TypechoUsersController {
 
     @Autowired
     private TypechoUserapiService userapiService;
+
+    @Autowired
+    private TypechoHeadpictureService headpictureService;
 
     @Autowired
     private SecurityService securityService;
@@ -103,7 +108,6 @@ public class TypechoUsersController {
     private String dataprefix;
 
 
-
     RedisHelp redisHelp = new RedisHelp();
     ResultAll Result = new ResultAll();
     baseFull baseFull = new baseFull();
@@ -128,7 +132,7 @@ public class TypechoUsersController {
                            @RequestParam(value = "token", required = false, defaultValue = "") String token) {
         TypechoUsers query = new TypechoUsers();
         String sqlParams = "null";
-        if(limit>50){
+        if (limit > 50) {
             limit = 50;
         }
         Integer total = 0;
@@ -140,20 +144,20 @@ public class TypechoUsersController {
             sqlParams = paramsJson.toString();
 
         }
-        total = service.total(query,searchKey);
+        total = service.total(query, searchKey);
         List jsonList = new ArrayList();
         List cacheList = new ArrayList();
         //如果是管理员，则不缓存且显示用户资产
         Integer isAdmin = 0;
         String group = "";
         Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        if(map.size()>0){
+        if (map.size() > 0) {
             group = map.get("group").toString();
-            if (group.equals("administrator")||group.equals("editor")) {
+            if (group.equals("administrator") || group.equals("editor")) {
                 isAdmin = 1;
             }
         }
-        if(isAdmin.equals(0)){
+        if (isAdmin.equals(0)) {
             cacheList = redisHelp.getList(this.dataprefix + "_" + "userList_" + page + "_" + limit + "_" + sqlParams + "_" + order + "_" + searchKey, redisTemplate);
         }
 
@@ -161,14 +165,14 @@ public class TypechoUsersController {
             if (cacheList.size() > 0) {
                 jsonList = cacheList;
             } else {
-                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
                 PageList<TypechoUsers> pageList = service.selectPage(query, page, limit, searchKey, order);
                 List<TypechoUsers> list = pageList.getList();
-                if(list.size() < 1){
+                if (list.size() < 1) {
                     JSONObject noData = new JSONObject();
-                    noData.put("code" , 1);
-                    noData.put("msg"  , "");
-                    noData.put("data" , new ArrayList());
+                    noData.put("code", 1);
+                    noData.put("msg", "");
+                    noData.put("data", new ArrayList());
                     noData.put("count", 0);
                     noData.put("total", total);
                     return noData.toString();
@@ -180,7 +184,7 @@ public class TypechoUsersController {
                     Integer uid = Integer.parseInt(json.get("uid").toString());
                     TypechoComments comments = new TypechoComments();
                     comments.setAuthorId(uid);
-                    Integer lv = commentsService.total(comments,null);
+                    Integer lv = commentsService.total(comments, null);
                     json.put("lv", baseFull.getLv(lv));
 
                     json.remove("password");
@@ -189,31 +193,31 @@ public class TypechoUsersController {
                     if (!group.equals("administrator")) {
                         json.remove("assets");
                     }
-                    if(json.get("avatar")==null){
+                    if (json.get("avatar") == null) {
                         if (json.get("mail") != null) {
 
                             String mail = json.get("mail").toString();
 
-                            if(mail.indexOf("@qq.com") != -1){
-                                String qq = mail.replace("@qq.com","");
-                                json.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk="+qq+"&s=640");
-                            }else{
+                            if (mail.indexOf("@qq.com") != -1) {
+                                String qq = mail.replace("@qq.com", "");
+                                json.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640");
+                            } else {
                                 json.put("avatar", baseFull.getAvatar(apiconfig.getWebinfoAvatar(), mail));
                             }
                         } else {
                             json.put("avatar", apiconfig.getWebinfoAvatar() + "null");
                         }
-                    }else{
+                    } else {
 
                     }
                     json.put("isvip", 0);
                     Long date = System.currentTimeMillis();
                     String curTime = String.valueOf(date).substring(0, 10);
-                    Integer viptime  = userInfo.getVip();
-                    if(viptime>Integer.parseInt(curTime)){
+                    Integer viptime = userInfo.getVip();
+                    if (viptime > Integer.parseInt(curTime)) {
                         json.put("isvip", 1);
                     }
-                    if(viptime.equals(1)){
+                    if (viptime.equals(1)) {
                         //永久VIP
                         json.put("isvip", 2);
                     }
@@ -255,32 +259,32 @@ public class TypechoUsersController {
 
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
-                if(uid==null){
-                    return Result.getResultJson(0,"参数不正确",null);
+                if (uid == null) {
+                    return Result.getResultJson(0, "参数不正确", null);
                 }
-            }else{
+            } else {
                 Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
                 uid = Integer.parseInt(map.get("uid").toString());
             }
 
-            Map cacheInfo = redisHelp.getMapValue(this.dataprefix+"_"+"userData_"+uid,redisTemplate);
-            if(cacheInfo.size()>0){
+            Map cacheInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userData_" + uid, redisTemplate);
+            if (cacheInfo.size() > 0) {
                 json = cacheInfo;
-            }else{
+            } else {
                 //用户文章数量
                 TypechoContents contents = new TypechoContents();
                 contents.setType("post");
                 contents.setStatus("publish");
                 contents.setAuthorId(uid);
-                Integer contentsNum = contentsService.total(contents,null);
+                Integer contentsNum = contentsService.total(contents, null);
                 //用户评论数量
                 TypechoComments comments = new TypechoComments();
                 comments.setAuthorId(uid);
-                Integer commentsNum = commentsService.total(comments,null);
+                Integer commentsNum = commentsService.total(comments, null);
                 //用户资产和创建时间
                 TypechoUsers user = service.selectByKey(uid);
-                if(user==null){
-                    return Result.getResultJson(0,"用户不存在",null);
+                if (user == null) {
+                    return Result.getResultJson(0, "用户不存在", null);
                 }
                 Integer assets = user.getAssets();
                 Integer created = user.getCreated();
@@ -315,10 +319,10 @@ public class TypechoUsersController {
                 follow.setUid(uid);
                 Integer followNum = fanService.total(follow);
 
-                String isSilence = redisHelp.getRedis(this.dataprefix+"_"+uid+"_silence",redisTemplate);
-                if(isSilence!=null){
+                String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
+                if (isSilence != null) {
                     json.put("systemBan", 1);
-                }else{
+                } else {
                     json.put("systemBan", 0);
                 }
                 json.put("contentsNum", contentsNum);
@@ -329,11 +333,11 @@ public class TypechoUsersController {
                 json.put("isClock", isClock);
                 json.put("fanNum", fanNum);
                 json.put("followNum", followNum);
-                redisHelp.delete(this.dataprefix+"_"+"userData_"+uid,redisTemplate);
-                redisHelp.setKey(this.dataprefix+"_"+"userData_"+uid,json,5,redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + "userData_" + uid, redisTemplate);
+                redisHelp.setKey(this.dataprefix + "_" + "userData_" + uid, json, 5, redisTemplate);
             }
 
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         JSONObject response = new JSONObject();
@@ -349,41 +353,41 @@ public class TypechoUsersController {
      */
     @RequestMapping(value = "/userInfo")
     @ResponseBody
-    public String userInfo(@RequestParam(value = "key", required = false) String key,@RequestParam(value = "token", required = false, defaultValue = "") String token) {
+    public String userInfo(@RequestParam(value = "key", required = false) String key, @RequestParam(value = "token", required = false, defaultValue = "") String token) {
         try {
             Map json = new HashMap();
-            Map cacheInfo = redisHelp.getMapValue(this.dataprefix+"_"+"userInfo_"+key,redisTemplate);
-            if(cacheInfo.size()>0){
+            Map cacheInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo_" + key, redisTemplate);
+            if (cacheInfo.size() > 0) {
                 json = cacheInfo;
-            }else{
+            } else {
                 TypechoUsers info = service.selectByKey(key);
-                if(info==null){
+                if (info == null) {
                     return Result.getResultJson(0, "请传入正确的参数", null);
                 }
                 json = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
 
                 // 格式化 head_picture medal opt 为对象
                 JSONObject opt = JSONObject.parseObject(info.getOpt());
-                if(opt instanceof Object){
+                if (opt instanceof Object) {
                     opt = JSONObject.parseObject(info.getOpt());
-                }else{
+                } else {
                     opt = null;
                 }
-                json.put("opt",opt);
+                json.put("opt", opt);
                 //获取用户等级
 
                 Integer uid = Integer.parseInt(key);
 
                 TypechoComments comments = new TypechoComments();
                 comments.setAuthorId(uid);
-                Integer lv = commentsService.total(comments,null);
+                Integer lv = commentsService.total(comments, null);
                 json.put("lv", baseFull.getLv(lv));
                 //判断是否为VIP
                 json.put("isvip", 0);
                 Long date = System.currentTimeMillis();
                 String curTime = String.valueOf(date).substring(0, 10);
-                Integer viptime  = info.getVip();
-                if(viptime>Integer.parseInt(curTime)||viptime.equals(1)){
+                Integer viptime = info.getVip();
+                if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
                     json.put("isvip", 1);
                 }
                 json.remove("password");
@@ -391,25 +395,25 @@ public class TypechoUsersController {
                 json.remove("clientId");
                 json.remove("pay");
                 Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-                if(map.size()>0){
+                if (map.size() > 0) {
                     String group = map.get("group").toString();
                     if (!group.equals("administrator")) {
                         json.remove("assets");
                     }
-                }else{
+                } else {
                     json.remove("assets");
                 }
 
 
-                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
-                if(json.get("avatar")==null){
+                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+                if (json.get("avatar") == null) {
                     if (json.get("mail") != null) {
                         String mail = json.get("mail").toString();
 
-                        if(mail.indexOf("@qq.com") != -1){
-                            String qq = mail.replace("@qq.com","");
-                            json.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk="+qq+"&s=640");
-                        }else{
+                        if (mail.indexOf("@qq.com") != -1) {
+                            String qq = mail.replace("@qq.com", "");
+                            json.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640");
+                        } else {
                             json.put("avatar", baseFull.getAvatar(apiconfig.getWebinfoAvatar(), mail));
                         }
                         //json.put("avatar", baseFull.getAvatar(apiconfig.getWebinfoAvatar(), json.get("mail").toString()));
@@ -418,8 +422,8 @@ public class TypechoUsersController {
                         json.put("avatar", apiconfig.getWebinfoAvatar() + "null");
                     }
                 }
-                redisHelp.delete(this.dataprefix+"_"+"userInfo_"+key,redisTemplate);
-                redisHelp.setKey(this.dataprefix+"_"+"userInfo_"+key,json,this.userCache,redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + "userInfo_" + key, redisTemplate);
+                redisHelp.setKey(this.dataprefix + "_" + "userInfo_" + key, json, this.userCache, redisTemplate);
 
             }
             JSONObject response = new JSONObject();
@@ -446,14 +450,14 @@ public class TypechoUsersController {
      */
     @RequestMapping(value = "/userLogin")
     @ResponseBody
-    public String userLogin(@RequestParam(value = "params", required = false) String params,HttpServletRequest request) {
+    public String userLogin(@RequestParam(value = "params", required = false) String params, HttpServletRequest request) {
         Map jsonToMap = null;
         String oldpw = null;
         try {
             //未登录情况下，撞库类攻击拦截
-            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
-            String  ip = baseFull.getIpAddr(request);
-            if(apiconfig.getBanRobots().equals(1)) {
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+            String ip = baseFull.getIpAddr(request);
+            if (apiconfig.getBanRobots().equals(1)) {
                 String isSilence = redisHelp.getRedis(ip + "_silence", redisTemplate);
                 if (isSilence != null) {
                     return Result.getResultJson(0, "你已被禁止请求，请耐心等待", null);
@@ -489,19 +493,19 @@ public class TypechoUsersController {
             //支持邮箱登录
             if (!baseFull.isEmail(name)) {
                 Users.setName(name);
-            }else{
+            } else {
                 Users.setMail(name);
             }
             List<TypechoUsers> rows = service.selectList(Users);
             if (rows.size() > 0) {
                 //判断用户是否被封禁
                 Integer bantime = rows.get(0).getBantime();
-                if(bantime.equals(1)){
+                if (bantime.equals(1)) {
                     return Result.getResultJson(0, "你的账号已被永久封禁，如有疑问请联系管理员", null);
-                }else{
+                } else {
                     Long date = System.currentTimeMillis();
-                    Integer curtime = Integer.parseInt(String.valueOf(date).substring(0,10));
-                    if(bantime > curtime){
+                    Integer curtime = Integer.parseInt(String.valueOf(date).substring(0, 10));
+                    if (bantime > curtime) {
                         return Result.getResultJson(0, "你的账号被暂时封禁，请耐心等待解封。", null);
                     }
                 }
@@ -531,24 +535,24 @@ public class TypechoUsersController {
                 jsonToMap.put("vip", rows.get(0).getVip());
                 jsonToMap.put("isvip", 0);
                 String curTime = String.valueOf(date).substring(0, 10);
-                Integer viptime  = rows.get(0).getVip();
-                if(viptime>Integer.parseInt(curTime)||viptime.equals(1)){
+                Integer viptime = rows.get(0).getVip();
+                if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
                     jsonToMap.put("isvip", 1);
                 }
                 //获取用户等级
                 Integer uid = rows.get(0).getUid();
                 TypechoComments comments = new TypechoComments();
                 comments.setAuthorId(uid);
-                Integer lv = commentsService.total(comments,null);
+                Integer lv = commentsService.total(comments, null);
                 jsonToMap.put("lv", baseFull.getLv(lv));
-                if(rows.get(0).getAvatar()!=null){
-                    jsonToMap.put("avatar",rows.get(0).getAvatar());
-                }else{
+                if (rows.get(0).getAvatar() != null) {
+                    jsonToMap.put("avatar", rows.get(0).getAvatar());
+                } else {
                     if (rows.get(0).getMail() != null) {
-                        if(rows.get(0).getMail().indexOf("@qq.com") != -1){
-                            String qq = rows.get(0).getMail().replace("@qq.com","");
-                            jsonToMap.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk="+qq+"&s=640");
-                        }else{
+                        if (rows.get(0).getMail().indexOf("@qq.com") != -1) {
+                            String qq = rows.get(0).getMail().replace("@qq.com", "");
+                            jsonToMap.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640");
+                        } else {
                             jsonToMap.put("avatar", baseFull.getAvatar(apiconfig.getWebinfoAvatar(), rows.get(0).getMail()));
                         }
                     } else {
@@ -597,7 +601,7 @@ public class TypechoUsersController {
      */
     @RequestMapping(value = "/apiLogin")
     @ResponseBody
-    public String apiLogin(@RequestParam(value = "params", required = false) String params,HttpServletRequest request) {
+    public String apiLogin(@RequestParam(value = "params", required = false) String params, HttpServletRequest request) {
 
 
         Map jsonToMap = null;
@@ -608,55 +612,55 @@ public class TypechoUsersController {
             } else {
                 return Result.getResultJson(0, "请输入正确的参数", null);
             }
-            String  ip = baseFull.getIpAddr(request);
-            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+            String ip = baseFull.getIpAddr(request);
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             Integer isInvite = apiconfig.getIsInvite();
             //如果是微信，则走两步判断，是小程序还是APP
-            if(jsonToMap.get("appLoginType").toString().equals("weixin")){
+            if (jsonToMap.get("appLoginType").toString().equals("weixin")) {
 
                 //走官方接口获取accessToken和openid
                 if (jsonToMap.get("js_code") == null) {
                     return Result.getResultJson(0, "APP配置异常，js_code参数不存在", null);
                 }
                 String js_code = jsonToMap.get("js_code").toString();
-                if(jsonToMap.get("type").toString().equals("applets")){
-                    String requestUrl = "https://api.weixin.qq.com/sns/jscode2session?appid="+apiconfig.getAppletsAppid()+"&secret="+apiconfig.getAppletsSecret()+"&js_code="+js_code+"&grant_type=authorization_code";
+                if (jsonToMap.get("type").toString().equals("applets")) {
+                    String requestUrl = "https://api.weixin.qq.com/sns/jscode2session?appid=" + apiconfig.getAppletsAppid() + "&secret=" + apiconfig.getAppletsSecret() + "&js_code=" + js_code + "&grant_type=authorization_code";
                     String res = HttpClient.doGet(requestUrl);
                     System.out.println(res);
-                    if(res==null){
+                    if (res == null) {
                         return Result.getResultJson(0, "接口配置异常，微信官方接口请求失败", null);
                     }
-                    System.out.println("微信登录小程序接口返回"+res);
+                    System.out.println("微信登录小程序接口返回" + res);
                     HashMap data = JSON.parseObject(res, HashMap.class);
-                    if(data.get("openid")==null){
+                    if (data.get("openid") == null) {
                         return Result.getResultJson(0, "接口配置异常，小程序openid获取失败", null);
                     }
-                    jsonToMap.put("accessToken",data.get("openid"));
-                    jsonToMap.put("openId",data.get("openid"));
-                }else{
-                    String requestUrl = "https://api.weixin.qq.com/sns/oauth2/access_token?appid="+apiconfig.getWxAppId()+"&secret="+apiconfig.getWxAppSecret()+"&code="+js_code+"&grant_type=authorization_code";
+                    jsonToMap.put("accessToken", data.get("openid"));
+                    jsonToMap.put("openId", data.get("openid"));
+                } else {
+                    String requestUrl = "https://api.weixin.qq.com/sns/oauth2/access_token?appid=" + apiconfig.getWxAppId() + "&secret=" + apiconfig.getWxAppSecret() + "&code=" + js_code + "&grant_type=authorization_code";
                     String res = HttpClient.doGet(requestUrl);
                     System.out.println(res);
-                    if(res==null){
+                    if (res == null) {
                         return Result.getResultJson(0, "接口配置异常，微信官方接口请求失败", null);
                     }
-                    System.out.println("微信登录app接口返回"+res);
+                    System.out.println("微信登录app接口返回" + res);
                     HashMap data = JSON.parseObject(res, HashMap.class);
-                    if(data.get("openid")==null){
+                    if (data.get("openid") == null) {
                         return Result.getResultJson(0, "接口配置异常，openid获取失败", null);
                     }
-                    jsonToMap.put("accessToken",data.get("openid"));
-                    jsonToMap.put("openId",data.get("openid"));
+                    jsonToMap.put("accessToken", data.get("openid"));
+                    jsonToMap.put("openId", data.get("openid"));
                 }
 
 
             }
 
             //QQ也要走两步判断
-            if(jsonToMap.get("appLoginType").toString().equals("qq")){
+            if (jsonToMap.get("appLoginType").toString().equals("qq")) {
 
 
-                if(jsonToMap.get("type").toString().equals("applets")){
+                if (jsonToMap.get("type").toString().equals("applets")) {
                     if (jsonToMap.get("js_code") == null) {
                         return Result.getResultJson(0, "APP配置异常，js_code参数不存在", null);
                     }
@@ -664,27 +668,27 @@ public class TypechoUsersController {
                     //如果是小程序，走官方接口获取accessToken和openid
 
 
-                    String requestUrl = "https://api.q.qq.com/sns/jscode2session?appid="+apiconfig.getQqAppletsAppid()+"&secret="+apiconfig.getQqAppletsSecret()+"&js_code="+js_code+"&grant_type=authorization_code";
+                    String requestUrl = "https://api.q.qq.com/sns/jscode2session?appid=" + apiconfig.getQqAppletsAppid() + "&secret=" + apiconfig.getQqAppletsSecret() + "&js_code=" + js_code + "&grant_type=authorization_code";
                     String res = HttpClient.doGet(requestUrl);
-                    System.out.println("QQ接口返回"+res);
-                    if(res==null){
+                    System.out.println("QQ接口返回" + res);
+                    if (res == null) {
                         return Result.getResultJson(0, "接口配置异常，QQ官方接口请求失败", null);
                     }
 
                     HashMap data = JSON.parseObject(res, HashMap.class);
-                    if(data.get("openid")==null){
+                    if (data.get("openid") == null) {
                         return Result.getResultJson(0, "接口配置异常，openid获取失败", null);
                     }
-                    jsonToMap.put("accessToken",data.get("openid"));
-                    jsonToMap.put("openId",data.get("openid"));
-                }else {
+                    jsonToMap.put("accessToken", data.get("openid"));
+                    jsonToMap.put("openId", data.get("openid"));
+                } else {
                     if (jsonToMap.get("accessToken") == null) {
                         return Result.getResultJson(0, "登录配置异常，accessToken参数不存在", null);
                     }
-                    jsonToMap.put("accessToken",jsonToMap.get("openId"));
-                    jsonToMap.put("openId",jsonToMap.get("openId"));
+                    jsonToMap.put("accessToken", jsonToMap.get("openId"));
+                    jsonToMap.put("openId", jsonToMap.get("openId"));
                 }
-            }else{
+            } else {
                 if (jsonToMap.get("accessToken") == null) {
                     return Result.getResultJson(0, "登录配置异常，accessToken参数不存在", null);
                 }
@@ -703,12 +707,12 @@ public class TypechoUsersController {
                 TypechoUsers user = service.selectByKey(apiInfo.getUid().toString());
                 //判断用户是否被封禁
                 Integer bantime = user.getBantime();
-                if(bantime.equals(1)){
+                if (bantime.equals(1)) {
                     return Result.getResultJson(0, "你的账号已被永久封禁，如有疑问请联系管理员", null);
-                }else{
+                } else {
                     Long date = System.currentTimeMillis();
-                    Integer curtime = Integer.parseInt(String.valueOf(date).substring(0,10));
-                    if(bantime > curtime){
+                    Integer curtime = Integer.parseInt(String.valueOf(date).substring(0, 10));
+                    if (bantime > curtime) {
                         return Result.getResultJson(0, "你的账号被暂时封禁，请耐心等待解封。", null);
                     }
                 }
@@ -731,18 +735,18 @@ public class TypechoUsersController {
                 jsonToMap.put("vip", user.getVip());
                 jsonToMap.put("isvip", 0);
                 String curTime = String.valueOf(date).substring(0, 10);
-                Integer viptime  = user.getVip();
-                if(viptime>Integer.parseInt(curTime)||viptime.equals(1)){
+                Integer viptime = user.getVip();
+                if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
                     jsonToMap.put("isvip", 1);
                 }
-                if(user.getAvatar()!=null){
+                if (user.getAvatar() != null) {
                     jsonToMap.put("avatar", user.getAvatar());
-                }else{
+                } else {
                     if (user.getMail() != null) {
-                        if(user.getMail().indexOf("@qq.com") != -1){
-                            String qq = user.getMail().replace("@qq.com","");
-                            jsonToMap.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk="+qq+"&s=640");
-                        }else{
+                        if (user.getMail().indexOf("@qq.com") != -1) {
+                            String qq = user.getMail().replace("@qq.com", "");
+                            jsonToMap.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640");
+                        } else {
                             jsonToMap.put("avatar", baseFull.getAvatar(apiconfig.getWebinfoAvatar(), user.getMail()));
                         }
                     } else {
@@ -754,7 +758,7 @@ public class TypechoUsersController {
                 Integer uid = user.getUid();
                 TypechoComments comments = new TypechoComments();
                 comments.setAuthorId(uid);
-                Integer lv = commentsService.total(comments,null);
+                Integer lv = commentsService.total(comments, null);
                 jsonToMap.put("lv", baseFull.getLv(lv));
                 //更新用户登录时间和第一次登陆时间（满足typecho要求）
                 String userTime = String.valueOf(date).substring(0, 10);
@@ -779,7 +783,7 @@ public class TypechoUsersController {
 
             } else {
                 //注册
-                if(isInvite.equals(1)){
+                if (isInvite.equals(1)) {
                     return Result.getResultJson(0, "当前注册需要邀请码，请采用普通方式注册！", null);
                 }
 
@@ -800,9 +804,9 @@ public class TypechoUsersController {
                 if (jsonToMap.get("headImgUrl") != null) {
                     String headImgUrl = jsonToMap.get("headImgUrl").toString();
                     //QQ的接口头像要处理(垃圾腾讯突然修改了返回格式)
-                    if(jsonToMap.get("appLoginType").toString().equals("qq")){
-                        headImgUrl = headImgUrl.replace("http://","https://");
-                        headImgUrl = headImgUrl.replace("&amp;","&");
+                    if (jsonToMap.get("appLoginType").toString().equals("qq")) {
+                        headImgUrl = headImgUrl.replace("http://", "https://");
+                        headImgUrl = headImgUrl.replace("&amp;", "&");
                     }
                     regUser.setAvatar(headImgUrl);
                 }
@@ -876,75 +880,75 @@ public class TypechoUsersController {
             } else {
                 return Result.getResultJson(0, "请输入正确的参数", null);
             }
-            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             //如果是微信，则走两步判断，是小程序还是APP
             //如果是微信，则走两步判断，是小程序还是APP
-            if(jsonToMap.get("appLoginType").toString().equals("weixin")){
+            if (jsonToMap.get("appLoginType").toString().equals("weixin")) {
 
                 //走官方接口获取accessToken和openid
                 if (jsonToMap.get("js_code") == null) {
                     return Result.getResultJson(0, "APP配置异常，js_code参数不存在", null);
                 }
                 String js_code = jsonToMap.get("js_code").toString();
-                if(jsonToMap.get("type").toString().equals("applets")){
-                    String requestUrl = "https://api.weixin.qq.com/sns/jscode2session?appid="+apiconfig.getAppletsAppid()+"&secret="+apiconfig.getAppletsSecret()+"&js_code="+js_code+"&grant_type=authorization_code";
+                if (jsonToMap.get("type").toString().equals("applets")) {
+                    String requestUrl = "https://api.weixin.qq.com/sns/jscode2session?appid=" + apiconfig.getAppletsAppid() + "&secret=" + apiconfig.getAppletsSecret() + "&js_code=" + js_code + "&grant_type=authorization_code";
                     String res = HttpClient.doGet(requestUrl);
-                    if(res==null){
+                    if (res == null) {
                         return Result.getResultJson(0, "接口配置异常，微信官方接口请求失败", null);
                     }
-                    System.out.println("微信登录小程序接口返回"+res);
+                    System.out.println("微信登录小程序接口返回" + res);
                     HashMap data = JSON.parseObject(res, HashMap.class);
-                    if(data.get("openid")==null){
-                        return Result.getResultJson(0, "接口配置异常，小程序openid获取失败，错误码"+data.get("errcode").toString(), null);
+                    if (data.get("openid") == null) {
+                        return Result.getResultJson(0, "接口配置异常，小程序openid获取失败，错误码" + data.get("errcode").toString(), null);
                     }
-                    jsonToMap.put("accessToken",data.get("openid"));
-                    jsonToMap.put("openId",data.get("openid"));
-                }else{
-                    String requestUrl = "https://api.weixin.qq.com/sns/oauth2/access_token?appid="+apiconfig.getWxAppId()+"&secret="+apiconfig.getWxAppSecret()+"&code="+js_code+"&grant_type=authorization_code";
+                    jsonToMap.put("accessToken", data.get("openid"));
+                    jsonToMap.put("openId", data.get("openid"));
+                } else {
+                    String requestUrl = "https://api.weixin.qq.com/sns/oauth2/access_token?appid=" + apiconfig.getWxAppId() + "&secret=" + apiconfig.getWxAppSecret() + "&code=" + js_code + "&grant_type=authorization_code";
                     String res = HttpClient.doGet(requestUrl);
-                    if(res==null){
+                    if (res == null) {
                         return Result.getResultJson(0, "接口配置异常，微信官方接口请求失败", null);
                     }
-                    System.out.println("微信登录app接口返回"+res);
+                    System.out.println("微信登录app接口返回" + res);
                     HashMap data = JSON.parseObject(res, HashMap.class);
-                    if(data.get("openid")==null){
-                        return Result.getResultJson(0, "接口配置异常，openid获取失败，错误码"+data.get("errcode").toString(), null);
+                    if (data.get("openid") == null) {
+                        return Result.getResultJson(0, "接口配置异常，openid获取失败，错误码" + data.get("errcode").toString(), null);
                     }
-                    jsonToMap.put("accessToken",data.get("openid"));
-                    jsonToMap.put("openId",data.get("openid"));
+                    jsonToMap.put("accessToken", data.get("openid"));
+                    jsonToMap.put("openId", data.get("openid"));
                 }
 
 
             }
             //QQ也要走两步判断
-            if(jsonToMap.get("appLoginType").toString().equals("qq")){
-                if(jsonToMap.get("type").toString().equals("applets")){
+            if (jsonToMap.get("appLoginType").toString().equals("qq")) {
+                if (jsonToMap.get("type").toString().equals("applets")) {
                     //如果是小程序，走官方接口获取accessToken和openid
                     if (jsonToMap.get("js_code") == null) {
                         return Result.getResultJson(0, "APP配置异常，请检查相关设置", null);
                     }
                     String js_code = jsonToMap.get("js_code").toString();
 
-                    String requestUrl = "https://api.q.qq.com/sns/jscode2session?appid="+apiconfig.getQqAppletsAppid()+"&secret="+apiconfig.getQqAppletsSecret()+"&js_code="+js_code+"&grant_type=authorization_code";
+                    String requestUrl = "https://api.q.qq.com/sns/jscode2session?appid=" + apiconfig.getQqAppletsAppid() + "&secret=" + apiconfig.getQqAppletsSecret() + "&js_code=" + js_code + "&grant_type=authorization_code";
                     String res = HttpClient.doGet(requestUrl);
-                    if(res==null){
+                    if (res == null) {
                         return Result.getResultJson(0, "接口配置异常，请检查相关设置", null);
                     }
 
                     HashMap data = JSON.parseObject(res, HashMap.class);
-                    if(data.get("unionid")==null){
+                    if (data.get("unionid") == null) {
                         return Result.getResultJson(0, "接口配置异常，请检查相关设置", null);
                     }
-                    jsonToMap.put("accessToken",data.get("openid"));
-                    jsonToMap.put("openId",data.get("openid"));
-                }else {
+                    jsonToMap.put("accessToken", data.get("openid"));
+                    jsonToMap.put("openId", data.get("openid"));
+                } else {
                     if (jsonToMap.get("accessToken") == null) {
                         return Result.getResultJson(0, "登录配置异常，请检查相关设置", null);
                     }
-                    jsonToMap.put("accessToken",jsonToMap.get("openId"));
-                    jsonToMap.put("openId",jsonToMap.get("openId"));
+                    jsonToMap.put("accessToken", jsonToMap.get("openId"));
+                    jsonToMap.put("openId", jsonToMap.get("openId"));
                 }
-            }else{
+            } else {
                 if (jsonToMap.get("accessToken") == null) {
                     return Result.getResultJson(0, "登录配置异常，请检查相关设置", null);
                 }
@@ -1033,14 +1037,14 @@ public class TypechoUsersController {
      */
     @RequestMapping(value = "/userRegister")
     @ResponseBody
-    public String userRegister(@RequestParam(value = "params", required = false) String params,HttpServletRequest request) {
+    public String userRegister(@RequestParam(value = "params", required = false) String params, HttpServletRequest request) {
         TypechoUsers insert = null;
         Map jsonToMap = null;
-        try{
+        try {
             //未登录情况下，撞库类攻击拦截
-            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
-            String  ip = baseFull.getIpAddr(request);
-            if(apiconfig.getBanRobots().equals(1)) {
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+            String ip = baseFull.getIpAddr(request);
+            if (apiconfig.getBanRobots().equals(1)) {
                 String isSilence = redisHelp.getRedis(ip + "_silence", redisTemplate);
                 if (isSilence != null) {
                     return Result.getResultJson(0, "你已被禁止请求，请耐心等待", null);
@@ -1068,7 +1072,7 @@ public class TypechoUsersController {
                 Integer isInvite = apiconfig.getIsInvite();
                 //验证是否存在相同用户名或者邮箱
                 TypechoUsers toKey = new TypechoUsers();
-                if(isEmail>0) {
+                if (isEmail > 0) {
 
                     toKey.setMail(jsonToMap.get("mail").toString());
                     List isMail = service.selectList(toKey);
@@ -1083,7 +1087,7 @@ public class TypechoUsersController {
                     return Result.getResultJson(0, "该用户名已注册", null);
                 }
                 //验证邮箱验证码
-                if(isEmail>0){
+                if (isEmail > 0) {
                     String email = jsonToMap.get("mail").toString();
                     String code = jsonToMap.get("code").toString();
                     String cur_code = redisHelp.getRedis(this.dataprefix + "_" + "sendCode" + email, redisTemplate);
@@ -1095,16 +1099,16 @@ public class TypechoUsersController {
                     }
                 }
                 //验证邀请码
-                if(isInvite.equals(1)){
-                    if(jsonToMap.get("inviteCode")==null){
+                if (isInvite.equals(1)) {
+                    if (jsonToMap.get("inviteCode") == null) {
                         return Result.getResultJson(0, "请输入邀请码", null);
                     }
                     TypechoInvitation invitation = new TypechoInvitation();
                     invitation.setCode(jsonToMap.get("inviteCode").toString());
                     List<TypechoInvitation> invite = invitationService.selectList(invitation);
-                    if(invite.size()<1){
+                    if (invite.size() < 1) {
                         return Result.getResultJson(0, "错误的邀请码", null);
-                    }else{
+                    } else {
                         TypechoInvitation cur = invite.get(0);
                         cur.setStatus(1);
                         invitationService.update(cur);
@@ -1114,8 +1118,8 @@ public class TypechoUsersController {
                 //验证用户名是否违禁
                 String userName = jsonToMap.get("name").toString();
                 String forbidden = apiconfig.getForbidden();
-                Integer isForbidden = baseFull.getForbidden(forbidden,userName);
-                if(isForbidden.equals(1)){
+                Integer isForbidden = baseFull.getForbidden(forbidden, userName);
+                if (isForbidden.equals(1)) {
                     return Result.getResultJson(0, "用户名包含违规词语", null);
                 }
 
@@ -1143,7 +1147,7 @@ public class TypechoUsersController {
             response.put("data", rows);
             response.put("msg", rows > 0 ? "注册成功" : "注册失败");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(0, "参数错误", null);
         }
@@ -1157,13 +1161,13 @@ public class TypechoUsersController {
     @RequestMapping(value = "/SendCode")
     @ResponseBody
     public String SendCode(@RequestParam(value = "params", required = false) String params, HttpServletRequest request) throws MessagingException {
-        try{
+        try {
             Map jsonToMap = null;
-            String  agent =  request.getHeader("User-Agent");
-            String  ip = baseFull.getIpAddr(request);
+            String agent = request.getHeader("User-Agent");
+            String ip = baseFull.getIpAddr(request);
             //刷邮件攻击拦截
-            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
-            if(apiconfig.getBanRobots().equals(1)) {
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+            if (apiconfig.getBanRobots().equals(1)) {
                 String isSilence = redisHelp.getRedis(ip + "_silence", redisTemplate);
                 if (isSilence != null) {
                     return Result.getResultJson(0, "你已被暂时禁止请求，请耐心等待", null);
@@ -1185,28 +1189,28 @@ public class TypechoUsersController {
             //攻击拦截结束
 
             //邮件每天最多发送五次
-            String sendCode = redisHelp.getRedis(this.dataprefix+"_"+ip+"_sendCode",redisTemplate);
-            if(sendCode==null){
-                redisHelp.setRedis(this.dataprefix+"_"+ip+"_sendCode","1",86400,redisTemplate);
-            }else{
+            String sendCode = redisHelp.getRedis(this.dataprefix + "_" + ip + "_sendCode", redisTemplate);
+            if (sendCode == null) {
+                redisHelp.setRedis(this.dataprefix + "_" + ip + "_sendCode", "1", 86400, redisTemplate);
+            } else {
                 Integer send_Code = Integer.parseInt(sendCode) + 1;
-                if(send_Code > 5){
-                    return Result.getResultJson(0,"你已超过最大邮件限制，请您24小时后再操作",null);
-                }else{
-                    redisHelp.setRedis(this.dataprefix+"_"+ip+"_sendCode",send_Code.toString(),86400,redisTemplate);
+                if (send_Code > 5) {
+                    return Result.getResultJson(0, "你已超过最大邮件限制，请您24小时后再操作", null);
+                } else {
+                    redisHelp.setRedis(this.dataprefix + "_" + ip + "_sendCode", send_Code.toString(), 86400, redisTemplate);
                 }
             }
             //限制结束
 
             //邮件59秒只能发送一次
-            String iSsendCode = redisHelp.getRedis(this.dataprefix + "_" + "iSsendCode_"+agent+"_"+ip, redisTemplate);
-            if(iSsendCode==null){
-                redisHelp.setRedis(this.dataprefix + "_" + "iSsendCode_"+agent+"_"+ip, "data", 59, redisTemplate);
-            }else{
+            String iSsendCode = redisHelp.getRedis(this.dataprefix + "_" + "iSsendCode_" + agent + "_" + ip, redisTemplate);
+            if (iSsendCode == null) {
+                redisHelp.setRedis(this.dataprefix + "_" + "iSsendCode_" + agent + "_" + ip, "data", 59, redisTemplate);
+            } else {
                 return Result.getResultJson(0, "你的操作太频繁了", null);
             }
             Integer isEmail = apiconfig.getIsEmail();
-            if(isEmail.equals(0)){
+            if (isEmail.equals(0)) {
                 return Result.getResultJson(0, "邮箱验证已经关闭", null);
             }
 
@@ -1240,10 +1244,9 @@ public class TypechoUsersController {
             } else {
                 return Result.getResultJson(0, "参数错误", null);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return Result.getResultJson(0, "不正确的邮箱发信配置", null);
         }
-
 
 
     }
@@ -1254,38 +1257,38 @@ public class TypechoUsersController {
     @RequestMapping(value = "/RegSendCode")
     @ResponseBody
     public String RegSendCode(@RequestParam(value = "params", required = false) String params, HttpServletRequest request) throws MessagingException {
-        try{
+        try {
             Map jsonToMap = null;
-            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             Integer isEmail = apiconfig.getIsEmail();
-            if(isEmail.equals(0)){
+            if (isEmail.equals(0)) {
                 return Result.getResultJson(0, "邮箱验证已经关闭", null);
             }
-            String  agent =  request.getHeader("User-Agent");
-            String  ip = baseFull.getIpAddr(request);
+            String agent = request.getHeader("User-Agent");
+            String ip = baseFull.getIpAddr(request);
             //刷邮件攻击拦截
-            String isSilence = redisHelp.getRedis(ip+"_silence",redisTemplate);
-            if(isSilence!=null){
-                return Result.getResultJson(0,"你已被暂时禁止请求，请耐心等待",null);
+            String isSilence = redisHelp.getRedis(ip + "_silence", redisTemplate);
+            if (isSilence != null) {
+                return Result.getResultJson(0, "你已被暂时禁止请求，请耐心等待", null);
             }
-            String isRepeated = redisHelp.getRedis(ip+"_isOperation",redisTemplate);
-            if(isRepeated==null){
-                redisHelp.setRedis(ip+"_isOperation","1",2,redisTemplate);
-            }else{
+            String isRepeated = redisHelp.getRedis(ip + "_isOperation", redisTemplate);
+            if (isRepeated == null) {
+                redisHelp.setRedis(ip + "_isOperation", "1", 2, redisTemplate);
+            } else {
                 Integer frequency = Integer.parseInt(isRepeated) + 1;
-                if(frequency==3){
-                    securityService.safetyMessage("IP："+ip+"，在邮箱发信疑似存在攻击行为，请及时确认处理。","system");
-                    redisHelp.setRedis(ip+"_silence","1",1800,redisTemplate);
-                    return Result.getResultJson(0,"你的请求存在恶意行为，30分钟内禁止操作！",null);
+                if (frequency == 3) {
+                    securityService.safetyMessage("IP：" + ip + "，在邮箱发信疑似存在攻击行为，请及时确认处理。", "system");
+                    redisHelp.setRedis(ip + "_silence", "1", 1800, redisTemplate);
+                    return Result.getResultJson(0, "你的请求存在恶意行为，30分钟内禁止操作！", null);
                 }
-                redisHelp.setRedis(ip+"_isOperation",frequency.toString(),3,redisTemplate);
-                return Result.getResultJson(0,"你的操作太频繁了",null);
+                redisHelp.setRedis(ip + "_isOperation", frequency.toString(), 3, redisTemplate);
+                return Result.getResultJson(0, "你的操作太频繁了", null);
             }
             //攻击拦截结束
-            String regISsendCode = redisHelp.getRedis(this.dataprefix + "_" + "regISsendCode_"+agent+"_"+ip, redisTemplate);
-            if(regISsendCode==null){
-                redisHelp.setRedis(this.dataprefix + "_" + "regISsendCode_"+agent+"_"+ip, "data", 59, redisTemplate);
-            }else{
+            String regISsendCode = redisHelp.getRedis(this.dataprefix + "_" + "regISsendCode_" + agent + "_" + ip, redisTemplate);
+            if (regISsendCode == null) {
+                redisHelp.setRedis(this.dataprefix + "_" + "regISsendCode_" + agent + "_" + ip, "data", 59, redisTemplate);
+            } else {
                 return Result.getResultJson(0, "你的操作太频繁了", null);
             }
             if (StringUtils.isNotBlank(params)) {
@@ -1318,7 +1321,7 @@ public class TypechoUsersController {
             } else {
                 return Result.getResultJson(0, "参数错误", null);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return Result.getResultJson(0, "不正确的邮箱发信配置", null);
         }
 
@@ -1336,9 +1339,9 @@ public class TypechoUsersController {
             TypechoUsers update = null;
             Map jsonToMap = null;
             if (StringUtils.isNotBlank(params)) {
-                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
                 Integer isEmail = apiconfig.getIsEmail();
-                if(isEmail.equals(0)){
+                if (isEmail.equals(0)) {
                     return Result.getResultJson(0, "邮箱验证已经关闭，请联系管理员找回密码", null);
                 }
                 jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
@@ -1389,6 +1392,7 @@ public class TypechoUsersController {
         }
 
     }
+
     /***
      * 用户clientId修改，用于推送
      */
@@ -1400,7 +1404,7 @@ public class TypechoUsersController {
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
-            Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
+            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             String uid = map.get("uid").toString();
             TypechoUsers user = new TypechoUsers();
             user.setUid(Integer.parseInt(uid));
@@ -1416,6 +1420,7 @@ public class TypechoUsersController {
             return Result.getResultJson(0, "操作失败", null);
         }
     }
+
     /***
      * 用户修改
      * @param params Bean对象JSON字符串
@@ -1431,25 +1436,25 @@ public class TypechoUsersController {
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
-            Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
+            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             String uid = map.get("uid").toString();
             TypechoUsers user = new TypechoUsers();
             Integer isForbidden = 0;
             if (StringUtils.isNotBlank(params)) {
-                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
                 jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
                 //根据验证码判断是否要修改邮箱
                 if (jsonToMap.get("code") != null && jsonToMap.get("mail") != null) {
 
                     Integer isEmail = apiconfig.getIsEmail();
-                    if(isEmail>0){
+                    if (isEmail > 0) {
                         String email = jsonToMap.get("mail").toString();
                         //判断邮箱是否已被其它用户绑定
                         user.setMail(email);
                         List<TypechoUsers> ulist = service.selectList(user);
-                        if(ulist.size() > 0){
+                        if (ulist.size() > 0) {
                             String oldEmail = ulist.get(0).getMail();
-                            if(oldEmail.equals(email)){
+                            if (oldEmail.equals(email)) {
                                 return Result.getResultJson(0, "该邮箱已被绑定", null);
                             }
                         }
@@ -1485,10 +1490,10 @@ public class TypechoUsersController {
                     return Result.getResultJson(0, "用户不存在", null);
                 }
                 String forbidden = apiconfig.getForbidden();
-                if(jsonToMap.get("introduce") != null){
+                if (jsonToMap.get("introduce") != null) {
                     String introduce = jsonToMap.get("introduce").toString();
-                    Integer isIntroForbidden = baseFull.getForbidden(forbidden,introduce);
-                    if(isIntroForbidden.equals(1)){
+                    Integer isIntroForbidden = baseFull.getForbidden(forbidden, introduce);
+                    if (isIntroForbidden.equals(1)) {
                         isForbidden = 1;
                         jsonToMap.remove("introduce");
                     }
@@ -1508,26 +1513,26 @@ public class TypechoUsersController {
                 jsonToMap.remove("assets");
                 jsonToMap.remove("experience");
                 jsonToMap.remove("vip");
-                if(jsonToMap.get("screenName")!=null){
+                if (jsonToMap.get("screenName") != null) {
                     //验证用户名是否违禁
                     String screenName = jsonToMap.get("screenName").toString();
 
-                    Integer isNameForbidden = baseFull.getForbidden(forbidden,screenName);
-                    if(isNameForbidden.equals(1)){
+                    Integer isNameForbidden = baseFull.getForbidden(forbidden, screenName);
+                    if (isNameForbidden.equals(1)) {
                         return Result.getResultJson(0, "用户名包含违规词语", null);
                     }
                     user.setScreenName(screenName);
                     List<TypechoUsers> userlist = service.selectList(user);
-                    if(userlist.size() > 0){
+                    if (userlist.size() > 0) {
                         Integer myuid = Integer.parseInt(uid);
-                        if(!userlist.get(0).getUid().equals(myuid)){
+                        if (!userlist.get(0).getUid().equals(myuid)) {
                             return Result.getResultJson(0, "该昵称已被占用！", null);
                         }
                     }
                 }
 
                 update = JSON.parseObject(JSON.toJSONString(jsonToMap), TypechoUsers.class);
-            }else{
+            } else {
                 return Result.getResultJson(0, "参数不正确", null);
             }
             update.setUid(Integer.parseInt(uid));
@@ -1542,7 +1547,7 @@ public class TypechoUsersController {
                 redisHelp.delete(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             }
             String responseText = "操作成功";
-            if(isForbidden.equals(1)){
+            if (isForbidden.equals(1)) {
                 responseText = "简介存在违禁词，该字段未修改。";
             }
             JSONObject response = new JSONObject();
@@ -1572,10 +1577,10 @@ public class TypechoUsersController {
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
-            Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
+            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             String group = map.get("group").toString();
-            if(!group.equals("administrator")&&!group.equals("editor")){
-                return Result.getResultJson(0,"你没有操作权限",null);
+            if (!group.equals("administrator") && !group.equals("editor")) {
+                return Result.getResultJson(0, "你没有操作权限", null);
             }
             String name = "";
             if (StringUtils.isNotBlank(params)) {
@@ -1597,12 +1602,12 @@ public class TypechoUsersController {
 
 
                 jsonToMap.remove("name");
-                if(jsonToMap.get("group")!=null){
+                if (jsonToMap.get("group") != null) {
                     String groupText = jsonToMap.get("group").toString();
-                    if(!groupText.equals("administrator")&&!groupText.equals("editor")&&!groupText.equals("contributor")&&!groupText.equals("subscriber")&&!groupText.equals("visitor")){
+                    if (!groupText.equals("administrator") && !groupText.equals("editor") && !groupText.equals("contributor") && !groupText.equals("subscriber") && !groupText.equals("visitor")) {
                         return Result.getResultJson(0, "用户组不正确", null);
                     }
-                    jsonToMap.put("groupKey",groupText);
+                    jsonToMap.put("groupKey", groupText);
                 }
 
                 //部分字段不允许修改
@@ -1621,7 +1626,7 @@ public class TypechoUsersController {
 
             int rows = service.update(update);
             //如果修改了密码、权限、头衔，则让用户强制重新登陆
-            if(update.getGroupKey()!=null||update.getExperience()!=null||update.getScreenName()!=null||update.getMail()!=null||update.getPassword()!=null){
+            if (update.getGroupKey() != null || update.getExperience() != null || update.getScreenName() != null || update.getMail() != null || update.getPassword() != null) {
                 String oldToken = null;
                 if (redisHelp.getRedis(this.dataprefix + "_" + "userkey" + name, redisTemplate) != null) {
                     oldToken = redisHelp.getRedis(this.dataprefix + "_" + "userkey" + name, redisTemplate);
@@ -1638,7 +1643,7 @@ public class TypechoUsersController {
             return response.toString();
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0,"接口请求异常，请联系管理员",null);
+            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
         }
 
     }
@@ -1662,15 +1667,15 @@ public class TypechoUsersController {
             Map json = JSONObject.parseObject(JSONObject.toJSONString(users), Map.class);
             TypechoComments comments = new TypechoComments();
             comments.setAuthorId(uid);
-            Integer lv = commentsService.total(comments,null);
+            Integer lv = commentsService.total(comments, null);
             json.remove("password");
             json.remove("clientId");
             //判断是否为VIP
             json.put("isvip", 0);
             Long date = System.currentTimeMillis();
             String curTime = String.valueOf(date).substring(0, 10);
-            Integer viptime  = users.getVip();
-            if(viptime>Integer.parseInt(curTime)||viptime.equals(1)){
+            Integer viptime = users.getVip();
+            if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
                 json.put("isvip", 1);
             }
             json.put("lv", baseFull.getLv(lv));
@@ -1701,19 +1706,19 @@ public class TypechoUsersController {
             if (!group.equals("administrator")) {
                 return Result.getResultJson(0, "你没有操作权限", null);
             }
-            Integer logUid =Integer.parseInt(map.get("uid").toString());
+            Integer logUid = Integer.parseInt(map.get("uid").toString());
             TypechoUsers users = service.selectByKey(key);
-            if(users==null){
+            if (users == null) {
                 return Result.getResultJson(0, "该用户不存在", null);
             }
-            if(users.getUid().equals(logUid)){
+            if (users.getUid().equals(logUid)) {
                 return Result.getResultJson(0, "你不可以删除你自己", null);
             }
             //删除关联的信息
             TypechoUserapi userapi = new TypechoUserapi();
             userapi.setUid(Integer.parseInt(key));
             Integer isApi = userapiService.total(userapi);
-            if(isApi > 0){
+            if (isApi > 0) {
                 userapiService.delete(key);
             }
             //删除用户登录状态
@@ -1723,7 +1728,7 @@ public class TypechoUsersController {
                 redisHelp.delete(this.dataprefix + "_" + "userkey" + users.getName(), redisTemplate);
             }
             int rows = service.delete(key);
-            editFile.setLog("管理员"+logUid+"删除了用户"+key);
+            editFile.setLog("管理员" + logUid + "删除了用户" + key);
             JSONObject response = new JSONObject();
             response.put("code", rows > 0 ? 1 : 0);
             response.put("data", rows);
@@ -1743,7 +1748,7 @@ public class TypechoUsersController {
     @ResponseBody
     public String userWithdraw(@RequestParam(value = "num", required = false) Integer num, @RequestParam(value = "token", required = false) String token) {
         try {
-            if(num==null){
+            if (num == null) {
                 return Result.getResultJson(0, "参数错误", null);
             }
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
@@ -1753,7 +1758,7 @@ public class TypechoUsersController {
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             Integer uid = Integer.parseInt(map.get("uid").toString());
             //查询用户是否设置pay
-            if(num < 1){
+            if (num < 1) {
                 return Result.getResultJson(0, "参数错误", null);
             }
             TypechoUsers user = service.selectByKey(uid);
@@ -1761,7 +1766,7 @@ public class TypechoUsersController {
                 return Result.getResultJson(0, "请先设置收款信息", null);
             }
             Integer Assets = user.getAssets();
-            if(num > Assets){
+            if (num > Assets) {
                 return Result.getResultJson(0, "你的余额不足", null);
             }
             Long date = System.currentTimeMillis();
@@ -1772,7 +1777,7 @@ public class TypechoUsersController {
             userlog.setCid(-1);
 
             List<TypechoUserlog> list = userlogService.selectList(userlog);
-            if(list.size()>0){
+            if (list.size() > 0) {
                 return Result.getResultJson(0, "您有正在审核的申请", null);
             }
             userlog.setNum(num);
@@ -1792,6 +1797,52 @@ public class TypechoUsersController {
     }
 
     /***
+     * 获取头像框
+     */
+
+    @RequestMapping(value = "/headpictureList")
+    @ResponseBody
+    public String headpictureList(@RequestParam(value = "searchParams", required = false) String searchParams,
+                                  @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                                  @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
+                                  @RequestParam(value = "order",required = false,defaultValue = "permission desc") String order
+    ) {
+        if (limit > 50) limit = 50; //限制
+        Integer total = 0; // 总数
+        TypechoHeadpicture query = new TypechoHeadpicture();
+        List jsonList = new ArrayList();
+        if (StringUtils.isNotBlank(searchParams)) {
+            JSONObject object = JSON.parseObject(searchParams);
+            query.setStatus(object.getInteger("status"));
+            PageList<TypechoHeadpicture> Pagelist = headpictureService.selectPage(query, page, limit,order);
+            List<TypechoHeadpicture> list = Pagelist.getList();
+            for (int i =0;i<list.size();i++){
+                Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
+                jsonList.add(json);
+            }
+
+            if(list.size()<1){
+                JSONObject noData = new JSONObject();
+                noData.put("code", 1);
+                noData.put("msg", "");
+                noData.put("data", new ArrayList());
+                noData.put("count", 0);
+                noData.put("total", total);
+                return noData.toString();
+            }
+
+
+        }
+        JSONObject response = new JSONObject();
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", null != jsonList ? jsonList : new JSONArray());
+        response.put("count", jsonList.size());
+        response.put("total", total);
+        return response.toString();
+    }
+
+    /***
      * 提现列表
      */
     @RequestMapping(value = "/withdrawList")
@@ -1804,7 +1855,7 @@ public class TypechoUsersController {
         if (uStatus == 0) {
             return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
-        if(limit>50){
+        if (limit > 50) {
             limit = 50;
         }
         Integer total = 0;
@@ -1836,11 +1887,11 @@ public class TypechoUsersController {
         PageList<TypechoUserlog> pageList = userlogService.selectPage(query, page, limit);
         List jsonList = new ArrayList();
         List<TypechoUserlog> list = pageList.getList();
-        if(list.size() < 1){
+        if (list.size() < 1) {
             JSONObject noData = new JSONObject();
-            noData.put("code" , 1);
-            noData.put("msg"  , "");
-            noData.put("data" , new ArrayList());
+            noData.put("code", 1);
+            noData.put("msg", "");
+            noData.put("data", new ArrayList());
             noData.put("count", 0);
             noData.put("total", total);
             return noData.toString();
@@ -1875,7 +1926,7 @@ public class TypechoUsersController {
             }
             //String group = (String) redisHelp.getValue("userInfo"+token,"group",redisTemplate);
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer loguid =Integer.parseInt(map.get("uid").toString());
+            Integer loguid = Integer.parseInt(map.get("uid").toString());
             String group = map.get("group").toString();
             if (!group.equals("administrator")) {
                 return Result.getResultJson(0, "你没有操作权限", null);
@@ -1888,7 +1939,7 @@ public class TypechoUsersController {
                 Integer uid = userlog.getUid();
                 TypechoUsers user = service.selectByKey(uid);
                 Integer oldAssets = user.getAssets();
-                if(oldAssets<num){
+                if (oldAssets < num) {
                     return Result.getResultJson(0, "该用户资产已不足以用于提现！", null);
                 }
                 Integer assets = oldAssets - num;
@@ -1902,13 +1953,13 @@ public class TypechoUsersController {
                 paylog.setStatus(1);
                 paylog.setCreated(Integer.parseInt(curTime));
                 paylog.setUid(uid);
-                paylog.setOutTradeNo(curTime+"withdraw");
-                paylog.setTotalAmount("-"+num);
+                paylog.setOutTradeNo(curTime + "withdraw");
+                paylog.setTotalAmount("-" + num);
                 paylog.setPaytype("withdraw");
                 paylog.setSubject("申请提现");
                 paylogService.insert(paylog);
                 //发送消息通知
-                String created = String.valueOf(date).substring(0,10);
+                String created = String.valueOf(date).substring(0, 10);
                 TypechoInbox inbox = new TypechoInbox();
                 inbox.setUid(loguid);
                 inbox.setTouid(uid);
@@ -1957,21 +2008,21 @@ public class TypechoUsersController {
         Integer assets;
         //生成系统对用户资产操作的日志
         Long date = System.currentTimeMillis();
-        String userTime = String.valueOf(date).substring(0,10);
+        String userTime = String.valueOf(date).substring(0, 10);
         TypechoPaylog paylog = new TypechoPaylog();
         paylog.setStatus(1);
         paylog.setCreated(Integer.parseInt(userTime));
         paylog.setUid(key);
-        paylog.setOutTradeNo(userTime+"system");
+        paylog.setOutTradeNo(userTime + "system");
         paylog.setPaytype("system");
         //0是充值，1是扣款
         if (type.equals(0)) {
             assets = oldAssets + num;
-            paylog.setTotalAmount(num+"");
+            paylog.setTotalAmount(num + "");
             paylog.setSubject("系统充值");
         } else {
             assets = oldAssets - num;
-            paylog.setTotalAmount("-"+num);
+            paylog.setTotalAmount("-" + num);
             paylog.setSubject("系统扣款");
         }
         paylogService.insert(paylog);
@@ -1985,12 +2036,13 @@ public class TypechoUsersController {
         response.put("msg", rows > 0 ? "操作成功" : "操作失败");
         return response.toString();
     }
+
     /**
      * 退出登录
-     * **/
+     **/
     @RequestMapping(value = "/signOut")
     @ResponseBody
-    public String signOut(@RequestParam(value = "token", required = false) String  token) {
+    public String signOut(@RequestParam(value = "token", required = false) String token) {
         try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
@@ -2001,12 +2053,13 @@ public class TypechoUsersController {
             redisHelp.delete(this.dataprefix + "_" + "userkey" + name, redisTemplate);
             redisHelp.delete(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             return Result.getResultJson(1, "退出成功", null);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(0, "退出失败", null);
         }
 
     }
+
     /**
      * 扫码登陆-生成二维码
      **/
@@ -2048,18 +2101,18 @@ public class TypechoUsersController {
         Map json = JSONObject.parseObject(JSONObject.toJSONString(users), Map.class);
         TypechoComments comments = new TypechoComments();
         comments.setAuthorId(uid);
-        Integer lv = commentsService.total(comments,null);
+        Integer lv = commentsService.total(comments, null);
         json.remove("password");
         json.put("lv", baseFull.getLv(lv));
         json.put("token", token);
-        TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+        TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
         if (json.get("mail") != null) {
             String mail = json.get("mail").toString();
 
-            if(mail.indexOf("@qq.com") != -1){
-                String qq = mail.replace("@qq.com","");
-                json.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk="+qq+"&s=640");
-            }else{
+            if (mail.indexOf("@qq.com") != -1) {
+                String qq = mail.replace("@qq.com", "");
+                json.put("avatar", "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640");
+            } else {
                 json.put("avatar", baseFull.getAvatar(apiconfig.getWebinfoAvatar(), mail));
             }
             //json.put("avatar", baseFull.getAvatar(apiconfig.getWebinfoAvatar(), json.get("mail").toString()));
@@ -2072,8 +2125,8 @@ public class TypechoUsersController {
         json.put("isvip", 0);
         Long date = System.currentTimeMillis();
         String curTime = String.valueOf(date).substring(0, 10);
-        Integer viptime  = users.getVip();
-        if(viptime>Integer.parseInt(curTime)||viptime.equals(1)){
+        Integer viptime = users.getVip();
+        if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
             json.put("isvip", 1);
         }
         JSONObject response = new JSONObject();
@@ -2084,6 +2137,7 @@ public class TypechoUsersController {
 
         return response.toString();
     }
+
     /**
      * 扫码登陆-app载入token
      **/
@@ -2097,11 +2151,12 @@ public class TypechoUsersController {
             }
             redisHelp.setRedis(codeContent, token, 90, redisTemplate);
             return Result.getResultJson(1, "操作成功！", null);
-        }catch (Exception e){
+        } catch (Exception e) {
             return Result.getResultJson(0, "请求异常", null);
         }
 
     }
+
     /***
      * 注册系统配置信息
      */
@@ -2109,34 +2164,34 @@ public class TypechoUsersController {
     @ResponseBody
     public String regConfig() {
         JSONObject data = new JSONObject();
-        TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
-        data.put("isEmail",apiconfig.getIsEmail());
-        data.put("isInvite",apiconfig.getIsInvite());
+        TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+        data.put("isEmail", apiconfig.getIsEmail());
+        data.put("isInvite", apiconfig.getIsInvite());
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("data" , data);
-        response.put("msg"  , "");
+        response.put("code", 1);
+        response.put("data", data);
+        response.put("msg", "");
         return response.toString();
     }
 
     /**
      * 创建邀请码
-     * **/
+     **/
     @RequestMapping(value = "/madeInvitation")
     @ResponseBody
-    public String madeInvitation(@RequestParam(value = "num", required = false) Integer  num,@RequestParam(value = "token", required = false) String  token) {
-        try{
+    public String madeInvitation(@RequestParam(value = "num", required = false) Integer num, @RequestParam(value = "token", required = false) String token) {
+        try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             String group = map.get("group").toString();
-            Integer uid =Integer.parseInt(map.get("uid").toString());
+            Integer uid = Integer.parseInt(map.get("uid").toString());
             if (!group.equals("administrator")) {
                 return Result.getResultJson(0, "你没有操作权限", null);
             }
-            if(num>100){
+            if (num > 100) {
                 num = 100;
             }
 
@@ -2153,13 +2208,13 @@ public class TypechoUsersController {
                 invitationService.insert(invitation);
             }
             JSONObject response = new JSONObject();
-            response.put("code" , 1);
-            response.put("msg"  , "生成邀请码成功");
+            response.put("code", 1);
+            response.put("msg", "生成邀请码成功");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             JSONObject response = new JSONObject();
-            response.put("code" , 1);
-            response.put("msg"  , "生成邀请码失败");
+            response.put("code", 1);
+            response.put("msg", "生成邀请码失败");
             return response.toString();
         }
     }
@@ -2170,10 +2225,10 @@ public class TypechoUsersController {
      */
     @RequestMapping(value = "/invitationList")
     @ResponseBody
-    public String invitationList (@RequestParam(value = "searchParams", required = false) String  searchParams,
-                                  @RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                                  @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit,
-                                  @RequestParam(value = "token", required = false) String  token) {
+    public String invitationList(@RequestParam(value = "searchParams", required = false) String searchParams,
+                                 @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                                 @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
+                                 @RequestParam(value = "token", required = false) String token) {
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
         if (uStatus == 0) {
             return Result.getResultJson(0, "用户未登录或Token验证失败", null);
@@ -2193,20 +2248,21 @@ public class TypechoUsersController {
 
         PageList<TypechoInvitation> pageList = invitationService.selectPage(query, page, limit);
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , null != pageList.getList() ? pageList.getList() : new JSONArray());
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", null != pageList.getList() ? pageList.getList() : new JSONArray());
         response.put("count", pageList.getTotalCount());
         response.put("total", total);
         return response.toString();
     }
+
     /***
      * 导出邀请码
      *
      */
     @RequestMapping(value = "/invitationExcel")
     @ResponseBody
-    public void invitationExcel(@RequestParam(value = "limit" , required = false, defaultValue = "15") Integer limit,@RequestParam(value = "token", required = false) String  token,HttpServletResponse response) throws IOException {
+    public void invitationExcel(@RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit, @RequestParam(value = "token", required = false) String token, HttpServletResponse response) throws IOException {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet("邀请码列表");
 
@@ -2230,20 +2286,18 @@ public class TypechoUsersController {
         List<TypechoInvitation> list = pageList.getList();
 
 
-
-
-        String fileName = "InvitationExcel"  + ".xls";//设置要导出的文件的名字
+        String fileName = "InvitationExcel" + ".xls";//设置要导出的文件的名字
         //新增数据行，并且设置单元格数据
 
         int rowNum = 1;
 
-        String[] headers = { "ID", "邀请码", "创建人"};
+        String[] headers = {"ID", "邀请码", "创建人"};
         //headers表示excel表中第一行的表头
 
         HSSFRow row = sheet.createRow(0);
         //在excel表中添加表头
 
-        for(int i=0;i<headers.length;i++){
+        for (int i = 0; i < headers.length; i++) {
             HSSFCell cell = row.createCell(i);
             HSSFRichTextString text = new HSSFRichTextString(headers[i]);
             cell.setCellValue(text);
@@ -2261,16 +2315,17 @@ public class TypechoUsersController {
         response.flushBuffer();
         workbook.write(response.getOutputStream());
     }
+
     /***
      * 用户收件箱
      *
      */
     @RequestMapping(value = "/inbox")
     @ResponseBody
-    public String inbox (@RequestParam(value = "token", required = false) String  token,
-                         @RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                         @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit) {
-        if(limit>50){
+    public String inbox(@RequestParam(value = "token", required = false) String token,
+                        @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                        @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit) {
+        if (limit > 50) {
             limit = 50;
         }
         TypechoInbox query = new TypechoInbox();
@@ -2280,26 +2335,26 @@ public class TypechoUsersController {
         }
         List jsonList = new ArrayList();
         Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
-        List cacheList = redisHelp.getList(this.dataprefix+"_"+"inbox_"+page+"_"+limit+"_"+uid,redisTemplate);
+        Integer uid = Integer.parseInt(map.get("uid").toString());
+        List cacheList = redisHelp.getList(this.dataprefix + "_" + "inbox_" + page + "_" + limit + "_" + uid, redisTemplate);
 
         query.setTouid(uid);
         Integer total = inboxService.total(query);
-        try{
-            if(cacheList.size()>0){
+        try {
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
-            }else{
+            } else {
 
 
-                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
 
                 PageList<TypechoInbox> pageList = inboxService.selectPage(query, page, limit);
                 List<TypechoInbox> list = pageList.getList();
-                if(list.size() < 1){
+                if (list.size() < 1) {
                     JSONObject noData = new JSONObject();
-                    noData.put("code" , 1);
-                    noData.put("msg"  , "");
-                    noData.put("data" , new ArrayList());
+                    noData.put("code", 1);
+                    noData.put("msg", "");
+                    noData.put("data", new ArrayList());
                     noData.put("count", 0);
                     noData.put("total", total);
                     return noData.toString();
@@ -2309,55 +2364,56 @@ public class TypechoUsersController {
                     TypechoInbox inbox = list.get(i);
                     Integer userid = inbox.getUid();
                     //获取用户信息
-                    Map userJson = UserStatus.getUserInfo(userid,apiconfigService,service);
+                    Map userJson = UserStatus.getUserInfo(userid, apiconfigService, service);
                     //获取用户等级
                     TypechoComments comments = new TypechoComments();
                     comments.setAuthorId(userid);
-                    Integer lv = commentsService.total(comments,null);
+                    Integer lv = commentsService.total(comments, null);
                     userJson.put("lv", baseFull.getLv(lv));
-                    json.put("userJson",userJson);
-                    if(inbox.getType().equals("comment")){
+                    json.put("userJson", userJson);
+                    if (inbox.getType().equals("comment")) {
                         TypechoContents contentsInfo = contentsService.selectByKey(inbox.getValue());
-                        if(contentsInfo!=null){
-                            json.put("contenTitle",contentsInfo.getTitle());
+                        if (contentsInfo != null) {
+                            json.put("contenTitle", contentsInfo.getTitle());
                             //加入文章数据
                             Map contentsJson = new HashMap();
-                            contentsJson.put("cid",contentsInfo.getCid());
-                            contentsJson.put("slug",contentsInfo.getSlug());
-                            contentsJson.put("title",contentsInfo.getTitle());
-                            contentsJson.put("type",contentsInfo.getType());
-                            json.put("contentsInfo",contentsJson);
-                        }else{
-                            json.put("contenTitle","文章已删除");
+                            contentsJson.put("cid", contentsInfo.getCid());
+                            contentsJson.put("slug", contentsInfo.getSlug());
+                            contentsJson.put("title", contentsInfo.getTitle());
+                            contentsJson.put("type", contentsInfo.getType());
+                            json.put("contentsInfo", contentsJson);
+                        } else {
+                            json.put("contenTitle", "文章已删除");
                         }
                     }
 
                     jsonList.add(json);
                 }
-                redisHelp.delete(this.dataprefix+"_"+"inbox_"+page+"_"+limit+"_"+uid,redisTemplate);
-                redisHelp.setList(this.dataprefix+"_"+"inbox_"+page+"_"+limit+"_"+uid,jsonList,3,redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + "inbox_" + page + "_" + limit + "_" + uid, redisTemplate);
+                redisHelp.setList(this.dataprefix + "_" + "inbox_" + page + "_" + limit + "_" + uid, jsonList, 3, redisTemplate);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            if(cacheList.size()>0){
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
             }
         }
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , jsonList);
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", jsonList);
         response.put("count", jsonList.size());
         response.put("total", total);
         return response.toString();
     }
+
     /***
      * 获取用户未读消息数量
      *
      */
     @RequestMapping(value = "/unreadNum")
     @ResponseBody
-    public String unreadNum (@RequestParam(value = "token", required = false) String  token) {
+    public String unreadNum(@RequestParam(value = "token", required = false) String token) {
         TypechoInbox query = new TypechoInbox();
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
         if (uStatus == 0) {
@@ -2365,23 +2421,24 @@ public class TypechoUsersController {
         }
 
         Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
+        Integer uid = Integer.parseInt(map.get("uid").toString());
         query.setTouid(uid);
         query.setIsread(0);
         Integer total = inboxService.total(query);
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" ,total);
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", total);
         return response.toString();
     }
+
     /***
      * 将所有消息已读
      *
      */
     @RequestMapping(value = "/setRead")
     @ResponseBody
-    public String setRead (@RequestParam(value = "token", required = false) String  token) {
+    public String setRead(@RequestParam(value = "token", required = false) String token) {
         TypechoInbox query = new TypechoInbox();
         try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
@@ -2390,25 +2447,26 @@ public class TypechoUsersController {
             }
 
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer uid =Integer.parseInt(map.get("uid").toString());
+            Integer uid = Integer.parseInt(map.get("uid").toString());
 
-            jdbcTemplate.execute("UPDATE "+this.prefix+"_inbox SET isread = 1 WHERE touid="+uid+";");
+            jdbcTemplate.execute("UPDATE " + this.prefix + "_inbox SET isread = 1 WHERE touid=" + uid + ";");
             return Result.getResultJson(1, "操作成功", null);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(0, "操作失败", null);
         }
 
     }
+
     /***
      * 向指定用户发送消息
      */
     @RequestMapping(value = "/sendUser")
     @ResponseBody
-    public String sendUser(@RequestParam(value = "token", required = false) String  token,
+    public String sendUser(@RequestParam(value = "token", required = false) String token,
                            @RequestParam(value = "uid", required = false, defaultValue = "1") Integer uid,
                            @RequestParam(value = "text", required = false, defaultValue = "1") String text) {
-        try{
+        try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
@@ -2418,45 +2476,45 @@ public class TypechoUsersController {
             if (!group.equals("administrator")) {
                 return Result.getResultJson(0, "你没有操作权限", null);
             }
-            if(text.length()<1){
+            if (text.length() < 1) {
                 return Result.getResultJson(0, "发送内容不能为空", null);
             }
             TypechoUsers user = service.selectByKey(uid);
-            if(user==null){
+            if (user == null) {
                 return Result.getResultJson(0, "该用户不存在", null);
-            }else{
+            } else {
                 //如果用户存在客户端id，则发送app通知
-                if(user.getClientId()!=null){
-                    TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+                if (user.getClientId() != null) {
+                    TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
                     String title = apiconfig.getWebinfoTitle();
                     try {
-                        pushService.sendPushMsg(user.getClientId(),title+"系统消息",text,"payload","system");
-                    }catch (Exception e){
-                        System.err.println("通知发送失败："+e);
+                        pushService.sendPushMsg(user.getClientId(), title + "系统消息", text, "payload", "system");
+                    } catch (Exception e) {
+                        System.err.println("通知发送失败：" + e);
                     }
 
                 }
             }
-            Integer muid =Integer.parseInt(map.get("uid").toString());
+            Integer muid = Integer.parseInt(map.get("uid").toString());
 
             //普通用户最大邮件限制
-            if(!group.equals("administrator")&&!group.equals("editor")){
-                String sendUser = redisHelp.getRedis(this.dataprefix+"_"+muid+"_sendUser",redisTemplate);
-                if(sendUser==null){
-                    redisHelp.setRedis(this.dataprefix+"_"+muid+"_sendUser","1",86400,redisTemplate);
-                }else{
+            if (!group.equals("administrator") && !group.equals("editor")) {
+                String sendUser = redisHelp.getRedis(this.dataprefix + "_" + muid + "_sendUser", redisTemplate);
+                if (sendUser == null) {
+                    redisHelp.setRedis(this.dataprefix + "_" + muid + "_sendUser", "1", 86400, redisTemplate);
+                } else {
                     Integer send_User = Integer.parseInt(sendUser) + 1;
-                    if(send_User > 4){
-                        return Result.getResultJson(0,"你已超过最大邮件限制，请您24小时后再操作",null);
-                    }else{
-                        redisHelp.setRedis(this.dataprefix+"_"+muid+"_sendUser",send_User.toString(),86400,redisTemplate);
+                    if (send_User > 4) {
+                        return Result.getResultJson(0, "你已超过最大邮件限制，请您24小时后再操作", null);
+                    } else {
+                        redisHelp.setRedis(this.dataprefix + "_" + muid + "_sendUser", send_User.toString(), 86400, redisTemplate);
                     }
                 }
             }
             //限制结束
 
             Long date = System.currentTimeMillis();
-            String created = String.valueOf(date).substring(0,10);
+            String created = String.valueOf(date).substring(0, 10);
             TypechoInbox insert = new TypechoInbox();
             insert.setUid(muid);
             insert.setTouid(uid);
@@ -2466,25 +2524,26 @@ public class TypechoUsersController {
             int rows = inboxService.insert(insert);
 
             JSONObject response = new JSONObject();
-            response.put("code" , rows);
-            response.put("msg"  , rows > 0 ? "发送成功" : "发送失败");
+            response.put("code", rows);
+            response.put("msg", rows > 0 ? "发送成功" : "发送失败");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(0, "发送失败", null);
         }
 
     }
+
     /***
      * 关注和取消关注
      */
     @RequestMapping(value = "/follow")
     @ResponseBody
-    public String follow(@RequestParam(value = "token", required = false) String  token,
+    public String follow(@RequestParam(value = "token", required = false) String token,
                          @RequestParam(value = "touid", required = false, defaultValue = "1") Integer touid,
                          @RequestParam(value = "type", required = false, defaultValue = "1") Integer type) {
-        try{
-            if(touid==0||touid==null||type==null){
+        try {
+            if (touid == 0 || touid == null || type == null) {
                 return Result.getResultJson(0, "参数不正确", null);
             }
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
@@ -2492,33 +2551,33 @@ public class TypechoUsersController {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer uid =Integer.parseInt(map.get("uid").toString());
+            Integer uid = Integer.parseInt(map.get("uid").toString());
             //登录情况下，刷数据攻击拦截
-            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
-            if(apiconfig.getBanRobots().equals(1)){
-                String isSilence = redisHelp.getRedis(this.dataprefix+"_"+uid+"_silence",redisTemplate);
-                if(isSilence!=null){
-                    return Result.getResultJson(0,"你已被禁止请求，请耐心等待",null);
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+            if (apiconfig.getBanRobots().equals(1)) {
+                String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
+                if (isSilence != null) {
+                    return Result.getResultJson(0, "你已被禁止请求，请耐心等待", null);
                 }
-                String isRepeated = redisHelp.getRedis(this.dataprefix+"_"+uid+"_isRepeated",redisTemplate);
-                if(isRepeated==null){
-                    redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated","1",1,redisTemplate);
-                }else{
+                String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + uid + "_isRepeated", redisTemplate);
+                if (isRepeated == null) {
+                    redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", "1", 1, redisTemplate);
+                } else {
                     Integer frequency = Integer.parseInt(isRepeated) + 1;
-                    if(frequency==1){
-                        securityService.safetyMessage("用户ID："+uid+"，在关注接口疑似存在攻击行为，请及时确认处理。","system");
-                        redisHelp.setRedis(this.dataprefix+"_"+uid+"_silence","1",600,redisTemplate);
-                        return Result.getResultJson(0,"你的请求存在恶意行为，10分钟内禁止操作！",null);
-                    }else{
-                        redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated",frequency.toString(),3,redisTemplate);
+                    if (frequency == 1) {
+                        securityService.safetyMessage("用户ID：" + uid + "，在关注接口疑似存在攻击行为，请及时确认处理。", "system");
+                        redisHelp.setRedis(this.dataprefix + "_" + uid + "_silence", "1", 600, redisTemplate);
+                        return Result.getResultJson(0, "你的请求存在恶意行为，10分钟内禁止操作！", null);
+                    } else {
+                        redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", frequency.toString(), 3, redisTemplate);
                     }
-                    return Result.getResultJson(0,"你的操作太频繁了",null);
+                    return Result.getResultJson(0, "你的操作太频繁了", null);
                 }
             }
 
             //攻击拦截结束
 
-            if(uid.equals(touid)){
+            if (uid.equals(touid)) {
                 return Result.getResultJson(0, "你不可以关注自己", null);
             }
             TypechoFan fan = new TypechoFan();
@@ -2526,49 +2585,50 @@ public class TypechoUsersController {
             fan.setUid(uid);
             Integer isFan = fanService.total(fan);
             //1是请求关注，0是取消关注
-            if(type.equals(1)){
-                if(isFan > 0){
+            if (type.equals(1)) {
+                if (isFan > 0) {
                     return Result.getResultJson(0, "你已经关注过了", null);
                 }
                 Long date = System.currentTimeMillis();
-                String created = String.valueOf(date).substring(0,10);
+                String created = String.valueOf(date).substring(0, 10);
                 fan.setCreated(Integer.parseInt(created));
                 int rows = fanService.insert(fan);
                 JSONObject response = new JSONObject();
-                response.put("code" , rows);
-                response.put("msg"  , rows > 0 ? "关注成功" : "关注失败");
+                response.put("code", rows);
+                response.put("msg", rows > 0 ? "关注成功" : "关注失败");
                 return response.toString();
-            }else{
-                if(isFan < 1){
+            } else {
+                if (isFan < 1) {
                     return Result.getResultJson(0, "你还未关注Ta", null);
                 }
                 int rows = 0;
                 List<TypechoFan> fanlist = fanService.selectList(fan);
-                if(fanlist.size()>0){
+                if (fanlist.size() > 0) {
                     TypechoFan oldFan = fanlist.get(0);
                     Integer id = oldFan.getId();
                     rows = fanService.delete(id);
                 }
 
                 JSONObject response = new JSONObject();
-                response.put("code" , rows);
-                response.put("msg"  , rows > 0 ? "取消关注成功" : "取消关注失败");
+                response.put("code", rows);
+                response.put("msg", rows > 0 ? "取消关注成功" : "取消关注失败");
                 return response.toString();
             }
 
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(0, "接口异常，请联系管理员", null);
         }
     }
+
     /***
      * 关注状态
      */
     @RequestMapping(value = "/isFollow")
     @ResponseBody
-    public String isFollow(@RequestParam(value = "token", required = false) String  token,
+    public String isFollow(@RequestParam(value = "token", required = false) String token,
                            @RequestParam(value = "touid", required = false, defaultValue = "1") Integer touid) {
-        if(touid==0||touid==null){
+        if (touid == 0 || touid == null) {
             return Result.getResultJson(0, "参数不正确", null);
         }
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
@@ -2576,47 +2636,48 @@ public class TypechoUsersController {
             return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
         Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
+        Integer uid = Integer.parseInt(map.get("uid").toString());
         TypechoFan fan = new TypechoFan();
         fan.setTouid(touid);
         fan.setUid(uid);
         Integer isFan = fanService.total(fan);
-        if(isFan > 0){
+        if (isFan > 0) {
             return Result.getResultJson(1, "已关注", null);
-        }else{
+        } else {
             return Result.getResultJson(0, "未关注", null);
         }
     }
+
     /***
      * Ta关注的人
      */
     @RequestMapping(value = "/followList")
     @ResponseBody
-    public String followList(@RequestParam(value = "uid", required = false) Integer  uid,
-                             @RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                             @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit) {
-        if(limit>50){
+    public String followList(@RequestParam(value = "uid", required = false) Integer uid,
+                             @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                             @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit) {
+        if (limit > 50) {
             limit = 50;
         }
         TypechoFan query = new TypechoFan();
         List jsonList = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix+"_"+"followList_"+page+"_"+limit+"_"+uid,redisTemplate);
+        List cacheList = redisHelp.getList(this.dataprefix + "_" + "followList_" + page + "_" + limit + "_" + uid, redisTemplate);
         query.setUid(uid);
         Integer total = fanService.total(query);
-        try{
-            if(cacheList.size()>0){
+        try {
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
-            }else{
+            } else {
 
-                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
 
                 PageList<TypechoFan> pageList = fanService.selectPage(query, page, limit);
                 List<TypechoFan> list = pageList.getList();
-                if(list.size() < 1){
+                if (list.size() < 1) {
                     JSONObject noData = new JSONObject();
-                    noData.put("code" , 1);
-                    noData.put("msg"  , "");
-                    noData.put("data" , new ArrayList());
+                    noData.put("code", 1);
+                    noData.put("msg", "");
+                    noData.put("data", new ArrayList());
                     noData.put("count", 0);
                     noData.put("total", total);
                     return noData.toString();
@@ -2627,62 +2688,63 @@ public class TypechoUsersController {
                     Integer userid = fan.getTouid();
                     TypechoUsers user = service.selectByKey(userid);
                     //获取用户信息
-                    Map userJson = UserStatus.getUserInfo(userid,apiconfigService,service);
+                    Map userJson = UserStatus.getUserInfo(userid, apiconfigService, service);
                     //获取用户等级
                     TypechoComments comments = new TypechoComments();
                     comments.setAuthorId(userid);
-                    Integer lv = commentsService.total(comments,null);
+                    Integer lv = commentsService.total(comments, null);
                     userJson.put("lv", baseFull.getLv(lv));
-                    json.put("userJson",userJson);
+                    json.put("userJson", userJson);
                     jsonList.add(json);
                 }
-                redisHelp.delete(this.dataprefix+"_"+"followList_"+page+"_"+limit+"_"+uid,redisTemplate);
-                redisHelp.setList(this.dataprefix+"_"+"followList_"+page+"_"+limit+"_"+uid,jsonList,3,redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + "followList_" + page + "_" + limit + "_" + uid, redisTemplate);
+                redisHelp.setList(this.dataprefix + "_" + "followList_" + page + "_" + limit + "_" + uid, jsonList, 3, redisTemplate);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            if(cacheList.size()>0){
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
             }
         }
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , jsonList);
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", jsonList);
         response.put("count", jsonList.size());
         response.put("total", total);
         return response.toString();
 
     }
+
     /***
      * 关注Ta的人
      */
     @RequestMapping(value = "/fanList")
     @ResponseBody
-    public String fanList(@RequestParam(value = "touid", required = false) Integer  touid,
-                          @RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                          @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit) {
-        if(limit>50){
+    public String fanList(@RequestParam(value = "touid", required = false) Integer touid,
+                          @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                          @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit) {
+        if (limit > 50) {
             limit = 50;
         }
         TypechoFan query = new TypechoFan();
         List jsonList = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix+"_"+"fanList_"+page+"_"+limit+"_"+touid,redisTemplate);
+        List cacheList = redisHelp.getList(this.dataprefix + "_" + "fanList_" + page + "_" + limit + "_" + touid, redisTemplate);
         query.setTouid(touid);
         Integer total = fanService.total(query);
-        try{
-            if(cacheList.size()>0){
+        try {
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
-            }else{
+            } else {
 
 
                 PageList<TypechoFan> pageList = fanService.selectPage(query, page, limit);
                 List<TypechoFan> list = pageList.getList();
-                if(list.size() < 1){
+                if (list.size() < 1) {
                     JSONObject noData = new JSONObject();
-                    noData.put("code" , 1);
-                    noData.put("msg"  , "");
-                    noData.put("data" , new ArrayList());
+                    noData.put("code", 1);
+                    noData.put("msg", "");
+                    noData.put("data", new ArrayList());
                     noData.put("count", 0);
                     noData.put("total", total);
                     return noData.toString();
@@ -2692,95 +2754,96 @@ public class TypechoUsersController {
                     TypechoFan fan = list.get(i);
                     Integer userid = fan.getUid();
                     //获取用户信息
-                    Map userJson = UserStatus.getUserInfo(userid,apiconfigService,service);
+                    Map userJson = UserStatus.getUserInfo(userid, apiconfigService, service);
                     //获取用户等级
                     TypechoComments comments = new TypechoComments();
                     comments.setAuthorId(userid);
-                    Integer lv = commentsService.total(comments,null);
+                    Integer lv = commentsService.total(comments, null);
                     userJson.put("lv", baseFull.getLv(lv));
-                    json.put("userJson",userJson);
+                    json.put("userJson", userJson);
                     jsonList.add(json);
                 }
-                redisHelp.delete(this.dataprefix+"_"+"fanList_"+page+"_"+limit+"_"+touid,redisTemplate);
-                redisHelp.setList(this.dataprefix+"_"+"fanList_"+page+"_"+limit+"_"+touid,jsonList,3,redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + "fanList_" + page + "_" + limit + "_" + touid, redisTemplate);
+                redisHelp.setList(this.dataprefix + "_" + "fanList_" + page + "_" + limit + "_" + touid, jsonList, 3, redisTemplate);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            if(cacheList.size()>0){
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
             }
         }
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , jsonList);
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", jsonList);
         response.put("count", jsonList.size());
         response.put("total", total);
         return response.toString();
 
     }
+
     /***
      * 封禁指定用户
      */
     @RequestMapping(value = "/banUser")
     @ResponseBody
-    public String sendUser(@RequestParam(value = "token", required = false) String  token,
+    public String sendUser(@RequestParam(value = "token", required = false) String token,
                            @RequestParam(value = "uid", required = false) Integer uid,
                            @RequestParam(value = "time", required = false) Integer time,
                            @RequestParam(value = "type", required = false) String type,
-                           @RequestParam(value = "text", required = false) String text){
+                           @RequestParam(value = "text", required = false) String text) {
         try {
             //防止重复提交
-            String isRepeated = redisHelp.getRedis(token+"_isRepeated",redisTemplate);
-            if(isRepeated==null){
-                redisHelp.setRedis(token+"_isRepeated","1",5,redisTemplate);
-            }else{
-                return Result.getResultJson(0,"你的操作太频繁了",null);
+            String isRepeated = redisHelp.getRedis(token + "_isRepeated", redisTemplate);
+            if (isRepeated == null) {
+                redisHelp.setRedis(token + "_isRepeated", "1", 5, redisTemplate);
+            } else {
+                return Result.getResultJson(0, "你的操作太频繁了", null);
             }
-            Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-            if(uStatus==0){
-                return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+            if (uStatus == 0) {
+                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
 
-            if(time<0||time==null){
+            if (time < 0 || time == null) {
                 return Result.getResultJson(0, "参数错误", null);
             }
 
             //处理类型（manager管理员操作，system系统自动）
-            if(!type.equals("manager")&&!type.equals("system")){
+            if (!type.equals("manager") && !type.equals("system")) {
                 return Result.getResultJson(0, "参数错误", null);
             }
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer userid =Integer.parseInt(map.get("uid").toString());
+            Integer userid = Integer.parseInt(map.get("uid").toString());
             String group = map.get("group").toString();
-            if (!group.equals("administrator")&&!group.equals("editor")) {
+            if (!group.equals("administrator") && !group.equals("editor")) {
                 return Result.getResultJson(0, "你没有操作权限", null);
             }
             //判断用户是否存在
             TypechoUsers olduser = service.selectByKey(uid);
             TypechoUsers users = new TypechoUsers();
-            if(olduser==null){
+            if (olduser == null) {
                 return Result.getResultJson(0, "该用户不存在", null);
             }
-            if(olduser.getGroupKey().equals("administrator")){
+            if (olduser.getGroupKey().equals("administrator")) {
                 return Result.getResultJson(0, "该用户组无法封禁", null);
             }
             Integer updatetime = 0;
             Long date = System.currentTimeMillis();
-            Integer curtime = Integer.parseInt(String.valueOf(date).substring(0,10));
+            Integer curtime = Integer.parseInt(String.valueOf(date).substring(0, 10));
             Integer oldtime = olduser.getBantime();
             //如果用户已经被封禁，则继续累加时间，如果没有在封禁状态，则从当前时间开始计算。
-            if(oldtime > curtime){
+            if (oldtime > curtime) {
                 updatetime = oldtime;
-            }else{
+            } else {
                 updatetime = curtime;
             }
             updatetime = updatetime + time;
             users.setUid(uid);
             //如果time等于0则设置为当前时间，则等于解除封禁
-            if(time.equals(0)){
+            if (time.equals(0)) {
                 users.setBantime(curtime);
-            }else{
+            } else {
                 users.setBantime(updatetime);
             }
             int rows = service.update(users);
@@ -2798,42 +2861,43 @@ public class TypechoUsersController {
                 redisHelp.delete(this.dataprefix + "_" + "userInfo" + oldToken, redisTemplate);
                 redisHelp.delete(this.dataprefix + "_" + "userkey" + olduser.getName(), redisTemplate);
             }
-            editFile.setLog("管理员"+userid+"请求封禁用户"+uid);
+            editFile.setLog("管理员" + userid + "请求封禁用户" + uid);
             JSONObject response = new JSONObject();
-            response.put("code" , rows);
-            response.put("msg"  , rows > 0 ? "操作成功" : "操作失败");
+            response.put("code", rows);
+            response.put("msg", rows > 0 ? "操作成功" : "操作失败");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(0, "接口异常，请联系管理员", null);
         }
     }
+
     /***
      * 解封指定用户
      */
     @RequestMapping(value = "/unblockUser")
     @ResponseBody
-    public String sendUser(@RequestParam(value = "token", required = false) String  token,
-                           @RequestParam(value = "uid", required = false) Integer uid){
-        try{
-            Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-            if(uStatus==0){
-                return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+    public String sendUser(@RequestParam(value = "token", required = false) String token,
+                           @RequestParam(value = "uid", required = false) Integer uid) {
+        try {
+            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+            if (uStatus == 0) {
+                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer userid =Integer.parseInt(map.get("uid").toString());
+            Integer userid = Integer.parseInt(map.get("uid").toString());
             String group = map.get("group").toString();
-            if (!group.equals("administrator")&&!group.equals("editor")) {
+            if (!group.equals("administrator") && !group.equals("editor")) {
                 return Result.getResultJson(0, "你没有操作权限", null);
             }
             TypechoUsers users = service.selectByKey(uid);
-            if(users==null){
+            if (users == null) {
                 return Result.getResultJson(0, "用户不存在", null);
             }
             Long date = System.currentTimeMillis();
-            Integer curtime = Integer.parseInt(String.valueOf(date).substring(0,10));
+            Integer curtime = Integer.parseInt(String.valueOf(date).substring(0, 10));
             Integer oldtime = users.getBantime();
-            if(oldtime < curtime){
+            if (oldtime < curtime) {
                 return Result.getResultJson(0, "用户未被封禁", null);
             }
             TypechoUsers update = new TypechoUsers();
@@ -2841,32 +2905,33 @@ public class TypechoUsersController {
             update.setUid(uid);
             int rows = service.update(update);
 
-            editFile.setLog("管理员"+userid+"请求解封用户"+uid);
+            editFile.setLog("管理员" + userid + "请求解封用户" + uid);
 
             JSONObject response = new JSONObject();
-            response.put("code" ,rows > 0 ? 1: 0 );
-            response.put("data" , rows);
-            response.put("msg"  , rows > 0 ? "操作成功" : "操作失败");
+            response.put("code", rows > 0 ? 1 : 0);
+            response.put("data", rows);
+            response.put("msg", rows > 0 ? "操作成功" : "操作失败");
             return response.toString();
 
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
         }
 
     }
+
     /***
      * 封禁记录
      */
     @RequestMapping(value = "/violationList")
     @ResponseBody
-    public String violationList (@RequestParam(value = "searchParams", required = false) String  searchParams,
-                                 @RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                                 @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit) {
+    public String violationList(@RequestParam(value = "searchParams", required = false) String searchParams,
+                                @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                                @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit) {
         TypechoViolation query = new TypechoViolation();
         Integer total = 0;
         List jsonList = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix+"_"+"violationList_"+page+"_"+limit+"_"+searchParams,redisTemplate);
+        List cacheList = redisHelp.getList(this.dataprefix + "_" + "violationList_" + page + "_" + limit + "_" + searchParams, redisTemplate);
         if (StringUtils.isNotBlank(searchParams)) {
             JSONObject object = JSON.parseObject(searchParams);
             query = object.toJavaObject(TypechoViolation.class);
@@ -2878,11 +2943,11 @@ public class TypechoUsersController {
             } else {
                 PageList<TypechoViolation> pageList = violationService.selectPage(query, page, limit);
                 List<TypechoViolation> list = pageList.getList();
-                if(list.size() < 1){
+                if (list.size() < 1) {
                     JSONObject noData = new JSONObject();
-                    noData.put("code" , 1);
-                    noData.put("msg"  , "");
-                    noData.put("data" , new ArrayList());
+                    noData.put("code", 1);
+                    noData.put("msg", "");
+                    noData.put("data", new ArrayList());
                     noData.put("count", 0);
                     noData.put("total", total);
                     return noData.toString();
@@ -2892,42 +2957,43 @@ public class TypechoUsersController {
                     TypechoViolation violation = list.get(i);
                     Integer userid = violation.getUid();
                     //获取用户信息
-                    Map userJson = UserStatus.getUserInfo(userid,apiconfigService,service);
+                    Map userJson = UserStatus.getUserInfo(userid, apiconfigService, service);
                     //获取用户等级
                     TypechoComments comments = new TypechoComments();
                     comments.setAuthorId(userid);
-                    Integer lv = commentsService.total(comments,null);
+                    Integer lv = commentsService.total(comments, null);
                     userJson.put("lv", baseFull.getLv(lv));
-                    json.put("userJson",userJson);
+                    json.put("userJson", userJson);
                     jsonList.add(json);
                 }
 
-                redisHelp.delete(this.dataprefix+"_"+"violationList_"+page+"_"+limit+"_"+searchParams,redisTemplate);
-                redisHelp.setList(this.dataprefix+"_"+"violationList_"+page+"_"+limit+"_"+searchParams,jsonList,30,redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + "violationList_" + page + "_" + limit + "_" + searchParams, redisTemplate);
+                redisHelp.setList(this.dataprefix + "_" + "violationList_" + page + "_" + limit + "_" + searchParams, jsonList, 30, redisTemplate);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            if(cacheList.size()>0){
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
             }
         }
 
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , jsonList);
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", jsonList);
         response.put("count", jsonList.size());
         response.put("total", total);
         return response.toString();
     }
+
     /***
      * 用户数据清理
      */
     @RequestMapping(value = "/userClean")
     @ResponseBody
-    public String dataClean(@RequestParam(value = "clean", required = false) Integer  clean,
-                            @RequestParam(value = "token", required = false) String  token,
-                            @RequestParam(value = "uid", required = false) Integer  uid) {
+    public String dataClean(@RequestParam(value = "clean", required = false) Integer clean,
+                            @RequestParam(value = "token", required = false) String token,
+                            @RequestParam(value = "uid", required = false) Integer uid) {
         try {
             //1是清理用户签到，2是清理用户资产日志，3是清理用户订单数据，4是清理无效卡密
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
@@ -2935,114 +3001,116 @@ public class TypechoUsersController {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer logUid =Integer.parseInt(map.get("uid").toString());
+            Integer logUid = Integer.parseInt(map.get("uid").toString());
             String group = map.get("group").toString();
             if (!group.equals("administrator")) {
                 return Result.getResultJson(0, "你没有操作权限", null);
             }
             TypechoUsers users = service.selectByKey(uid);
-            if(users==null){
+            if (users == null) {
                 return Result.getResultJson(0, "该用户不存在", null);
             }
-            if(users.getGroupKey().equals("administrator")){
+            if (users.getGroupKey().equals("administrator")) {
                 return Result.getResultJson(0, "不允许删除管理员的文章", null);
             }
             String text = "文章数据";
             //清除该用户所有文章
-            if(clean.equals(1)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_contents WHERE authorId = "+uid+";");
+            if (clean.equals(1)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_contents WHERE authorId = " + uid + ";");
             }
             //清除该用户所有评论
-            if(clean.equals(2)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_comments WHERE authorId = "+uid+";");
+            if (clean.equals(2)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_comments WHERE authorId = " + uid + ";");
                 text = "评论数据";
             }
             //清除该用户所有动态
-            if(clean.equals(3)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_space WHERE uid = "+uid+";");
+            if (clean.equals(3)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_space WHERE uid = " + uid + ";");
                 text = "动态数据";
             }
             //清除该用户所有商品
-            if(clean.equals(4)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_shop WHERE uid = "+uid+";");
+            if (clean.equals(4)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_shop WHERE uid = " + uid + ";");
                 text = "商品数据";
             }
             //清除该用户签到记录
-            if(clean.equals(5)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_userlog WHERE type='clock' and uid = "+uid+";");
+            if (clean.equals(5)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_userlog WHERE type='clock' and uid = " + uid + ";");
                 text = "日志数据";
             }
-            securityService.safetyMessage("管理员："+logUid+"，清除了用户"+uid+"所有"+text,"system");
+            securityService.safetyMessage("管理员：" + logUid + "，清除了用户" + uid + "所有" + text, "system");
             JSONObject response = new JSONObject();
-            response.put("code" , 1);
-            response.put("msg"  , "清理成功");
+            response.put("code", 1);
+            response.put("msg", "清理成功");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             JSONObject response = new JSONObject();
-            response.put("code" , 0);
-            response.put("msg"  , "接口请求异常，请联系管理员");
+            response.put("code", 0);
+            response.put("msg", "接口请求异常，请联系管理员");
             return response.toString();
         }
 
     }
+
     /***
      * 限制和解除限制（普通功能限制，不记录数据库）
      */
     @RequestMapping(value = "/restrict")
     @ResponseBody
-    public String restrict(@RequestParam(value = "token", required = false) String  token,
-                           @RequestParam(value = "uid", required = false) Integer  uid,
-                           @RequestParam(value = "type", required = false, defaultValue = "0") Integer  type) {
+    public String restrict(@RequestParam(value = "token", required = false) String token,
+                           @RequestParam(value = "uid", required = false) Integer uid,
+                           @RequestParam(value = "type", required = false, defaultValue = "0") Integer type) {
         try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer logUid =Integer.parseInt(map.get("uid").toString());
+            Integer logUid = Integer.parseInt(map.get("uid").toString());
             String group = map.get("group").toString();
             if (!group.equals("administrator")) {
                 return Result.getResultJson(0, "你没有操作权限", null);
             }
-            if(type.equals(1)){
-                redisHelp.setRedis(this.dataprefix+"_"+uid+"_silence","1",900,redisTemplate);
-            }else{
-                String isSilence = redisHelp.getRedis(this.dataprefix+"_"+uid+"_silence",redisTemplate);
-                if(isSilence==null){
-                    return Result.getResultJson(0,"用户状态正常，无需操作",null);
+            if (type.equals(1)) {
+                redisHelp.setRedis(this.dataprefix + "_" + uid + "_silence", "1", 900, redisTemplate);
+            } else {
+                String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
+                if (isSilence == null) {
+                    return Result.getResultJson(0, "用户状态正常，无需操作", null);
                 }
-                redisHelp.delete(this.dataprefix+"_"+uid+"_silence", redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + uid + "_silence", redisTemplate);
             }
             JSONObject response = new JSONObject();
-            response.put("code" , 1);
-            response.put("msg"  , "操作成功");
+            response.put("code", 1);
+            response.put("msg", "操作成功");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             JSONObject response = new JSONObject();
-            response.put("code" , 0);
-            response.put("msg"  , "接口请求异常，请联系管理员");
+            response.put("code", 0);
+            response.put("msg", "接口请求异常，请联系管理员");
             return response.toString();
         }
     }
+
     @RequestMapping(value = "/giftVIP")
     @ResponseBody
-    public String giftVIP(@RequestParam(value = "token", required = false) String  token,
-                          @RequestParam(value = "uid", required = false) Integer  uid,
-                          @RequestParam(value = "day", required = false, defaultValue = "0") Integer  day) {
-        try{
+    public String giftVIP(@RequestParam(value = "token", required = false) String token,
+                          @RequestParam(value = "uid", required = false) Integer uid,
+                          @RequestParam(value = "day", required = false, defaultValue = "0") Integer day) {
+        try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer logUid =Integer.parseInt(map.get("uid").toString());
+            Integer logUid = Integer.parseInt(map.get("uid").toString());
             String group = map.get("group").toString();
             if (!group.equals("administrator")) {
                 return Result.getResultJson(0, "你没有操作权限", null);
             }
-            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
 
             Long date = System.currentTimeMillis();
             String curTime = String.valueOf(date).substring(0, 10);
@@ -3052,66 +3120,67 @@ public class TypechoUsersController {
             //判断用户是否为VIP，决定是续期还是从当前时间开始计算
             Integer vip = users.getVip();
             //默认是从当前时间开始相加
-            Integer vipTime = Integer.parseInt(curTime) + days*day;
-            if(vip.equals(1)){
-                return Result.getResultJson(0,"用户已经是永久VIP，无需购买",null);
+            Integer vipTime = Integer.parseInt(curTime) + days * day;
+            if (vip.equals(1)) {
+                return Result.getResultJson(0, "用户已经是永久VIP，无需购买", null);
             }
             //如果已经是vip，走续期逻辑。
-            if(vip>Integer.parseInt(curTime)){
-                vipTime = vip+ days*day;
+            if (vip > Integer.parseInt(curTime)) {
+                vipTime = vip + days * day;
             }
 
             Integer AllPrice = day * apiconfig.getVipPrice();
-            if(day >= apiconfig.getVipDay()){
+            if (day >= apiconfig.getVipDay()) {
                 //如果时间戳为1就是永久会员
                 vipTime = 1;
             }
-            if(AllPrice < 0 ){
-                return Result.getResultJson(0,"参数错误！",null);
+            if (AllPrice < 0) {
+                return Result.getResultJson(0, "参数错误！", null);
             }
             Integer newassets = assets - AllPrice;
             //更新用户资产与登录状态
             users.setAssets(newassets);
             users.setVip(vipTime);
 
-            int rows =  service.update(users);
-            String created = String.valueOf(date).substring(0,10);
+            int rows = service.update(users);
+            String created = String.valueOf(date).substring(0, 10);
             TypechoPaylog paylog = new TypechoPaylog();
             paylog.setStatus(1);
             paylog.setCreated(Integer.parseInt(created));
             paylog.setUid(uid);
-            paylog.setOutTradeNo(created+"buyvip");
-            paylog.setTotalAmount("-"+AllPrice);
+            paylog.setOutTradeNo(created + "buyvip");
+            paylog.setTotalAmount("-" + AllPrice);
             paylog.setPaytype("buyvip");
             paylog.setSubject("管理员赠送VIP");
             paylogService.insert(paylog);
-            editFile.setLog("管理员"+uid+"为用户"+uid+"开通VIP"+day+"天");
+            editFile.setLog("管理员" + uid + "为用户" + uid + "开通VIP" + day + "天");
             JSONObject response = new JSONObject();
-            response.put("code" , rows);
-            response.put("msg"  , rows > 0 ? "开通VIP成功" : "操作失败");
+            response.put("code", rows);
+            response.put("msg", rows > 0 ? "开通VIP成功" : "操作失败");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             JSONObject response = new JSONObject();
-            response.put("code" , 0);
-            response.put("msg"  , "接口请求异常，请联系管理员");
+            response.put("code", 0);
+            response.put("msg", "接口请求异常，请联系管理员");
             return response.toString();
         }
 
 
     }
+
     @RequestMapping(value = "/selfDelete")
     @ResponseBody
-    public String selfDelete(@RequestParam(value = "token", required = false) String  token) {
+    public String selfDelete(@RequestParam(value = "token", required = false) String token) {
         try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer uid =Integer.parseInt(map.get("uid").toString());
+            Integer uid = Integer.parseInt(map.get("uid").toString());
             TypechoUsers user = service.selectByKey(uid);
-            if(user==null){
+            if (user == null) {
                 return Result.getResultJson(0, "用户不存在", null);
             }
             int rows = service.delete(uid);
@@ -3119,7 +3188,7 @@ public class TypechoUsersController {
             TypechoUserapi userapi = new TypechoUserapi();
             userapi.setUid(uid);
             Integer isApi = userapiService.total(userapi);
-            if(isApi > 0){
+            if (isApi > 0) {
                 userapiService.delete(uid);
             }
             //删除用户登录状态
@@ -3128,15 +3197,15 @@ public class TypechoUsersController {
                 redisHelp.delete(this.dataprefix + "_" + "userInfo" + oldToken, redisTemplate);
                 redisHelp.delete(this.dataprefix + "_" + "userkey" + user.getName(), redisTemplate);
             }
-            editFile.setLog("用户"+uid+"申请注销账户");
+            editFile.setLog("用户" + uid + "申请注销账户");
             JSONObject response = new JSONObject();
-            response.put("code" ,rows > 0 ? 1: 0 );
-            response.put("data" , rows);
-            response.put("msg"  , rows > 0 ? "注销成功！" : "操作失败");
+            response.put("code", rows > 0 ? 1 : 0);
+            response.put("data", rows);
+            response.put("msg", rows > 0 ? "注销成功！" : "操作失败");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0,"接口请求异常，请联系管理员",null);
+            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
         }
     }
 

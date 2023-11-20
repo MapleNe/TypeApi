@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.RuleApi.dao.TypechoHeadpictureDao">
+
+    <resultMap id="BaseResultMap" type="com.RuleApi.entity.TypechoHeadpicture" >
+        <result column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="link" property="link" />
+        <result column="status" property="status" />
+        <result column="permission" property="permission" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        `id`,
+        `name`,
+        `link`,
+        `status`,
+        `permission`
+    </sql>
+
+    <!-- 插入数据 -->
+    <insert id="insert" parameterType="com.RuleApi.entity.TypechoHeadpicture">
+        INSERT INTO ${prefix}_headpicture
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                `id`,
+            </if>
+            <if test ='null != name'>
+                `name`,
+            </if>
+            <if test ='null != link'>
+                `link`,
+            </if>
+            <if test ='null != status'>
+                `status`,
+            </if>
+            <if test ='null != permission'>
+                `permission`
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                #{id},
+            </if>
+            <if test ='null != name'>
+                #{name},
+            </if>
+            <if test ='null != link'>
+                #{link},
+            </if>
+            <if test ='null != status'>
+                #{status},
+            </if>
+            <if test ='null != permission'>
+                #{permission}
+            </if>
+        </trim>
+    </insert>
+
+    <!-- 批量插入数据 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO ${prefix}_headpicture ( <include refid="Base_Column_List" /> ) VALUES
+        <foreach collection="list" item="curr" index="index" separator=",">
+            (
+            #{curr.id},
+            #{curr.name},
+            #{curr.link},
+            #{curr.status},
+            #{curr.permission}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 更新 -->
+    <update id="update" parameterType="com.RuleApi.entity.TypechoHeadpicture">
+        UPDATE ${prefix}_headpicture
+        <set>
+            <if test ='null != name'>`name` = #{name},</if>
+            <if test ='null != slug'>`link` = #{link},</if>
+            <if test ='null != type'>`status` = #{status},</if>
+            <if test ='null != description'>`permission` = #{permission}</if>
+        </set>
+        WHERE `id` = #{id}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="delete">
+        DELETE FROM ${prefix}_headpicture
+        WHERE `mid` = #{key}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="batchDelete" parameterType = "java.util.List">
+        DELETE FROM ${prefix}_headpicture WHERE id IN
+        <foreach collection="list"  item="item" open="(" separator="," close=")"  >
+            #{item}
+        </foreach>
+    </delete>
+
+    <!-- 主键查询 -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_headpicture
+        WHERE `id` = #{key}
+    </select>
+
+    <!-- slug查询 -->
+    <select id="selectBySlug" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_headpicture
+        WHERE `link` = #{link}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_headpicture
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != name'>
+                and `name` = #{name}
+            </if>
+            <if test ='null != link'>
+                and `link` = #{link}
+            </if>
+            <if test ='null != status'>
+                and `status` = #{status}
+            </if>
+            <if test ='null != permission'>
+                and `permission` = #{permission}
+            </if>
+        </where>
+    </select>
+
+    <!-- 分页条件查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_headpicture
+        <where>
+            <if test ='null != TypechoHeadpicture.id'>
+                and `id` = #{TypechoHeadpicture.id}
+            </if>
+            <if test ='null != TypechoHeadpicture.name'>
+                and `name` = #{TypechoHeadpicture.name}
+            </if>
+            <if test ='null != TypechoHeadpicture.link'>
+                and `link` = #{TypechoHeadpicture.link}
+            </if>
+            <if test ='null != TypechoHeadpicture.status'>
+                and `status` = #{TypechoHeadpicture.status}
+            </if>
+            <if test ='null != TypechoHeadpicture.permission'>
+                and `permission` = #{TypechoHeadpicture.permission}
+            </if>
+<!--            <if test ='null != searchKey'>-->
+<!--                and CONCAT(IFNULL(`name`, ''), IFNULL(`permission`, '')) LIKE CONCAT('%', #{searchKey}, '%')-->
+<!--            </if>-->
+        </where>
+        <if test="order != null and order != ''">
+            order by CONCAT('`', #{order}, '`')
+        </if>
+        limit ${page}, ${pageSize}
+    </select>
+
+    <!-- 总量查询 -->
+    <select id="total" resultType="java.lang.Integer">
+        SELECT count(*) FROM ${prefix}_headpicture
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != name'>
+                and `name` = #{name}
+            </if>
+            <if test ='null != link'>
+                and `link` = #{link}
+            </if>
+            <if test ='null != status'>
+                and `status` = #{status}
+            </if>
+            <if test ='null != permission'>
+                and `permission` = #{permission}
+            </if>
+        </where>
+    </select>
+</mapper>
