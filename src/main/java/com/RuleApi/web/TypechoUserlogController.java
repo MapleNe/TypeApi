@@ -24,6 +24,7 @@ import java.util.*;
  * 控制层
  * TypechoUserlogController
  * 同时负责用户的收藏，点赞，打赏和签到
+ *
  * @author buxia97
  * @date 2022/01/06
  */
@@ -82,47 +83,49 @@ public class TypechoUserlogController {
     @Value("${mybatis.configuration.variables.prefix}")
     private String prefix;
 
-    RedisHelp redisHelp =new RedisHelp();
+    RedisHelp redisHelp = new RedisHelp();
     ResultAll Result = new ResultAll();
     HttpClient HttpClient = new HttpClient();
     UserStatus UStatus = new UserStatus();
 
     baseFull baseFull = new baseFull();
+
     /***
      * 查询用户是否收藏
      */
     @RequestMapping(value = "/isMark")
     @ResponseBody
-    public String isMark (@RequestParam(value = "cid", required = false) String  cid,
-                            @RequestParam(value = "token", required = false) String  token) {
-        Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-        if(uStatus==0){
-            return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+    public String isMark(@RequestParam(value = "cid", required = false) String cid,
+                         @RequestParam(value = "token", required = false) String token) {
+        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+        if (uStatus == 0) {
+            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
-        if(cid==""||cid==null){
-            return Result.getResultJson(0,"参数不正确",null);
+        if (cid == "" || cid == null) {
+            return Result.getResultJson(0, "参数不正确", null);
         }
-        Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
+        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+        Integer uid = Integer.parseInt(map.get("uid").toString());
         TypechoUserlog userlog = new TypechoUserlog();
         userlog.setCid(Integer.parseInt(cid));
         userlog.setUid(uid);
         userlog.setType("mark");
         Integer isMark = service.total(userlog);
         Integer logid = -1;
-        if(isMark>0){
+        if (isMark > 0) {
             List<TypechoUserlog> loglist = service.selectList(userlog);
             logid = loglist.get(0).getId();
         }
         Map json = new HashMap();
-        json.put("isMark",isMark);
-        json.put("logid",logid);
+        json.put("isMark", isMark);
+        json.put("logid", logid);
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , json);
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", json);
         return response.toString();
     }
+
     /***
      * 查询用户收藏列表
      * @param page         页码
@@ -130,21 +133,21 @@ public class TypechoUserlogController {
      */
     @RequestMapping(value = "/markList")
     @ResponseBody
-    public String markList (@RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                            @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit,
-                            @RequestParam(value = "token", required = false) String  token) {
+    public String markList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                           @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
+                           @RequestParam(value = "token", required = false) String token) {
 
 
-        Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-        if(uStatus==0){
-            return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+        if (uStatus == 0) {
+            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
-        if(limit>50){
+        if (limit > 50) {
             limit = 50;
         }
         Integer total = 0;
-        Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
+        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+        Integer uid = Integer.parseInt(map.get("uid").toString());
 
         TypechoUserlog query = new TypechoUserlog();
         query.setUid(uid);
@@ -152,18 +155,18 @@ public class TypechoUserlogController {
         total = service.total(query);
 
         List jsonList = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix+"_"+"markList_"+page+"_"+limit+"_"+uid,redisTemplate);
-        try{
-            if(cacheList.size()>0){
+        List cacheList = redisHelp.getList(this.dataprefix + "_" + "markList_" + page + "_" + limit + "_" + uid, redisTemplate);
+        try {
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
-            }else {
+            } else {
                 PageList<TypechoUserlog> pageList = service.selectPage(query, page, limit);
                 List<TypechoUserlog> list = pageList.getList();
-                if(list.size() < 1){
+                if (list.size() < 1) {
                     JSONObject noData = new JSONObject();
-                    noData.put("code" , 1);
-                    noData.put("msg"  , "");
-                    noData.put("data" , new ArrayList());
+                    noData.put("code", 1);
+                    noData.put("msg", "");
+                    noData.put("data", new ArrayList());
                     noData.put("count", 0);
                     noData.put("total", total);
                     return noData.toString();
@@ -186,11 +189,11 @@ public class TypechoUserlogController {
                         text = text.replaceAll("\\s*", "");
                         text = text.replaceAll("</?[^>]+>", "");
                         //去掉文章开头的图片插入
-                        text=text.replaceAll("((https?|http):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)","");
-                        text=text.replaceAll("((!\\[)[\\s\\S]+?(\\]\\[)[\\s\\S]+?(\\]))", "");
-                        text=text.replaceAll("((!\\[)[\\s\\S]+?(\\]))", "");
-                        text=text.replaceAll("\\(", "");
-                        text=text.replaceAll("\\)", "");
+                        text = text.replaceAll("((https?|http):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)", "");
+                        text = text.replaceAll("((!\\[)[\\s\\S]+?(\\]\\[)[\\s\\S]+?(\\]))", "");
+                        text = text.replaceAll("((!\\[)[\\s\\S]+?(\\]))", "");
+                        text = text.replaceAll("\\(", "");
+                        text = text.replaceAll("\\)", "");
                         contentsInfo.put("text", text.length() > 200 ? text.substring(0, 200) : text);
                         contentsInfo.put("images", imgList);
                         //加入自定义字段，分类和标签
@@ -219,8 +222,67 @@ public class TypechoUserlogController {
                             }
 
                         }
+                        TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+                        Map authorInfo = new HashMap();
+                        Integer authorId = Integer.parseInt(contentsInfo.get("authorId").toString());
+                        if (authorId > 0) {
+                            TypechoUsers author = usersService.selectByKey(authorId);
+
+                            if (author != null) {
+                                String name = StringUtils.isNotEmpty(author.getScreenName()) ? author.getScreenName() : author.getName();
+                                String avatar = apiconfig.getWebinfoAvatar() + "null";
+                                if (StringUtils.isNotEmpty(author.getAvatar())) {
+                                    avatar = author.getAvatar();
+                                } else {
+                                    if (StringUtils.isNotEmpty(author.getMail())) {
+                                        String mail = author.getMail();
+
+                                        switch (mail) {
+                                            case "@qq.com":
+                                                String qq = mail.replace("@qq.com", "");
+                                                avatar = "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640";
+                                                break;
+                                            default:
+                                                avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), author.getMail());
+                                                break;
+                                        }
+                                    }
+                                }
+                                // 格式化用户opt
+                                JSONObject opt = JSONObject.parseObject(author.getOpt());
+                                if(opt instanceof Object){
+                                    opt = JSONObject.parseObject(author.getOpt());
+                                }else {
+                                    opt = null;
+                                }
+                                authorInfo.put("name", name);
+                                authorInfo.put("avatar", avatar);
+                                authorInfo.put("customize", author.getCustomize());
+                                authorInfo.put("experience", author.getExperience());
+                                authorInfo.put("opt",opt);
+
+                                //判断是否为VIP
+                                authorInfo.putIfAbsent("isvip", 0);
+                                Long date = System.currentTimeMillis();
+                                String curTime = String.valueOf(date).substring(0, 10);
+                                Integer viptime = author.getVip();
+
+                                if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
+                                    authorInfo.put("isvip", 1);
+                                }
+                                if (viptime.equals(1)) {
+                                    //永久VIP
+                                    authorInfo.put("isvip", 2);
+                                }
+                            } else {
+                                authorInfo.put("name", "用户已注销");
+                                authorInfo.put("avatar", apiconfig.getWebinfoAvatar() + "null");
+                            }
+
+                        }
 
                         contentsInfo.remove("password");
+                        contentsInfo.put("authorInfo",authorInfo);
                         contentsInfo.put("category", metas);
                         contentsInfo.put("tag", tags);
                         contentsInfo.put("logid", list.get(i).getId());
@@ -229,22 +291,23 @@ public class TypechoUserlogController {
 
 
                 }
-                redisHelp.delete(this.dataprefix+"_"+"markList_"+page+"_"+limit+"_"+uid, redisTemplate);
-                redisHelp.setList(this.dataprefix+"_"+"markList_"+page+"_"+limit+"_"+uid, jsonList, 5, redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + "markList_" + page + "_" + limit + "_" + uid, redisTemplate);
+                redisHelp.setList(this.dataprefix + "_" + "markList_" + page + "_" + limit + "_" + uid, jsonList, 5, redisTemplate);
             }
-        }catch (Exception e){
-            if(cacheList.size()>0){
+        } catch (Exception e) {
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
             }
         }
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , null != jsonList ? jsonList : new JSONArray());
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", null != jsonList ? jsonList : new JSONArray());
         response.put("count", jsonList.size());
         response.put("total", total);
         return response.toString();
     }
+
     /***
      * 查询用户打赏历史
      * @param page         页码
@@ -252,16 +315,16 @@ public class TypechoUserlogController {
      */
     @RequestMapping(value = "/rewardList")
     @ResponseBody
-    public String rewardList (@RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                            @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit,
-                            @RequestParam(value = "token", required = false) String  token) {
-        Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-        if(uStatus==0){
-            return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+    public String rewardList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                             @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
+                             @RequestParam(value = "token", required = false) String token) {
+        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+        if (uStatus == 0) {
+            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
-        Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
-        if(limit>50){
+        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+        Integer uid = Integer.parseInt(map.get("uid").toString());
+        if (limit > 50) {
             limit = 50;
         }
         Integer total = 0;
@@ -273,25 +336,27 @@ public class TypechoUserlogController {
 
 
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , null != pageList.getList() ? pageList.getList() : new JSONArray());
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", null != pageList.getList() ? pageList.getList() : new JSONArray());
         response.put("count", pageList.getList());
         response.put("total", total);
         return response.toString();
     }
+
     /***
      * 添加log
      * @param params Bean对象JSON字符串
      */
     @RequestMapping(value = "/addLog")
     @ResponseBody
-    public String addLog(@RequestParam(value = "params", required = false) String  params,@RequestParam(value = "token", required = false) String  token,HttpServletRequest request) {
+    public String addLog(@RequestParam(value = "params", required = false) String
+                                 params, @RequestParam(value = "token", required = false) String token, HttpServletRequest request) {
         try {
-            Map jsonToMap =null;
+            Map jsonToMap = null;
             TypechoUserlog insert = null;
-            String  agent =  request.getHeader("User-Agent");
-            String  ip = baseFull.getIpAddr(request);
+            String agent = request.getHeader("User-Agent");
+            String ip = baseFull.getIpAddr(request);
 
             //生成随机积分
             Random r = new Random();
@@ -302,44 +367,47 @@ public class TypechoUserlogController {
             if (StringUtils.isNotBlank(params)) {
 
 
-                jsonToMap =  JSONObject.parseObject(JSON.parseObject(params).toString());
+                jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
 
                 //生成typecho数据库格式的修改时间戳
                 Long date = System.currentTimeMillis();
-                String userTime = String.valueOf(date).substring(0,10);
-                jsonToMap.put("created",userTime);
+                String userTime = String.valueOf(date).substring(0, 10);
+                jsonToMap.put("created", userTime);
                 type = jsonToMap.get("type").toString();
-                //只有喜欢操作不需要登陆拦截
-                if(!type.equals("likes")){
-                    Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-                    if(uStatus==0){
-                        return Result.getResultJson(0,"请先登录哦",null);
-                    }
-                    String isRepeated = redisHelp.getRedis(token+"_isRepeated",redisTemplate);
-                    if(isRepeated==null){
-                        redisHelp.setRedis(token+"_isRepeated","1",5,redisTemplate);
-                    }else{
-                        return Result.getResultJson(0,"你的操作太频繁了",null);
-                    }
+
+                Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+                if (uStatus == 0) {
+                    return Result.getResultJson(0, "请先登录哦", null);
                 }
-                Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
+                String isRepeated = redisHelp.getRedis(token + "_isRepeated", redisTemplate);
+                if (isRepeated == null) {
+                    redisHelp.setRedis(token + "_isRepeated", "1", 5, redisTemplate);
+                } else {
+                    return Result.getResultJson(0, "你的操作太频繁了", null);
+                }
+
+                Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
                 Integer uid = 0;
-                if(map.get("uid")!=null){
-                    uid =Integer.parseInt(map.get("uid").toString());
-                    jsonToMap.put("uid",uid);
+                if (map.get("uid") != null) {
+                    uid = Integer.parseInt(map.get("uid").toString());
+                    jsonToMap.put("uid", uid);
                 }
 
 
                 //mark为收藏，reward为打赏，likes为奖励，clock为签到
-                if(!type.equals("mark")&&!type.equals("reward")&&!type.equals("likes")&&!type.equals("clock")){
-                    return Result.getResultJson(0,"错误的字段类型",null);
+                if (!type.equals("mark") && !type.equals("reward") && !type.equals("likes") && !type.equals("clock")) {
+                    return Result.getResultJson(0, "错误的字段类型", null);
                 }
                 //如果是点赞
-                if(type.equals("likes")){
+                if (type.equals("likes")) {
                     String cid = jsonToMap.get("cid").toString();
-                    String isLikes = redisHelp.getRedis(this.dataprefix+"_"+"userlikes"+"_"+ip+"_"+agent+"_"+cid,redisTemplate);
+                    //String isLikes = redisHelp.getRedis(this.dataprefix + "_" + "userlikes" + "_" + ip + "_" + agent + "_" + cid, redisTemplate);
+                    TypechoUserlog searchParams = new TypechoUserlog();
+                    searchParams.setCid(Integer.parseInt(cid));
+                    searchParams.setUid(uid);
+                    List<TypechoUserlog> isLikes = service.selectList(searchParams);
                     // 如果不为空就取消点赞 并删除对应数据
-                    if(isLikes!=null){
+                    if (isLikes.size()>0) {
                         TypechoContents contensjson = contentsService.selectByKey(cid);
                         Integer likes = contensjson.getLikes();
                         likes--;
@@ -347,17 +415,11 @@ public class TypechoUserlogController {
                         toContents.setCid(Integer.parseInt(cid));
                         toContents.setLikes(likes);
                         contentsService.update(toContents);
-                       // 然后删除 对应数据日志
-                        TypechoUserlog searchParams = new TypechoUserlog();
-                        searchParams.setCid(Integer.parseInt(cid));
-                        searchParams.setUid(uid);
+                        // 然后删除 对应数据日志
 
-                        List<TypechoUserlog> likeList = service.selectList(searchParams);
-                        if(likeList.size()>0){
-                            Integer id = likeList.get(0).getId();
-                            service.delete(id);
-                            return Result.getResultJson(0,"已取消点赞",null);
-                        }
+                        Integer id = isLikes.get(0).getId();
+                        service.delete(id);
+                        return Result.getResultJson(0, "已取消点赞", null);
 
                     }
                     //添加点赞量
@@ -369,14 +431,14 @@ public class TypechoUserlogController {
                     toContents.setLikes(likes);
                     contentsService.update(toContents);
 
-                    redisHelp.setRedis(this.dataprefix+"_"+"userlikes"+"_"+ip+"_"+agent+"_"+cid,"yes",86400,redisTemplate);
+                    redisHelp.setRedis(this.dataprefix + "_" + "userlikes" + "_" + ip + "_" + agent + "_" + cid, "yes", 86400, redisTemplate);
                 }
                 //签到，每天一次
-                if(type.equals("clock")){
-                    TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+                if (type.equals("clock")) {
+                    TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
                     Integer clockMax = apiconfig.getClock();
                     int award = 0;
-                    if (clockMax > 0){
+                    if (clockMax > 0) {
                         award = r.nextInt(clockMax) + 1;
                     }
 
@@ -388,18 +450,18 @@ public class TypechoUserlogController {
                     List<TypechoUserlog> info = service.selectList(log);
 
                     //获取上次时间
-                    if (info.size()>0){
+                    if (info.size() > 0) {
                         Integer time = info.get(0).getCreated();
-                        String oldStamp = time+"000";
-                        SimpleDateFormat sdf=new SimpleDateFormat("yyyyMMdd");
+                        String oldStamp = time + "000";
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
                         String oldtime = sdf.format(new Date(Long.parseLong(oldStamp)));
                         Integer old = Integer.parseInt(oldtime);
                         //获取本次时间
                         Long curStamp = System.currentTimeMillis();  //获取当前时间戳
                         String curtime = sdf.format(new Date(Long.parseLong(String.valueOf(curStamp))));
                         Integer cur = Integer.parseInt(curtime);
-                        if(old>=cur){
-                            return Result.getResultJson(0,"你已经签到过了哦",null);
+                        if (old >= cur) {
+                            return Result.getResultJson(0, "你已经签到过了哦", null);
                         }
                     }
 
@@ -407,7 +469,7 @@ public class TypechoUserlogController {
                     TypechoUsers user = usersService.selectByKey(uid);
                     TypechoUsers newUser = new TypechoUsers();
                     newUser.setUid(uid);
-                    if(award > 0){
+                    if (award > 0) {
                         Integer account = user.getAssets();
                         Integer Assets = account + award;
                         newUser.setAssets(Assets);
@@ -416,10 +478,10 @@ public class TypechoUserlogController {
                     Integer newExperience = oldExperience + addExp;
                     newUser.setExperience(newExperience);
                     usersService.update(newUser);
-                    jsonToMap.put("num",award);
+                    jsonToMap.put("num", award);
                     //clock = "，获得"+award+"积分奖励！";
-                    clockData.put("award" , award);
-                    clockData.put("addExp" , addExp);
+                    clockData.put("award", award);
+                    clockData.put("addExp", addExp);
 
 
                     //生成签到收益日志
@@ -427,18 +489,18 @@ public class TypechoUserlogController {
                     paylog.setStatus(1);
                     paylog.setCreated(Integer.parseInt(userTime));
                     paylog.setUid(uid);
-                    paylog.setOutTradeNo(userTime+"clock");
-                    paylog.setTotalAmount(award+"");
+                    paylog.setOutTradeNo(userTime + "clock");
+                    paylog.setTotalAmount(award + "");
                     paylog.setPaytype("clock");
                     paylog.setSubject("签到奖励");
                     paylogService.insert(paylog);
 
-                    jsonToMap.put("toid",uid);
+                    jsonToMap.put("toid", uid);
                 }
                 //收藏，只能一次
-                if(type.equals("mark")){
-                    if(jsonToMap.get("cid")==null){
-                        return Result.getResultJson(0,"参数不正确",null);
+                if (type.equals("mark")) {
+                    if (jsonToMap.get("cid") == null) {
+                        return Result.getResultJson(0, "参数不正确", null);
                     }
                     Integer cid = Integer.parseInt(jsonToMap.get("cid").toString());
                     TypechoUserlog log = new TypechoUserlog();
@@ -446,24 +508,24 @@ public class TypechoUserlogController {
                     log.setUid(uid);
                     log.setCid(cid);
                     List<TypechoUserlog> info = service.selectList(log);
-                    if(info.size()>0){
-                        return Result.getResultJson(0,"已在你的收藏中！",null);
+                    if (info.size() > 0) {
+                        return Result.getResultJson(0, "已在你的收藏中！", null);
                     }
                 }
                 //打赏，要扣余额
-                if(type.equals("reward")){
+                if (type.equals("reward")) {
 
-                    if(jsonToMap.get("num")==null){
-                        return Result.getResultJson(0,"参数不正确",null);
+                    if (jsonToMap.get("num") == null) {
+                        return Result.getResultJson(0, "参数不正确", null);
                     }
                     Integer num = Integer.parseInt(jsonToMap.get("num").toString());
-                    if(num<=0){
-                        return Result.getResultJson(0,"参数不正确",null);
+                    if (num <= 0) {
+                        return Result.getResultJson(0, "参数不正确", null);
                     }
                     TypechoUsers user = usersService.selectByKey(uid);
                     Integer account = user.getAssets();
-                    if(num>account){
-                        return Result.getResultJson(0,"积分不足！",null);
+                    if (num > account) {
+                        return Result.getResultJson(0, "积分不足！", null);
                     }
                     Integer Assets = account - num;
 
@@ -472,18 +534,18 @@ public class TypechoUserlogController {
                     TypechoContents curContents = contentsService.selectByKey(cid);
                     Integer authorid = curContents.getAuthorId();
                     //生成打赏者资产日志（如果是自己打赏自己，就不生成）
-                    if(!uid.equals(authorid)){
+                    if (!uid.equals(authorid)) {
                         TypechoPaylog paylog = new TypechoPaylog();
                         paylog.setStatus(1);
                         paylog.setCreated(Integer.parseInt(userTime));
                         paylog.setUid(uid);
-                        paylog.setOutTradeNo(userTime+"toReward");
-                        paylog.setTotalAmount("-"+num);
+                        paylog.setOutTradeNo(userTime + "toReward");
+                        paylog.setTotalAmount("-" + num);
                         paylog.setPaytype("toReward");
                         paylog.setSubject("打赏作品");
                         paylogService.insert(paylog);
-                    }else{
-                        return Result.getResultJson(0,"你不可以打赏自己的作品！",null);
+                    } else {
+                        return Result.getResultJson(0, "你不可以打赏自己的作品！", null);
                     }
                     //扣除自己的积分
                     TypechoUsers newUser = new TypechoUsers();
@@ -499,9 +561,9 @@ public class TypechoUserlogController {
                     toUser.setAssets(curAssets);
                     usersService.update(toUser);
 
-                    jsonToMap.put("toid",authorid);
+                    jsonToMap.put("toid", authorid);
 
-                    if(!uid.equals(authorid)) {
+                    if (!uid.equals(authorid)) {
                         //生成作者资产日志
                         TypechoPaylog paylogB = new TypechoPaylog();
                         paylogB.setStatus(1);
@@ -513,12 +575,12 @@ public class TypechoUserlogController {
                         paylogB.setSubject("来自用户ID" + uid + "打赏");
                         paylogService.insert(paylogB);
                         //发送消息通知
-                        String created = String.valueOf(date).substring(0,10);
+                        String created = String.valueOf(date).substring(0, 10);
                         TypechoInbox inbox = new TypechoInbox();
                         inbox.setUid(uid);
                         inbox.setTouid(authorid);
                         inbox.setType("finance");
-                        inbox.setText("打赏了你的文章【"+curContents.getTitle()+"】");
+                        inbox.setText("打赏了你的文章【" + curContents.getTitle() + "】");
                         inbox.setValue(curContents.getCid());
                         inbox.setCreated(Integer.parseInt(created));
                         inboxService.insert(inbox);
@@ -531,52 +593,53 @@ public class TypechoUserlogController {
             int rows = service.insert(insert);
 
             JSONObject response = new JSONObject();
-            response.put("code" , rows);
-            if(type.equals("clock")){
-                response.put("clockData" , clockData);
+            response.put("code", rows);
+            if (type.equals("clock")) {
+                response.put("clockData", clockData);
 
             }
-            response.put("msg"  , rows > 0 ? "操作成功"+clock : "操作失败");
+            response.put("msg", rows > 0 ? "成功" + clock : "失败");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0,"接口请求异常，请联系管理员",null);
+            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
         }
 
     }
+
     /***
      * 查询用户是否收藏
      */
     @RequestMapping(value = "/isLike")
     @ResponseBody
-    public String isLike (@RequestParam(value = "cid", required = false) String  cid,
-                          @RequestParam(value = "token", required = false) String  token) {
-        Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-        if(uStatus==0){
-            return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+    public String isLike(@RequestParam(value = "cid", required = false) String cid,
+                         @RequestParam(value = "token", required = false) String token) {
+        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+        if (uStatus == 0) {
+            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
-        if(cid.isEmpty()){
-            return Result.getResultJson(0,"cid不可为空",null);
+        if (cid.isEmpty()) {
+            return Result.getResultJson(0, "cid不可为空", null);
         }
-        Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
+        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+        Integer uid = Integer.parseInt(map.get("uid").toString());
         TypechoUserlog userlog = new TypechoUserlog();
         userlog.setCid(Integer.parseInt(cid));
         userlog.setUid(uid);
         userlog.setType("like");
         Integer isLike = service.total(userlog);
         Integer logid = -1;
-        if(isLike>0){
+        if (isLike > 0) {
             List<TypechoUserlog> loglist = service.selectList(userlog);
             logid = loglist.get(0).getId();
         }
         Map json = new HashMap();
-        json.put("isLike",isLike);
-        json.put("logid",logid);
+        json.put("isLike", isLike);
+        json.put("logid", logid);
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , json);
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", json);
         return response.toString();
     }
 
@@ -585,70 +648,72 @@ public class TypechoUserlogController {
      */
     @RequestMapping(value = "/removeLog")
     @ResponseBody
-    public String removeLog(@RequestParam(value = "key", required = false) String  key,@RequestParam(value = "token", required = false) String  token) {
-        Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-        if(uStatus==0){
-            return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+    public String removeLog(@RequestParam(value = "key", required = false) String
+                                    key, @RequestParam(value = "token", required = false) String token) {
+        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+        if (uStatus == 0) {
+            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
         //验证用户权限
-        Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
+        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+        Integer uid = Integer.parseInt(map.get("uid").toString());
         String group = map.get("group").toString();
 
 
         TypechoUserlog info = service.selectByKey(key);
         Integer userId = info.getUid();
         String type = info.getType();
-        if(!group.equals("administrator")){
-            if(!userId.equals(uid)){
-                return Result.getResultJson(0,"你无权进行此操作",null);
+        if (!group.equals("administrator")) {
+            if (!userId.equals(uid)) {
+                return Result.getResultJson(0, "你无权进行此操作", null);
             }
-            if(!type.equals("mark")){
-                return Result.getResultJson(0,"该类型数据不允许删除",null);
+            if (!type.equals("mark")) {
+                return Result.getResultJson(0, "该类型数据不允许删除", null);
             }
         }
 
 
-        Integer rows =  service.delete(key);
+        Integer rows = service.delete(key);
         JSONObject response = new JSONObject();
-        response.put("code" , rows);
-        response.put("msg"  , rows > 0 ? "操作成功" : "操作失败");
+        response.put("code", rows);
+        response.put("msg", rows > 0 ? "操作成功" : "操作失败");
         return response.toString();
 
     }
+
     /***
      * 查询用户购买订单
      */
     @RequestMapping(value = "/orderList")
     @ResponseBody
-    public String orderList (@RequestParam(value = "token", required = false) String  token) {
+    public String orderList(@RequestParam(value = "token", required = false) String token) {
 
         String page = "1";
         String limit = "60";
-        Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-        if(uStatus==0){
-            return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+        if (uStatus == 0) {
+            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
-        Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
+        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+        Integer uid = Integer.parseInt(map.get("uid").toString());
         Integer total = 0;
         TypechoUserlog query = new TypechoUserlog();
         query.setUid(uid);
         query.setType("buy");
         total = service.total(query);
         List jsonList = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix+"_"+"orderList_"+page+"_"+limit+"_"+uid,redisTemplate);
-        try{
-            if(cacheList.size()>0){
+        List cacheList = redisHelp.getList(this.dataprefix + "_" + "orderList_" + page + "_" + limit + "_" + uid, redisTemplate);
+        try {
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
-            }else {
+            } else {
                 PageList<TypechoUserlog> pageList = service.selectPage(query, Integer.parseInt(page), Integer.parseInt(limit));
                 List<TypechoUserlog> list = pageList.getList();
-                if(list.size() < 1){
+                if (list.size() < 1) {
                     JSONObject noData = new JSONObject();
-                    noData.put("code" , 1);
-                    noData.put("msg"  , "");
-                    noData.put("data" , new ArrayList());
+                    noData.put("code", 1);
+                    noData.put("msg", "");
+                    noData.put("data", new ArrayList());
                     noData.put("count", 0);
                     noData.put("total", total);
                     return noData.toString();
@@ -658,9 +723,9 @@ public class TypechoUserlogController {
                     Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
                     //这里cid是商品id
                     TypechoShop shop = shopService.selectByKey(cid);
-                    if(shop!=null){
+                    if (shop != null) {
                         Map shopInfo = JSONObject.parseObject(JSONObject.toJSONString(shop), Map.class);
-                        json.put("shopInfo",shopInfo);
+                        json.put("shopInfo", shopInfo);
                     }
 
 
@@ -668,70 +733,70 @@ public class TypechoUserlogController {
                     Integer merid = shop.getUid();
                     TypechoUsers merchant = usersService.selectByKey(merid);
                     String merchantEmail = merchant.getMail();
-                    if(merchantEmail==null){
-                        json.put("merchantEmail",null);
-                    }else{
-                        json.put("merchantEmail",merchantEmail);
+                    if (merchantEmail == null) {
+                        json.put("merchantEmail", null);
+                    } else {
+                        json.put("merchantEmail", merchantEmail);
                     }
-
 
 
                     jsonList.add(json);
 
 
                 }
-                redisHelp.delete(this.dataprefix+"_"+"orderList_"+page+"_"+limit+"_"+uid, redisTemplate);
-                redisHelp.setList(this.dataprefix+"_"+"orderList_"+page+"_"+limit+"_"+uid, jsonList, 5, redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + "orderList_" + page + "_" + limit + "_" + uid, redisTemplate);
+                redisHelp.setList(this.dataprefix + "_" + "orderList_" + page + "_" + limit + "_" + uid, jsonList, 5, redisTemplate);
             }
-        }catch (Exception e){
-            if(cacheList.size()>0){
+        } catch (Exception e) {
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
             }
         }
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , null != jsonList ? jsonList : new JSONArray());
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", null != jsonList ? jsonList : new JSONArray());
         response.put("count", jsonList.size());
         response.put("total", total);
         return response.toString();
     }
+
     /***
      * 查询售出订单列表
      */
     @RequestMapping(value = "/orderSellList")
     @ResponseBody
-    public String orderSellList (@RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                                 @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit,
-                                 @RequestParam(value = "token", required = false) String  token) {
+    public String orderSellList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                                @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
+                                @RequestParam(value = "token", required = false) String token) {
 
-        Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-        if(uStatus==0){
-            return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+        if (uStatus == 0) {
+            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
-        if(limit>50){
+        if (limit > 50) {
             limit = 50;
         }
-        Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
+        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+        Integer uid = Integer.parseInt(map.get("uid").toString());
         Integer total = 0;
         TypechoUserlog query = new TypechoUserlog();
         query.setToid(uid);
         query.setType("buy");
         total = service.total(query);
         List jsonList = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix+"_"+"orderSellList_"+page+"_"+limit+"_"+uid,redisTemplate);
-        try{
-            if(cacheList.size()>0){
+        List cacheList = redisHelp.getList(this.dataprefix + "_" + "orderSellList_" + page + "_" + limit + "_" + uid, redisTemplate);
+        try {
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
-            }else {
+            } else {
                 PageList<TypechoUserlog> pageList = service.selectPage(query, page, limit);
                 List<TypechoUserlog> list = pageList.getList();
-                if(list.size() < 1){
+                if (list.size() < 1) {
                     JSONObject noData = new JSONObject();
-                    noData.put("code" , 1);
-                    noData.put("msg"  , "");
-                    noData.put("data" , new ArrayList());
+                    noData.put("code", 1);
+                    noData.put("msg", "");
+                    noData.put("data", new ArrayList());
                     noData.put("count", 0);
                     noData.put("total", total);
                     return noData.toString();
@@ -742,10 +807,10 @@ public class TypechoUserlogController {
                     Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
                     //这里cid是商品id
                     TypechoShop shop = shopService.selectByKey(cid);
-                    if(shop!=null){
+                    if (shop != null) {
                         Map shopInfo = JSONObject.parseObject(JSONObject.toJSONString(shop), Map.class);
 
-                        json.put("shopInfo",shopInfo);
+                        json.put("shopInfo", shopInfo);
                     }
 
                     //获取用户地址
@@ -753,33 +818,33 @@ public class TypechoUserlogController {
                     TypechoUsers user = usersService.selectByKey(touid);
                     String address = user.getAddress();
                     String userEmail = user.getMail();
-                    if(address==null){
-                        json.put("address",null);
-                    }else{
-                        json.put("address",address);
+                    if (address == null) {
+                        json.put("address", null);
+                    } else {
+                        json.put("address", address);
                     }
-                    if(userEmail==null){
-                        json.put("userEmail",null);
-                    }else{
-                        json.put("userEmail",userEmail);
+                    if (userEmail == null) {
+                        json.put("userEmail", null);
+                    } else {
+                        json.put("userEmail", userEmail);
                     }
                     jsonList.add(json);
 
 
                 }
-                redisHelp.delete(this.dataprefix+"_"+"orderSellList_"+page+"_"+limit+"_"+uid, redisTemplate);
-                redisHelp.setList(this.dataprefix+"_"+"orderSellList_"+page+"_"+limit+"_"+uid, jsonList, 5, redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + "orderSellList_" + page + "_" + limit + "_" + uid, redisTemplate);
+                redisHelp.setList(this.dataprefix + "_" + "orderSellList_" + page + "_" + limit + "_" + uid, jsonList, 5, redisTemplate);
 
             }
-        }catch (Exception e){
-            if(cacheList.size()>0){
+        } catch (Exception e) {
+            if (cacheList.size() > 0) {
                 jsonList = cacheList;
             }
         }
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , null != jsonList ? jsonList : new JSONArray());
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", null != jsonList ? jsonList : new JSONArray());
         response.put("count", jsonList.size());
         response.put("total", total);
         return response.toString();
@@ -790,53 +855,53 @@ public class TypechoUserlogController {
      */
     @RequestMapping(value = "/adsGift")
     @ResponseBody
-    public String adsGift(@RequestParam(value = "token", required = false) String  token,
-                          @RequestParam(value = "appkey", required = false) String  appkey) {
-        try{
+    public String adsGift(@RequestParam(value = "token", required = false) String token,
+                          @RequestParam(value = "appkey", required = false) String appkey) {
+        try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer uid =Integer.parseInt(map.get("uid").toString());
-            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
-            if(apiconfig.getBanRobots().equals(1)) {
+            Integer uid = Integer.parseInt(map.get("uid").toString());
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+            if (apiconfig.getBanRobots().equals(1)) {
                 //登录情况下，刷数据攻击拦截
-                String isSilence = redisHelp.getRedis(this.dataprefix+"_"+uid+"_silence",redisTemplate);
-                if(isSilence!=null){
-                    return Result.getResultJson(0,"你已被禁言，请耐心等待",null);
+                String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
+                if (isSilence != null) {
+                    return Result.getResultJson(0, "你已被禁言，请耐心等待", null);
                 }
-                String isRepeated = redisHelp.getRedis(this.dataprefix+"_"+uid+"_isRepeated",redisTemplate);
-                if(isRepeated==null){
-                    redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated","1",3,redisTemplate);
-                }else{
+                String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + uid + "_isRepeated", redisTemplate);
+                if (isRepeated == null) {
+                    redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", "1", 3, redisTemplate);
+                } else {
                     Integer frequency = Integer.parseInt(isRepeated) + 1;
-                    if(frequency==3){
-                        securityService.safetyMessage("用户ID："+uid+"，在激励视频奖励接口疑似存在攻击行为，请及时确认处理。","system");
-                        redisHelp.setRedis(this.dataprefix+"_"+uid+"_silence","1",apiconfig.getSilenceTime(),redisTemplate);
-                        return Result.getResultJson(0,"你的请求存在恶意行为，已暂时禁止操作！",null);
-                    }else{
-                        redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated",frequency.toString(),3,redisTemplate);
+                    if (frequency == 3) {
+                        securityService.safetyMessage("用户ID：" + uid + "，在激励视频奖励接口疑似存在攻击行为，请及时确认处理。", "system");
+                        redisHelp.setRedis(this.dataprefix + "_" + uid + "_silence", "1", apiconfig.getSilenceTime(), redisTemplate);
+                        return Result.getResultJson(0, "你的请求存在恶意行为，已暂时禁止操作！", null);
+                    } else {
+                        redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", frequency.toString(), 3, redisTemplate);
                     }
-                    return Result.getResultJson(0,"你的操作太频繁了",null);
+                    return Result.getResultJson(0, "你的操作太频繁了", null);
                 }
             }
             //攻击拦截结束
-            String regISsendCode = redisHelp.getRedis(this.dataprefix + "_" + "adsGift_"+uid, redisTemplate);
-            if(regISsendCode==null){
-                redisHelp.setRedis(this.dataprefix + "_" + "adsGift_"+uid, "data", 20, redisTemplate);
-            }else{
+            String regISsendCode = redisHelp.getRedis(this.dataprefix + "_" + "adsGift_" + uid, redisTemplate);
+            if (regISsendCode == null) {
+                redisHelp.setRedis(this.dataprefix + "_" + "adsGift_" + uid, "data", 20, redisTemplate);
+            } else {
                 return Result.getResultJson(0, "不要恶意跳过激励视频哦！", null);
             }
             TypechoApp app = appService.selectByKey(appkey);
-            if(app==null){
-                return Result.getResultJson(0,"应用不存在或密钥错误",null);
+            if (app == null) {
+                return Result.getResultJson(0, "应用不存在或密钥错误", null);
             }
             //获取今日已发起广告
             Integer adsNum = apiconfig.getAdsGiftNum();
-            Integer oldAdsNum = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM `"+prefix+"_userlog` WHERE type = 'adsGift' and uid = "+uid+" and DATE(FROM_UNIXTIME(created)) = CURDATE();", Integer.class);
-            if(oldAdsNum >=  adsNum){
-                return Result.getResultJson(0,"今日奖励获取次数已用完",null);
+            Integer oldAdsNum = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM `" + prefix + "_userlog` WHERE type = 'adsGift' and uid = " + uid + " and DATE(FROM_UNIXTIME(created)) = CURDATE();", Integer.class);
+            if (oldAdsNum >= adsNum) {
+                return Result.getResultJson(0, "今日奖励获取次数已用完", null);
             }
             //增加广告日志
             TypechoUserlog log = new TypechoUserlog();
@@ -855,56 +920,57 @@ public class TypechoUserlogController {
             response.put("msg", "");
             response.put("data", json);
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0,"接口请求异常，请联系管理员",null);
+            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
         }
 
 
     }
+
     /***
      * 广告回调
      */
     @RequestMapping(value = "/adsGiftNotify")
     @ResponseBody
-    public String adsGiftNotify(@RequestParam(value = "token", required = false) String  token,
-                                @RequestParam(value = "logid", required = false) String  logid) {
-        try{
+    public String adsGiftNotify(@RequestParam(value = "token", required = false) String token,
+                                @RequestParam(value = "logid", required = false) String logid) {
+        try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer uid =Integer.parseInt(map.get("uid").toString());
-            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
-            if(apiconfig.getBanRobots().equals(1)) {
+            Integer uid = Integer.parseInt(map.get("uid").toString());
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+            if (apiconfig.getBanRobots().equals(1)) {
                 //登录情况下，刷数据攻击拦截
-                String isSilence = redisHelp.getRedis(this.dataprefix+"_"+uid+"_silence",redisTemplate);
-                if(isSilence!=null){
-                    return Result.getResultJson(0,"你已被禁言，请耐心等待",null);
+                String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
+                if (isSilence != null) {
+                    return Result.getResultJson(0, "你已被禁言，请耐心等待", null);
                 }
-                String isRepeated = redisHelp.getRedis(this.dataprefix+"_"+uid+"_isRepeated",redisTemplate);
-                if(isRepeated==null){
-                    redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated","1",3,redisTemplate);
-                }else{
+                String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + uid + "_isRepeated", redisTemplate);
+                if (isRepeated == null) {
+                    redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", "1", 3, redisTemplate);
+                } else {
                     Integer frequency = Integer.parseInt(isRepeated) + 1;
-                    if(frequency==3){
-                        securityService.safetyMessage("用户ID："+uid+"，在激励视频回调疑似存在攻击行为，请及时确认处理。","system");
-                        redisHelp.setRedis(this.dataprefix+"_"+uid+"_silence","1",apiconfig.getSilenceTime(),redisTemplate);
-                        return Result.getResultJson(0,"你的请求存在恶意行为，已暂时禁止操作！",null);
-                    }else{
-                        redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated",frequency.toString(),3,redisTemplate);
+                    if (frequency == 3) {
+                        securityService.safetyMessage("用户ID：" + uid + "，在激励视频回调疑似存在攻击行为，请及时确认处理。", "system");
+                        redisHelp.setRedis(this.dataprefix + "_" + uid + "_silence", "1", apiconfig.getSilenceTime(), redisTemplate);
+                        return Result.getResultJson(0, "你的请求存在恶意行为，已暂时禁止操作！", null);
+                    } else {
+                        redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", frequency.toString(), 3, redisTemplate);
                     }
-                    return Result.getResultJson(0,"你的操作太频繁了",null);
+                    return Result.getResultJson(0, "你的操作太频繁了", null);
                 }
             }
             //攻击拦截结束
             TypechoUserlog log = service.selectByKey(logid);
-            if(log==null){
-                return Result.getResultJson(0,"请先发起激励视频",null);
+            if (log == null) {
+                return Result.getResultJson(0, "请先发起激励视频", null);
             }
-            if(!log.getCid().equals(0)){
-                return Result.getResultJson(0,"不要重复请求回调",null);
+            if (!log.getCid().equals(0)) {
+                return Result.getResultJson(0, "不要重复请求回调", null);
             }
             //修改状态
             TypechoUserlog newLog = new TypechoUserlog();
@@ -917,19 +983,19 @@ public class TypechoUserlogController {
             TypechoUsers user = usersService.selectByKey(uid);
             TypechoUsers newUser = new TypechoUsers();
             newUser.setUid(uid);
-            if(award > 0){
+            if (award > 0) {
                 Integer account = user.getAssets();
                 Integer Assets = account + award;
                 newUser.setAssets(Assets);
             }
             usersService.update(newUser);
             Long date = System.currentTimeMillis();
-            String userTime = String.valueOf(date).substring(0,10);
+            String userTime = String.valueOf(date).substring(0, 10);
             TypechoPaylog paylog = new TypechoPaylog();
             paylog.setStatus(1);
             paylog.setCreated(Integer.parseInt(userTime));
             paylog.setUid(uid);
-            paylog.setOutTradeNo(userTime+"adsGift");
+            paylog.setOutTradeNo(userTime + "adsGift");
             paylog.setTotalAmount(award.toString());
             paylog.setPaytype("adsGift");
             paylog.setSubject("广告奖励");
@@ -942,18 +1008,19 @@ public class TypechoUserlogController {
             response.put("msg", "");
             response.put("data", json);
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0,"接口请求异常，请联系管理员",null);
+            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
         }
     }
+
     /***
      * 查询商品是否已经购买过
      */
     @RequestMapping(value = "/dataClean")
     @ResponseBody
-    public String dataClean(@RequestParam(value = "clean", required = false) Integer  clean,
-                            @RequestParam(value = "token", required = false) String  token) {
+    public String dataClean(@RequestParam(value = "clean", required = false) Integer clean,
+                            @RequestParam(value = "token", required = false) String token) {
         try {
             //1是清理用户签到，2是清理用户资产日志，3是清理用户订单数据，4是清理无效卡密
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
@@ -966,50 +1033,50 @@ public class TypechoUserlogController {
                 return Result.getResultJson(0, "你没有操作权限", null);
             }
             Long date = System.currentTimeMillis();
-            String curTime = String.valueOf(date).substring(0,10);
+            String curTime = String.valueOf(date).substring(0, 10);
             Integer cleanTime = Integer.parseInt(curTime) - 2592000;
 
             Integer cleanUserTime = Integer.parseInt(curTime) - 31556926;
             //用户签到清理
-            if(clean.equals(1)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_userlog WHERE type='clock' and  created < "+cleanTime+";");
+            if (clean.equals(1)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_userlog WHERE type='clock' and  created < " + cleanTime + ";");
             }
             //用户资产记录清理
-            if(clean.equals(2)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_paylog WHERE created < "+cleanTime+";");
+            if (clean.equals(2)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_paylog WHERE created < " + cleanTime + ";");
             }
             //用户订单清理
-            if(clean.equals(3)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_userlog WHERE type='buy' and created < "+cleanTime+";");
+            if (clean.equals(3)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_userlog WHERE type='buy' and created < " + cleanTime + ";");
             }
             //充值码清理
-            if(clean.equals(4)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_paykey WHERE status=1 ;");
+            if (clean.equals(4)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_paykey WHERE status=1 ;");
             }
             //邀请码清理
-            if(clean.equals(5)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_invitation WHERE status=1 ;");
+            if (clean.equals(5)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_invitation WHERE status=1 ;");
             }
             //不活跃用户清理
-            if(clean.equals(6)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_user WHERE activated < "+cleanUserTime+";");
+            if (clean.equals(6)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_user WHERE activated < " + cleanUserTime + ";");
             }
             //未支付订单清理
-            if(clean.equals(7)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_paylog WHERE status=0;");
+            if (clean.equals(7)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_paylog WHERE status=0;");
             }
             //广告发起日志清理
-            if(clean.equals(8)){
-                jdbcTemplate.execute("DELETE FROM "+this.prefix+"_userlog WHERE type='adsGift' and created < "+cleanTime+";");
+            if (clean.equals(8)) {
+                jdbcTemplate.execute("DELETE FROM " + this.prefix + "_userlog WHERE type='adsGift' and created < " + cleanTime + ";");
             }
             JSONObject response = new JSONObject();
-            response.put("code" , 1);
-            response.put("msg"  , "清理成功");
+            response.put("code", 1);
+            response.put("msg", "清理成功");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             JSONObject response = new JSONObject();
-            response.put("code" , 0);
-            response.put("msg"  , "操作失败");
+            response.put("code", 0);
+            response.put("msg", "操作失败");
             return response.toString();
         }
 

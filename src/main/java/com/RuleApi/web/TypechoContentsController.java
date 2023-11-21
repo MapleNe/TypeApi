@@ -446,6 +446,7 @@ public class TypechoContentsController {
                             authorInfo.put("customize", author.getCustomize());
                             authorInfo.put("opt", opt);
                             authorInfo.put("experience", author.getExperience());
+                            authorInfo.put("introduce", author.getIntroduce());
                             //判断是否为VIP
                             authorInfo.put("isvip", 0);
                             Long date = System.currentTimeMillis();

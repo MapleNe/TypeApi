@@ -192,8 +192,11 @@ public class TypechoCommentsController {
                         for (int s = 0; s < commentsList.size(); s++) {
                             TypechoComments comment = commentsList.get(s);
                             Map<String, String> sonComment = new HashMap<>();
+                            TypechoUsers userInfo = new TypechoUsers();
+                            userInfo = usersService.selectByKey(comment.getAuthorId());
                             sonComment.put("author", comment.getAuthor());
                             sonComment.put("authorId", String.valueOf(comment.getAuthorId()));
+                            sonComment.put("avatar",userInfo.getAvatar());
                             sonComment.put("text", comment.getText());
                             sonComment.put("created", String.valueOf(comment.getCreated()));
                             sonCommentsList.add(sonComment);
