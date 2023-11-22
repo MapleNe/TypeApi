@@ -76,6 +76,9 @@ public class TypechoContentsController {
     private TypechoApiconfigService apiconfigService;
 
     @Autowired
+    private TypechoFanService fanService;
+
+    @Autowired
     private PushService pushService;
 
     @Autowired
@@ -185,6 +188,7 @@ public class TypechoContentsController {
                     text = renderer.render(document);
 
                 }
+
                 // 获取是否islike && isMark
                 Integer isLike = 0;
                 Integer isMark = 0;
@@ -204,6 +208,63 @@ public class TypechoContentsController {
                         }
                     }
                 }
+
+
+                // 加入文章作者信息
+                Map authorInfo = new HashMap();
+                if (uid != null) {
+                    TypechoUsers author = usersService.selectByKey(typechoContents.getAuthorId());
+
+                    if (author != null) {
+                        String name = author.getName();
+                        if (author.getScreenName() != null && author.getScreenName() != "") {
+                            name = author.getScreenName();
+                        }
+                        String avatar = apiconfig.getWebinfoAvatar() + "null";
+                        if (author.getAvatar() != null && author.getAvatar() != "") {
+                            avatar = author.getAvatar();
+                        } else {
+                            if (author.getMail() != null && author.getMail() != "") {
+                                String mail = author.getMail();
+
+                                if (mail.indexOf("@qq.com") != -1) {
+                                    String qq = mail.replace("@qq.com", "");
+                                    avatar = "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640";
+                                } else {
+                                    avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), author.getMail());
+                                }
+                                //avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), author.getMail());
+                            }
+                        }
+
+                        JSONObject opt = JSONObject.parseObject(author.getOpt());
+                        if (opt instanceof Object) opt = JSONObject.parseObject(author.getOpt());
+
+                        authorInfo.put("name", name);
+                        authorInfo.put("avatar", avatar);
+                        authorInfo.put("customize", author.getCustomize());
+                        authorInfo.put("opt", opt);
+                        authorInfo.put("experience", author.getExperience());
+                        authorInfo.put("introduce", author.getIntroduce());
+                        //判断是否为VIP
+                        authorInfo.put("isvip", 0);
+                        Long date = System.currentTimeMillis();
+                        String curTime = String.valueOf(date).substring(0, 10);
+                        Integer viptime = author.getVip();
+
+                        if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
+                            authorInfo.put("isvip", 1);
+                        }
+                        if (viptime.equals(1)) {
+                            //永久VIP
+                            authorInfo.put("isvip", 2);
+                        }
+                    } else {
+                        authorInfo.put("name", "用户已注销");
+                        authorInfo.put("avatar", apiconfig.getWebinfoAvatar() + "null");
+                    }
+                }
+
                 //获取文章id，从而获取自定义字段，和分类标签
                 String cid = typechoContents.getCid().toString();
                 TypechoFields f = new TypechoFields();
@@ -235,6 +296,15 @@ public class TypechoContentsController {
 
                 }
                 contensjson = JSONObject.parseObject(JSONObject.toJSONString(typechoContents), Map.class);
+
+                // 是否关注
+                TypechoFan fan = new TypechoFan();
+                Integer authorId = Integer.parseInt(contensjson.get("authorId").toString());
+                fan.setUid(uid);
+                fan.setTouid(authorId);
+                Integer isfollow = fanService.total(fan);
+                authorInfo.put("isfollow", isfollow);
+
                 // 格式化文章opt
                 JSONObject opt = JSONObject.parseObject(contensjson.get("opt").toString());
                 if (opt instanceof Object) {
@@ -247,6 +317,7 @@ public class TypechoContentsController {
                 contensjson.put("images", imgList);
                 contensjson.put("fields", fields);
                 contensjson.put("category", metas);
+                contensjson.put("authorInfo", authorInfo);
                 contensjson.put("isLike", isLike);
                 contensjson.put("isMark", isMark);
                 contensjson.put("tag", tags);
@@ -305,7 +376,8 @@ public class TypechoContentsController {
                                @RequestParam(value = "searchKey", required = false, defaultValue = "") String searchKey,
                                @RequestParam(value = "order", required = false, defaultValue = "") String order,
                                @RequestParam(value = "random", required = false, defaultValue = "0") Integer random,
-                               @RequestParam(value = "token", required = false, defaultValue = "") String token) {
+                               @RequestParam(value = "token", required = false, defaultValue = "") String token,
+                               @RequestParam(value = "uid", required = false, defaultValue = "") Integer uid) {
         TypechoContents query = new TypechoContents();
         if (limit > 50) {
             limit = 50;
@@ -412,9 +484,9 @@ public class TypechoContentsController {
                     }
 
                     //写入作者详细信息
-                    Integer uid = Integer.parseInt(json.get("authorId").toString());
-                    if (uid > 0) {
-                        TypechoUsers author = usersService.selectByKey(uid);
+                    Integer authorId = Integer.parseInt(json.get("authorId").toString());
+                    if (authorId > 0) {
+                        TypechoUsers author = usersService.selectByKey(authorId);
                         Map authorInfo = new HashMap();
                         if (author != null) {
                             String name = author.getName();
@@ -438,6 +510,12 @@ public class TypechoContentsController {
                                 }
                             }
 
+                            // 是否关注
+                            TypechoFan fan = new TypechoFan();
+                            fan.setUid(uid);
+                            fan.setTouid(authorId);
+                            Integer isfollow = fanService.total(fan);
+
                             JSONObject opt = JSONObject.parseObject(author.getOpt());
                             if (opt instanceof Object) opt = JSONObject.parseObject(author.getOpt());
 
@@ -446,6 +524,7 @@ public class TypechoContentsController {
                             authorInfo.put("customize", author.getCustomize());
                             authorInfo.put("opt", opt);
                             authorInfo.put("experience", author.getExperience());
+                            authorInfo.put("isfollow", isfollow);
                             authorInfo.put("introduce", author.getIntroduce());
                             //判断是否为VIP
                             authorInfo.put("isvip", 0);
@@ -479,6 +558,7 @@ public class TypechoContentsController {
                     List imgList = baseFull.getImageSrc(text);
 
                     text = baseFull.toStrByChinese(text);
+
                     // 格式化文章opt
                     JSONObject opt = JSONObject.parseObject((String) json.get("opt"));
                     if (opt instanceof Object) {

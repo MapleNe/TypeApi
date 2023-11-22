@@ -1832,8 +1832,8 @@ public class TypechoUsersController {
                 json.put("id", headpicture.getId());
                 json.put("name", headpicture.getName());
                 json.put("link", headpicture.getLink());
-                json.put("type",headpicture.getType());
-                json.put("permission",headpicture.getPermission());
+                json.put("type", headpicture.getType());
+                json.put("permission", headpicture.getPermission());
                 // 添加其他属性...
 
                 // 获取用户拥有的头像框
@@ -2564,22 +2564,30 @@ public class TypechoUsersController {
                          @RequestParam(value = "touid", required = false, defaultValue = "1") Integer touid,
                          @RequestParam(value = "type", required = false, defaultValue = "1") Integer type) {
         try {
-            if (touid == 0 || touid == null || type == null) {
+            if (Objects.isNull(touid) || Objects.isNull(type) || touid == 0) {
                 return Result.getResultJson(0, "参数不正确", null);
             }
+
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
+
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             Integer uid = Integer.parseInt(map.get("uid").toString());
-            //登录情况下，刷数据攻击拦截
+
+            if (uid.equals(touid)) {
+                return Result.getResultJson(0, "你不可以关注自己", null);
+            }
+
             TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+
             if (apiconfig.getBanRobots().equals(1)) {
                 String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
                 if (isSilence != null) {
                     return Result.getResultJson(0, "你已被禁止请求，请耐心等待", null);
                 }
+
                 String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + uid + "_isRepeated", redisTemplate);
                 if (isRepeated == null) {
                     redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", "1", 1, redisTemplate);
@@ -2591,25 +2599,25 @@ public class TypechoUsersController {
                         return Result.getResultJson(0, "你的请求存在恶意行为，10分钟内禁止操作！", null);
                     } else {
                         redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", frequency.toString(), 3, redisTemplate);
+                        return Result.getResultJson(0, "你的操作太频繁了", null);
                     }
-                    return Result.getResultJson(0, "你的操作太频繁了", null);
                 }
             }
 
-            //攻击拦截结束
-
-            if (uid.equals(touid)) {
-                return Result.getResultJson(0, "你不可以关注自己", null);
-            }
             TypechoFan fan = new TypechoFan();
             fan.setTouid(touid);
             fan.setUid(uid);
             Integer isFan = fanService.total(fan);
-            //1是请求关注，0是取消关注
-            if (type.equals(1)) {
-                if (isFan > 0) {
-                    return Result.getResultJson(0, "你已经关注过了", null);
+
+            if (isFan > 0) {
+                List<TypechoFan> fanlist = fanService.selectList(fan);
+                if (!fanlist.isEmpty()) {
+                    TypechoFan oldFan = fanlist.get(0);
+                    Integer id = oldFan.getId();
+                    int rows = fanService.delete(id);
+                    return Result.getResultJson(rows, rows > 0 ? "已取消关注" : "取消关注失败", null);
                 }
+            } else {
                 Long date = System.currentTimeMillis();
                 String created = String.valueOf(date).substring(0, 10);
                 fan.setCreated(Integer.parseInt(created));
@@ -2618,23 +2626,10 @@ public class TypechoUsersController {
                 response.put("code", rows);
                 response.put("msg", rows > 0 ? "关注成功" : "关注失败");
                 return response.toString();
-            } else {
-                if (isFan < 1) {
-                    return Result.getResultJson(0, "你还未关注Ta", null);
-                }
-                int rows = 0;
-                List<TypechoFan> fanlist = fanService.selectList(fan);
-                if (fanlist.size() > 0) {
-                    TypechoFan oldFan = fanlist.get(0);
-                    Integer id = oldFan.getId();
-                    rows = fanService.delete(id);
-                }
-
-                JSONObject response = new JSONObject();
-                response.put("code", rows);
-                response.put("msg", rows > 0 ? "取消关注成功" : "取消关注失败");
-                return response.toString();
             }
+
+            // 这里是确保即使所有逻辑都未匹配到，也会返回一个合适的默认响应
+            return Result.getResultJson(0, "未执行任何操作", null);
 
         } catch (Exception e) {
             e.printStackTrace();

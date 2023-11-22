@@ -291,6 +291,7 @@ public class TypechoCommentsController {
                         contentsJson.put("slug", contentsInfo.getSlug());
                         contentsJson.put("title", contentsInfo.getTitle());
                         contentsJson.put("type", contentsInfo.getType());
+                        contentsJson.put("authorId",contentsInfo.getAuthorId());
                         List<TypechoRelationships> relationships = relationshipsService.selectByKey(cid);
                         if (relationships.size() > 0) {
                             TypechoRelationships rinfo = relationships.get(0);

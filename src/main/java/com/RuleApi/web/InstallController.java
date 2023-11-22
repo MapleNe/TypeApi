@@ -1392,6 +1392,7 @@ public class InstallController {
                     "  `id` int(11) NOT NULL AUTO_INCREMENT," +
                     "  `name` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT '名称'," +
                     "  `link` varchar(255) DEFAULT NULL COMMENT '链接'," +
+                    "  `type` int(10) DEFAULT 0 COMMENT '类型'," +
                     "  `status` int(10) DEFAULT 1 COMMENT '状态'," +
                     "  `permission` int(10) DEFAULT 0 COMMENT '权限'," +
                     "  PRIMARY KEY (`id`)\n" +
