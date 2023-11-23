@@ -57,9 +57,9 @@
         `posttime`,
         `userBg`,
         `sex`,
-         `opt`,
-         `medal`,
-         `head_picture`
+        `opt`,
+        `medal`,
+        `head_picture`
     </sql>
 
     <!-- 插入数据 -->
@@ -203,10 +203,10 @@
             <if test ='null != clientId'>`clientId` = #{clientId},</if>
             <if test ='null != bantime'>`bantime` = #{bantime},</if>
             <if test ='null != posttime'>`posttime` = #{posttime},</if>
-            <if test ='null != userBg'>`userBg` = #{userBg}</if>
-            <if test ='null != sex'>`sex` = #{sex}</if>
-            <if test ='null != medal'>`medal` = #{medal}</if>
-            <if test ='null != opt'>`opt` = #{opt}</if>
+            <if test ='null != userBg'>`userBg` = #{userBg},</if>
+            <if test ='null != sex'>`sex` = #{sex},</if>
+            <if test ='null != medal'>`medal` = #{medal},</if>
+            <if test ='null != opt'>`opt` = #{opt},</if>
             <if test ='null != head_picture'>`head_picture` = #{head_picture}</if>
         </set>
         WHERE `uid` = #{uid}
