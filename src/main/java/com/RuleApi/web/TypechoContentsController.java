@@ -160,11 +160,6 @@ public class TypechoContentsController {
                     return Result.getResultJson(0, "文章暂未公开访问", null);
                 }
                 String text = typechoContents.getText();
-                String forbidden = apiconfig.getForbidden();
-                Integer textForbidden = baseFull.getForbidden(forbidden, text);
-                if (textForbidden.equals(1)) {
-                    text = "内容违规，无法展示";
-                }
                 String oldText = typechoContents.getText();
                 //要做处理将typecho的图片插入格式变成markdown
                 List imgList = baseFull.getImageSrc(text);
