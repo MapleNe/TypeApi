@@ -2643,19 +2643,36 @@ public class TypechoUsersController {
     @RequestMapping(value = "/isFollow")
     @ResponseBody
     public String isFollow(@RequestParam(value = "token", required = false) String token,
-                           @RequestParam(value = "touid", required = false, defaultValue = "1") Integer touid) {
-        if (touid == 0 || touid == null) {
+                           @RequestParam(value = "touid", required = false) String touidStr) {
+        if (touidStr == null || "undefined".equals(touidStr)) {
+            // 设置默认值或采取其他处理方式
+            touidStr = "1";
+        }
+
+        Integer touid;
+        try {
+            touid = Integer.parseInt(touidStr);
+        } catch (NumberFormatException e) {
+            // 处理转换异常，例如返回错误信息
+            return Result.getResultJson(0, "参数不是有效的整数", null);
+        }
+
+        if (touid == 0) {
             return Result.getResultJson(0, "参数不正确", null);
         }
+
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
         if (uStatus == 0) {
             return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
+
         Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
         Integer uid = Integer.parseInt(map.get("uid").toString());
+
         TypechoFan fan = new TypechoFan();
         fan.setTouid(touid);
         fan.setUid(uid);
+
         Integer isFan = fanService.total(fan);
         if (isFan > 0) {
             return Result.getResultJson(1, "已关注", null);
