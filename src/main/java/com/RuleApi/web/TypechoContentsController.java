@@ -212,7 +212,7 @@ public class TypechoContentsController {
 
                 // 加入文章作者信息
                 Map authorInfo = new HashMap();
-                if (uid != null) {
+                if (typechoContents.getAuthorId() != null) {
                     TypechoUsers author = usersService.selectByKey(typechoContents.getAuthorId());
 
                     if (author != null) {
@@ -235,6 +235,16 @@ public class TypechoContentsController {
                                 }
                                 //avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), author.getMail());
                             }
+                        }
+
+                        // 是否关注
+                        if (uid!=null) {
+                            TypechoFan fan = new TypechoFan();
+                            Integer authorId = Integer.parseInt(typechoContents.getAuthorId().toString());
+                            fan.setUid(uid);
+                            fan.setTouid(authorId);
+                            Integer isfollow = fanService.total(fan);
+                            authorInfo.put("isfollow", isfollow);
                         }
 
                         JSONObject opt = JSONObject.parseObject(author.getOpt());
@@ -296,15 +306,6 @@ public class TypechoContentsController {
 
                 }
                 contensjson = JSONObject.parseObject(JSONObject.toJSONString(typechoContents), Map.class);
-
-                // 是否关注
-                TypechoFan fan = new TypechoFan();
-                Integer authorId = Integer.parseInt(contensjson.get("authorId").toString());
-                fan.setUid(uid);
-                fan.setTouid(authorId);
-                Integer isfollow = fanService.total(fan);
-                authorInfo.put("isfollow", isfollow);
-
                 // 格式化文章opt
                 JSONObject opt = JSONObject.parseObject(contensjson.get("opt").toString());
                 if (opt instanceof Object) {
