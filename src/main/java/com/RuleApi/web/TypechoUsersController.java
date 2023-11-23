@@ -2576,6 +2576,7 @@ public class TypechoUsersController {
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             Integer uid = Integer.parseInt(map.get("uid").toString());
 
+            System.out.println(uid+"草"+touid);
             if (uid.equals(touid)) {
                 return Result.getResultJson(0, "你不可以关注自己", null);
             }
