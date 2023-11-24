@@ -138,7 +138,7 @@ public class TypechoContentsController {
         }
         //验证结束
         Integer uid = null;
-        if (token != null && token != "") {
+        if (token != null && !token.isEmpty()) {
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             uid = Integer.parseInt(map.get("uid").toString());
         }
@@ -397,7 +397,7 @@ public class TypechoContentsController {
         //验证结束
 
         Integer uid = null;
-        if (token != null && token != "") {
+        if (token != null && !token.isEmpty()) {
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             uid = Integer.parseInt(map.get("uid").toString());
         }
