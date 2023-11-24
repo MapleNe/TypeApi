@@ -125,7 +125,7 @@ public class TypechoContentsController {
      */
     @RequestMapping(value = "/contentsInfo")
     @ResponseBody
-    public String contentsInfo(@RequestParam(value = "key", required = false) String key, @RequestParam(value = "isMd", required = false, defaultValue = "0") Integer isMd, @RequestParam(value = "token", required = false) String token, @RequestParam(value = "uid", required = false) Integer uid, HttpServletRequest request) {
+    public String contentsInfo(@RequestParam(value = "key", required = false) String key, @RequestParam(value = "isMd", required = false, defaultValue = "0") Integer isMd, @RequestParam(value = "token", required = false) String token, HttpServletRequest request) {
         TypechoContents typechoContents = null;
 
         //如果开启全局登录，则必须登录才能得到数据
@@ -137,6 +137,11 @@ public class TypechoContentsController {
             }
         }
         //验证结束
+        Integer uid = null;
+        if (token != null && token != "") {
+            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+            uid = Integer.parseInt(map.get("uid").toString());
+        }
 
         Map contensjson = new HashMap<String, String>();
         Map cacheInfo = redisHelp.getMapValue(this.dataprefix + "_" + "contentsInfo_" + key + "_" + isMd, redisTemplate);
@@ -233,7 +238,7 @@ public class TypechoContentsController {
                         }
 
                         // 是否关注
-                        if (uid!=null) {
+                        if (uid != null) {
                             TypechoFan fan = new TypechoFan();
                             Integer authorId = Integer.parseInt(typechoContents.getAuthorId().toString());
                             fan.setUid(uid);
