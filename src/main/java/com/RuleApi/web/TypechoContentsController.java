@@ -692,7 +692,7 @@ public class TypechoContentsController {
 
                 //获取参数中的分类和标签
                 if (jsonToMap.get("category") == null) {
-                    jsonToMap.put("category", "0");
+                    jsonToMap.put("category", "1");
                 }
                 category = jsonToMap.get("category").toString();
                 if (jsonToMap.get("tag") != null) {
