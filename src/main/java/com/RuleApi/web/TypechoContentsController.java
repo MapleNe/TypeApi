@@ -377,8 +377,7 @@ public class TypechoContentsController {
                                @RequestParam(value = "searchKey", required = false, defaultValue = "") String searchKey,
                                @RequestParam(value = "order", required = false, defaultValue = "") String order,
                                @RequestParam(value = "random", required = false, defaultValue = "0") Integer random,
-                               @RequestParam(value = "token", required = false, defaultValue = "") String token,
-                               @RequestParam(value = "uid", required = false, defaultValue = "") Integer uid) {
+                               @RequestParam(value = "token", required = false, defaultValue = "") String token) {
         TypechoContents query = new TypechoContents();
         if (limit > 50) {
             limit = 50;
@@ -396,6 +395,12 @@ public class TypechoContentsController {
             }
         }
         //验证结束
+
+        Integer uid = null;
+        if (token != null && token != "") {
+            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+            uid = Integer.parseInt(map.get("uid").toString());
+        }
 
         if (StringUtils.isNotBlank(searchParams)) {
             JSONObject object = JSON.parseObject(searchParams);
