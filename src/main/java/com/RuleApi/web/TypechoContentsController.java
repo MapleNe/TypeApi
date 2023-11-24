@@ -138,10 +138,6 @@ public class TypechoContentsController {
         }
         //验证结束
         Integer uid = null;
-        if (token != null && !token.isEmpty()) {
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            uid = Integer.parseInt(map.get("uid").toString());
-        }
 
         Map contensjson = new HashMap<String, String>();
         Map cacheInfo = redisHelp.getMapValue(this.dataprefix + "_" + "contentsInfo_" + key + "_" + isMd, redisTemplate);
@@ -152,6 +148,10 @@ public class TypechoContentsController {
                 isLogin = 0;
             } else {
                 isLogin = 1;
+                if (token != null && !token.isEmpty()) {
+                    Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+                    uid = Integer.parseInt(map.get("uid").toString());
+                }
             }
             //如果是登录用户，且传入了token，就不缓存
             if (cacheInfo.size() > 0 & isLogin == 0) {
@@ -386,21 +386,24 @@ public class TypechoContentsController {
         List cacheList = new ArrayList();
         String group = "";
         Integer total = 0;
+        Integer uid = null;
         //如果开启全局登录，则必须登录才能得到数据
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
         TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
         if (apiconfig.getIsLogin().equals(1)) {
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+            }else {
+                if (token != null && !token.isEmpty()) {
+                    Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+                    uid = Integer.parseInt(map.get("uid").toString());
+                }
             }
         }
         //验证结束
 
-        Integer uid = null;
-        if (token != null && !token.isEmpty()) {
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            uid = Integer.parseInt(map.get("uid").toString());
-        }
+
+
 
         if (StringUtils.isNotBlank(searchParams)) {
             JSONObject object = JSON.parseObject(searchParams);
