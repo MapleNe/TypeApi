@@ -313,9 +313,32 @@ public class TypechoContentsController {
                 } else {
                     opt = null;
                 }
+                Object imagesObject = contensjson.get("images");
+                // 判断值是否为 null
+                if (imagesObject != null) {
+                    // 判断值的类型是否为 JSONArray
+                    if (imagesObject instanceof JSONArray) {
+                        // 如果是 JSONArray，直接使用
+                        contensjson.put("images", imagesObject);
+                    } else {
+                        // 如果不是 JSONArray，尝试将其解析为 JSONArray
+                        JSONArray imagesArray = JSON.parseArray(imagesObject.toString());
+
+                        // 判断解析结果是否为 null 或者为空
+                        if (imagesArray == null || imagesArray.isEmpty()) {
+                            // 如果为空，将其替换为 imgList
+                            contensjson.put("images", imgList);
+                        } else {
+                            // 如果不为空，直接使用解析的值
+                            contensjson.put("images", imagesArray);
+                        }
+                    }
+                } else {
+                    // 如果值为 null，将其替换为 imgList
+                    contensjson.put("images", imgList);
+                }
                 //转为map，再加入字段
                 contensjson.remove("password");
-                contensjson.put("images", imgList);
                 contensjson.put("fields", fields);
                 contensjson.put("category", metas);
                 contensjson.put("authorInfo", authorInfo);
@@ -393,7 +416,7 @@ public class TypechoContentsController {
         if (apiconfig.getIsLogin().equals(1)) {
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-            }else {
+            } else {
                 if (token != null && !token.isEmpty()) {
                     Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
                     uid = Integer.parseInt(map.get("uid").toString());
@@ -401,8 +424,6 @@ public class TypechoContentsController {
             }
         }
         //验证结束
-
-
 
 
         if (StringUtils.isNotBlank(searchParams)) {
@@ -575,7 +596,31 @@ public class TypechoContentsController {
                     } else {
                         opt = null;
                     }
-                    json.put("images", imgList);
+
+                    Object imagesObject = json.get("images");
+                    // 判断值是否为 null
+                    if (imagesObject != null) {
+                        // 判断值的类型是否为 JSONArray
+                        if (imagesObject instanceof JSONArray) {
+                            // 如果是 JSONArray，直接使用
+                            json.put("images", imagesObject);
+                        } else {
+                            // 如果不是 JSONArray，尝试将其解析为 JSONArray
+                            JSONArray imagesArray = JSON.parseArray(imagesObject.toString());
+
+                            // 判断解析结果是否为 null 或者为空
+                            if (imagesArray == null || imagesArray.isEmpty()) {
+                                // 如果为空，将其替换为 imgList
+                                json.put("images", imgList);
+                            } else {
+                                // 如果不为空，直接使用解析的值
+                                json.put("images", imagesArray);
+                            }
+                        }
+                    } else {
+                        // 如果值为 null，将其替换为 imgList
+                        json.put("images", imgList);
+                    }
                     json.put("text", text.length() > 400 ? text.substring(0, 400) : text);
                     json.put("category", metas);
                     json.put("tag", tags);

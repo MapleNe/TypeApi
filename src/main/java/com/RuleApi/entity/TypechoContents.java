@@ -80,6 +80,11 @@ public class TypechoContents implements Serializable {
     private Integer commentsNum;
 
     /**
+     * images
+     */
+    private String images;
+
+    /**
      * allowComment  
      */
     private String allowComment;

@@ -157,7 +157,7 @@ public class InstallController {
                     "  `commentsNum` int(10) unsigned DEFAULT '0'," +
                     "  `allowComment` char(1) DEFAULT '0'," +
                     "  `allowPing` char(1) DEFAULT '0'," +
-                    "  `images` varchar(255)," +
+                    "  `images` longtext," +
                     "  `opt` longtext," +
                     "  `allowFeed` char(1) DEFAULT '0'," +
                     "  `parent` int(10) unsigned DEFAULT '0'," +
@@ -301,6 +301,15 @@ public class InstallController {
         } else {
             text += "内容模块，字段istop已经存在，无需添加。";
         }
+        //查询文章表是否存在images字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'images';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_contents ADD images longtext ;");
+            text += "内容模块，字段istop添加完成。";
+        } else {
+            text += "内容模块，字段istop已经存在，无需添加。";
+        }
+
         //查询文章表是否存在isswiper字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'isswiper';", Integer.class);
         if (i == 0) {

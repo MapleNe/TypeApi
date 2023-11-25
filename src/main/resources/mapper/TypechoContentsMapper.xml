@@ -17,6 +17,7 @@
         <result column="status" property="status" />
         <result column="password" property="password" />
         <result column="commentsNum" property="commentsNum" />
+        <result column="images" property="images" />
         <result column="allowComment" property="allowComment" />
         <result column="allowPing" property="allowPing" />
         <result column="allowFeed" property="allowFeed" />
@@ -44,6 +45,7 @@
         `status`,
         `password`,
         `commentsNum`,
+        `images`,
         `allowComment`,
         `allowPing`,
         `allowFeed`,
@@ -116,7 +118,10 @@
                 `replyTime`,
             </if>
             <if test ='null != opt'>
-                `opt`
+                `opt`,
+            </if>
+            <if test ='null != images'>
+                `images`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -175,7 +180,10 @@
                 #{replyTime},
             </if>
             <if test ='null != opt'>
-                #{opt}
+                #{opt},
+            </if>
+            <if test ='null != images'>
+                #{images}
             </if>
         </trim>
     </insert>
@@ -202,7 +210,8 @@
             #{curr.allowPing},
             #{curr.allowFeed},
             #{curr.parent},
-            #{curr.opt}
+            #{curr.opt},
+            #{curr.images}
             )
         </foreach>
     </insert>
@@ -232,8 +241,9 @@
             <if test ='null != isrecommend'>`isrecommend` = #{isrecommend},</if>
             <if test ='null != istop'>`istop` = #{istop},</if>
             <if test ='null != isswiper'>`isswiper` = #{isswiper},</if>
-            <if test ='null != replyTime'>`replyTime` = #{replyTime}</if>
-            <if test ='null != opt'>`opt` = #{opt}</if>
+            <if test ='null != replyTime'>`replyTime` = #{replyTime},</if>
+            <if test ='null != opt'>`opt` = #{opt},</if>
+            <if test ='null != images'>`images` = #{images}</if>
 
         </set>
         WHERE `cid` = #{cid}
@@ -319,7 +329,7 @@
             <if test ='null != views'>
                 and `views` = #{views}
             </if>
-            <if test ='null != parent'>
+            <if test ='null != likes'>
                 and `likes` = #{likes}
             </if>
         </where>
