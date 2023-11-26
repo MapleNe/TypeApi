@@ -143,10 +143,10 @@
             <if test ='null != typechoRelationships.mid'>
                 and r.mid = #{typechoRelationships.mid}
             </if>
-            <if test="typechoRelationships != null and typechoRelationships.contents != null and typechoRelationships.contents.type != null">
+            <if test ='null != typechoRelationships.contents.type'>
                 and c.type = #{typechoRelationships.contents.type}
             </if>
-            <if test="typechoRelationships != null and typechoRelationships.contents != null and typechoRelationships.contents.status != null">
+            <if test ='null != typechoRelationships.contents.status'>
                 and c.status = #{typechoRelationships.contents.status}
             </if>
             and c.status = "publish"

@@ -142,6 +142,7 @@ public class InstallController {
             text += "管理员" + name + "添加完成。";
             //安装内容表
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_contents` (" +
+                    "  `mid` int(10) unsigned NOT NULL," +
                     "  `cid` int(10) unsigned NOT NULL AUTO_INCREMENT," +
                     "  `title` varchar(200) DEFAULT NULL," +
                     "  `slug` varchar(200) DEFAULT NULL," +
@@ -285,6 +286,16 @@ public class InstallController {
         } else {
             text += "内容模块，字段likes已经存在，无需添加。";
         }
+
+        //查询文章表是否存在mid字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'mid';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_contents ADD mid integer(10) DEFAULT 0;");
+            text += "内容模块，字段mid添加完成。";
+        } else {
+            text += "内容模块，字段mid已经存在，无需添加。";
+        }
+
         //查询文章表是否存在isrecommend字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'isrecommend';", Integer.class);
         if (i == 0) {
@@ -1432,47 +1443,48 @@ public class InstallController {
                     "  `iosUrl` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT 'ios下载地址'," +
                     "  `field1` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '预留字段1'," +
                     "  `field2` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '预留字段2'," +
-                    "  `silence` int(1) CHARACTER SET utf8 DEFAULT 0 COMMENT '静默更新'," +
-                    "  `forceUpdate` int(1) CHARACTER SET utf8 DEFAULT 0 COMMENT '强制更新'," +
-                    "  `issue` int(1) CHARACTER SET utf8 DEFAULT 1 COMMENT '发布/发行'," +
-                    "  `updateType` int(1) CHARACTER SET utf8 DEFAULT 0 COMMENT '更新方式'," +
+                    "  `silence` int  DEFAULT 0 COMMENT '静默更新'," +
+                    "  `forceUpdate` int  DEFAULT 0 COMMENT '强制更新'," +
+                    "  `issue` int  DEFAULT 1 COMMENT '发布/发行'," +
+                    "  `updateType` int DEFAULT 0 COMMENT '更新方式'," +
                     "  PRIMARY KEY (`id`)\n" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='应用表（web应用和APP应用）';");
             text += "应用模块创建完成。";
         } else {
             text += "应用模块已存在，无需安装。";
         }
+
         // 查询应用表是否存在 silence 字段
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_app' and column_name = 'silence';", Integer.class);
+        i = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM information_schema.columns WHERE table_name = '" + prefix + "_app' AND column_name = 'silence';", Integer.class);
         if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_app ADD `silence` int(1) CHARACTER SET utf8 DEFAULT 0 COMMENT '静默更新'");
-            text += "应用表，字段silence添加完成。";
+            jdbcTemplate.execute("ALTER TABLE " + prefix + "_app ADD COLUMN `silence` INT DEFAULT 0 COMMENT '静默更新'");
+            text += "应用表，字段 silence 添加完成。";
         } else {
-            text += "应用表，字段silence已经存在，无需添加。";
+            text += "应用表，字段 silence 已经存在，无需添加。";
         }
 
-        // 查询应用表是否存在 forceUpdate 字段
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_app' and column_name = 'forceUpdate';", Integer.class);
+// 查询应用表是否存在 forceUpdate 字段
+        i = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM information_schema.columns WHERE table_name = '" + prefix + "_app' AND column_name = 'forceUpdate';", Integer.class);
         if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_app ADD `forceUpdate` int(1) CHARACTER SET utf8 DEFAULT 0 COMMENT '强制更新'");
+            jdbcTemplate.execute("ALTER TABLE " + prefix + "_app ADD COLUMN `forceUpdate` INT DEFAULT 0 COMMENT '强制更新'");
             text += "应用表，字段 forceUpdate 添加完成。";
         } else {
             text += "应用表，字段 forceUpdate 已经存在，无需添加。";
         }
 
-        // 查询应用表是否存在 issue 字段
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_app' and column_name = 'issue';", Integer.class);
+// 查询应用表是否存在 issue 字段
+        i = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM information_schema.columns WHERE table_name = '" + prefix + "_app' AND column_name = 'issue';", Integer.class);
         if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_app ADD `issue` int(1) CHARACTER SET utf8 DEFAULT 1 COMMENT '是否发行'");
+            jdbcTemplate.execute("ALTER TABLE " + prefix + "_app ADD COLUMN `issue` INT DEFAULT 1 COMMENT '是否发行'");
             text += "应用表，字段 issue 添加完成。";
         } else {
             text += "应用表，字段 issue 已经存在，无需添加。";
         }
 
-        // 查询应用表是否存在 issue 字段
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_app' and column_name = 'updateType';", Integer.class);
+// 查询应用表是否存在 updateType 字段
+        i = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM information_schema.columns WHERE table_name = '" + prefix + "_app' AND column_name = 'updateType';", Integer.class);
         if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_app ADD `updateType` int(1) CHARACTER SET utf8 DEFAULT 0 COMMENT '更新方式'");
+            jdbcTemplate.execute("ALTER TABLE " + prefix + "_app ADD COLUMN `updateType` INT DEFAULT 0 COMMENT '更新方式'");
             text += "应用表，字段 updateType 添加完成。";
         } else {
             text += "应用表，字段 updateType 已经存在，无需添加。";

@@ -26,6 +26,7 @@
         <result column="silence" property="silence" />
         <result column="forceUpdate" property="forceUpdate" />
         <result column="issue" property="issue" />
+        <result column="updateType" property="updateType" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -122,7 +123,7 @@
                 `forceUpdate`,
             </if>
             <if test ='null != issue'>
-                `issue`
+                `issue`,
             </if>
             <if test ='null != updateType'>
                 `updateType`

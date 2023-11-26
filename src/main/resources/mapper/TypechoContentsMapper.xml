@@ -32,6 +32,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
+        `mid`,
         `cid`,
         `title`,
         `slug`,
@@ -63,6 +64,9 @@
     <insert id="insert" parameterType="com.RuleApi.entity.TypechoContents"  keyProperty="cid" useGeneratedKeys="true">
         INSERT INTO ${prefix}_contents
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != mid'>
+                `mid`,
+            </if>
             <if test ='null != cid'>
                 `cid`,
             </if>
@@ -125,6 +129,9 @@
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != mid'>
+                #{mid},
+            </if>
             <if test ='null != cid'>
                 #{cid},
             </if>
@@ -193,6 +200,7 @@
         INSERT INTO ${prefix}_contents ( <include refid="Base_Column_List" /> ) VALUES
         <foreach collection="list" item="curr" index="index" separator=",">
             (
+            #{curr.mid},
             #{curr.cid},
             #{curr.title},
             #{curr.slug},
@@ -220,6 +228,7 @@
     <update id="update" parameterType="com.RuleApi.entity.TypechoContents">
         UPDATE ${prefix}_contents
         <set>
+            <if test ='null != mid'>`mid` = #{mid},</if>
             <if test ='null != title'>`title` = #{title},</if>
             <if test ='null != slug'>`slug` = #{slug},</if>
             <if test ='null != created'>`created` = #{created},</if>
@@ -275,6 +284,9 @@
         SELECT <include refid="Base_Column_List" />
         FROM ${prefix}_contents
         <where>
+            <if test ='null != mid'>
+                and `mid` = #{mid}
+            </if>
             <if test ='null != cid'>
                 and `cid` = #{cid}
             </if>
@@ -340,6 +352,9 @@
         SELECT <include refid="Base_Column_List" />
         FROM ${prefix}_contents
         <where>
+            <if test ='null != typechoContents.mid'>
+                and `mid` = #{typechoContents.mid}
+            </if>
             <if test ='null != typechoContents.cid'>
                 and `cid` = #{typechoContents.cid}
             </if>

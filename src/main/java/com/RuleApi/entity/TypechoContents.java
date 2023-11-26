@@ -15,6 +15,11 @@ public class TypechoContents implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
+     * cid
+     */
+    private Integer mid;
+
+    /**
      * cid  
      */
     private Integer cid;
