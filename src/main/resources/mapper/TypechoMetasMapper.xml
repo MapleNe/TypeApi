@@ -129,7 +129,7 @@
             <if test ='null != count'>`count` = #{count},</if>
             <if test ='null != orderKey'>`order` = #{orderKey},</if>
             <if test ='null != imgurl'>`imgurl` = #{imgurl},</if>
-            <if test ='null != opt'>`imgurl` = #{opt},</if>
+            <if test ='null != opt'>`opt` = #{opt},</if>
             <if test ='null != isrecommend'>`isrecommend` = #{isrecommend}</if>
         </set>
         WHERE `mid` = #{mid}

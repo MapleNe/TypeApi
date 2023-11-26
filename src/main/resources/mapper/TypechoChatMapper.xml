@@ -169,7 +169,9 @@
                 and `type` = #{type}
             </if>
         </where>
-        order by created desc
+        <if test ='"" != order'>
+            order by ${order}
+        </if>
     </select>
 
     <!-- 分页条件查询 -->
@@ -200,7 +202,7 @@
             </if>
         </where>
         <if test ='"" != order'>
-            order by ${order} desc
+            order by ${order}
         </if>
         limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
     </select>

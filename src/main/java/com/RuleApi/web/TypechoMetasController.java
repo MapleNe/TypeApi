@@ -7,17 +7,18 @@ import com.alibaba.fastjson.JSONObject;
 import com.RuleApi.entity.*;
 import com.RuleApi.service.*;
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.Comparator;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -80,12 +81,26 @@ public class TypechoMetasController {
     public String selectContents(@RequestParam(value = "searchParams", required = false) String searchParams,
                                  @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
                                  @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
-                                 @RequestParam(value = "order", required = false, defaultValue = "create desc") String order,
-                                 @RequestParam(value = "uid", required = false, defaultValue = "") Integer uid) {
+                                 @RequestParam(value = "order", required = false, defaultValue = "") String order,
+                                 @RequestParam(value = "token", required = false, defaultValue = "") String token) {
 
         TypechoRelationships query = new TypechoRelationships();
         if (limit > 50) {
             limit = 50;
+        }
+
+        Integer uid = null;
+        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+        TypechoApiconfig userStatus = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+        if (userStatus.getIsLogin().equals(1)) {
+            if (uStatus == 0) {
+                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+            } else {
+                if (token != null && !token.isEmpty()) {
+                    Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+                    uid = Integer.parseInt(map.get("uid").toString());
+                }
+            }
         }
         String sqlParams = "null";
         if (StringUtils.isNotBlank(searchParams)) {
@@ -97,7 +112,6 @@ public class TypechoMetasController {
 
             query.setMid(mid);
             TypechoContents contents = new TypechoContents();
-            contents.setType("post");
             contents.setStatus("publish");
             query.setContents(contents);
             Map paramsJson = JSONObject.parseObject(JSONObject.toJSONString(query), Map.class);
@@ -160,10 +174,13 @@ public class TypechoMetasController {
                                 opt = null;
                             }
                             // 再查询是否关注了用户
-                            TypechoFan fan = new TypechoFan();
-                            fan.setUid(uid);
-                            fan.setTouid(authorId);
-                            Integer isfollow = fanService.total(fan);
+                            Integer isfollow = 0;
+                            if (uid != null && uid > 0) {
+                                TypechoFan fan = new TypechoFan();
+                                fan.setUid(uid);
+                                fan.setTouid(authorId);
+                                isfollow = fanService.total(fan);
+                            }
 
                             authorInfo.put("name", name);
                             authorInfo.put("avatar", avatar);
@@ -266,6 +283,9 @@ public class TypechoMetasController {
                 jsonList = cacheList;
             }
         }
+        if (order != null && order != "") {
+            jsonList = sortJsonList(jsonList, order);
+        }
 
         JSONObject response = new JSONObject();
         response.put("code", 1);
@@ -273,6 +293,51 @@ public class TypechoMetasController {
         response.put("data", null != jsonList ? jsonList : new JSONArray());
         response.put("count", jsonList.size());
         return response.toString();
+    }
+
+    private List<Map<Object, Integer>> sortJsonList(List<Map<Object, Integer>> jsonList, String order) {
+        switch (order) {
+            case "hot":
+                jsonList.sort(
+                        Comparator.comparingInt(o -> {
+                                    Map<Object, Integer> map = (Map<Object, Integer>) o;
+                                    return ((Number) map.getOrDefault("likes", 0)).intValue();
+                                })
+                                .thenComparing(o -> {
+                                    Map<Object, Long> map = (Map<Object, Long>) o;
+                                    return ((Number) map.getOrDefault("replyTime", 0L)).longValue();
+
+                                })
+                                .thenComparing(o -> {
+                                    Map<Object, String> map = (Map<Object, String>) o;
+                                    return ((String) map.getOrDefault("text", ""));
+                                })
+
+                                .thenComparing(o -> {
+                                    Map<Object, Long> map = (Map<Object, Long>) o;
+                                    return ((Number) map.getOrDefault("created", 0L)).longValue();
+
+                                }) .thenComparingInt(o -> {
+                                    Map<Object, Integer> map = (Map<Object, Integer>) o;
+                                    return ((Number) map.getOrDefault("views", 0)).intValue();
+                                })
+                );
+                break;
+            case "new":
+                jsonList.sort((Comparator<? super Map<Object, Integer>>) Comparator
+                        .comparingInt((Map<Object, Integer> o) -> o.getOrDefault("created", 0))
+                        .reversed()
+                );
+                break;
+            // Add more cases for other order types if needed
+        }
+
+        // Convert List<Map<Object, Integer>> to List<Map<String, Object>> if needed
+        // Assuming your data structure allows this conversion
+        // List<Map<String, Object>> result = new ArrayList<>(jsonList);
+
+        // Return the sorted list
+        return jsonList;
     }
 
 

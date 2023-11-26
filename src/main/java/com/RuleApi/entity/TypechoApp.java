@@ -108,4 +108,24 @@ public class TypechoApp implements Serializable {
      * field2  预留字段2
      */
     private String field2;
+
+    /**
+     * silence  静默更新
+     */
+
+    private Integer silence;
+    /**
+     * forceUpdate 强制更新
+     */
+    private Integer forceUpdate;
+
+    /**
+     * issue  是否发行
+     */
+    private Integer issue;
+
+    /**
+     * updateType  更新方式
+     */
+    private Integer updateType;
 }

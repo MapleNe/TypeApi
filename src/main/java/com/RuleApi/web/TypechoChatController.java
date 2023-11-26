@@ -843,7 +843,7 @@ public class TypechoChatController {
     @RequestMapping(value = "/allChat")
     @ResponseBody
     public String allGroup (@RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                            @RequestParam(value = "order", required = false, defaultValue = "created") String  order,
+                            @RequestParam(value = "order", required = false, defaultValue = "created desc") String  order,
                             @RequestParam(value = "type", required = false, defaultValue = "1") Integer  type,
                             @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit,
                             @RequestParam(value = "searchKey"        , required = false, defaultValue = "") String searchKey,

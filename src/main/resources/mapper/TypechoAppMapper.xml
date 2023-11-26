@@ -23,6 +23,9 @@
         <result column="adpid" property="adpid" />
         <result column="field1" property="field1" />
         <result column="field2" property="field2" />
+        <result column="silence" property="silence" />
+        <result column="forceUpdate" property="forceUpdate" />
+        <result column="issue" property="issue" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -44,7 +47,11 @@
         `iosUrl`,
         `adpid`,
         `field1`,
-        `field2`
+        `field2`,
+        `silence`,
+        `forceUpdate`,
+        `issue`,
+        `updateType`
     </sql>
 
     <!-- 插入数据 -->
@@ -106,7 +113,19 @@
                 `field1`,
             </if>
             <if test ='null != field2'>
-                `field2`
+                `field2`,
+            </if>
+            <if test ='null != silence'>
+                `silence`,
+            </if>
+            <if test ='null != forceUpdate'>
+                `forceUpdate`,
+            </if>
+            <if test ='null != issue'>
+                `issue`
+            </if>
+            <if test ='null != updateType'>
+                `updateType`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -165,7 +184,19 @@
                 #{field1},
             </if>
             <if test ='null != field2'>
-                #{field2}
+                #{field2},
+            </if>
+            <if test ='null != silence'>
+                #{silence},
+            </if>
+            <if test ='null != forceUpdate'>
+                #{forceUpdate},
+            </if>
+            <if test ='null != issue'>
+                #{issue},
+            </if>
+            <if test ='null != updateType'>
+                #{updateType}
             </if>
         </trim>
     </insert>
@@ -193,7 +224,11 @@
             #{curr.iosUrl},
             #{curr.adpid},
             #{curr.field1},
-            #{curr.field2}
+            #{curr.field2},
+            #{curr.silence},
+            #{curr.forceUpdate},
+            #{curr.issue},
+            #{curr.updateType}
             )
         </foreach>
     </insert>
@@ -219,7 +254,11 @@
             <if test ='null != iosUrl'>`iosUrl` = #{iosUrl},</if>
             <if test ='null != adpid'>`adpid` = #{adpid},</if>
             <if test ='null != field1'>`field1` = #{field1},</if>
-            <if test ='null != field2'>`field2` = #{field2}</if>
+            <if test ='null != field2'>`field2` = #{field2},</if>
+            <if test ='null != silence'>`silence` = #{silence},</if>
+            <if test ='null != forceUpdate'>`forceUpdate` = #{forceUpdate},</if>
+            <if test ='null != issue'>`issue` = #{issue},</if>
+            <if test ='null != updateType'>`updateType` = #{updateType}</if>
         </set>
         WHERE `id` = #{id}
     </update>
@@ -304,6 +343,18 @@
             <if test ='null != field2'>
                 and `field2` = #{field2}
             </if>
+            <if test ='null != silence'>
+                and `silence` = #{silence}
+            </if>
+            <if test ='null != forceUpdate'>
+                and `forceUpdate` = #{forceUpdate}
+            </if>
+            <if test ='null != issue'>
+                and `issue` = #{issue}
+            </if>
+            <if test ='null != updateType'>
+                and `updateType` = #{updateType}
+            </if>
         </where>
     </select>
 
@@ -366,6 +417,18 @@
             <if test ='null != typechoApp.field2'>
                 and `field2` = #{typechoApp.field2}
             </if>
+            <if test ='null != typechoApp.silence'>
+                and `silence` = #{typechoApp.silence}
+            </if>
+            <if test ='null != typechoApp.forceUpdate'>
+                and `forceUpdate` = #{typechoApp.forceUpdate}
+            </if>
+            <if test ='null != typechoApp.issue'>
+                and `issue` = #{typechoApp.issue}
+            </if>
+            <if test ='null != typechoApp.updateType'>
+                and `updateType` = #{typechoApp.updateType}
+            </if>
         </where>
         limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
     </select>
@@ -427,6 +490,18 @@
             </if>
             <if test ='null != field2'>
                 and `field2` = #{field2}
+            </if>
+            <if test ='null != silence'>
+                and `silence` = #{silence}
+            </if>
+            <if test ='null != forceUpdate'>
+                and `forceUpdate` = #{forceUpdate}
+            </if>
+            <if test ='null != issue'>
+                and `issue` = #{issue}
+            </if>
+            <if test ='null != updateType'>
+                and `updateType` = #{updateType}
             </if>
         </where>
     </select>
