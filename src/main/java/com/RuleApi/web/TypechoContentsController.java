@@ -1191,11 +1191,13 @@ public class TypechoContentsController {
                 }
 
                 // 脱离上面判断 开始获取传参Status
-                if(!postStatus.isEmpty()){
+                if (postStatus != null && !postStatus.isEmpty()) {
                     if (group.equals("administrator") || group.equals("editor")) {
                         // 如果用户组不是管理员或编辑者，根据传参设置状态为传入的postStatus
                         jsonToMap.put("status", postStatus);
                     }
+                } else {
+                    jsonToMap.put("status", "publish");
                 }
                 update = JSON.parseObject(JSON.toJSONString(jsonToMap), TypechoContents.class);
             }
