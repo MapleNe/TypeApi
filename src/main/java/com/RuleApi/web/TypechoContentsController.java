@@ -1035,6 +1035,7 @@ public class TypechoContentsController {
     public String contentsUpdate(@RequestParam(value = "params", required = false) String params,
                                  @RequestParam(value = "token", required = false) String token,
                                  @RequestParam(value = "text", required = false) String text,
+                                 @RequestParam(value = "postStatus", required = false) String postStatus,
                                  @RequestParam(value = "isDraft", required = false, defaultValue = "0") Integer isDraft,
                                  @RequestParam(value = "isMd", required = false, defaultValue = "1") Integer isMd,
                                  @RequestParam(value = "isPaid", required = false, defaultValue = "0") Integer isPaid,
@@ -1136,11 +1137,13 @@ public class TypechoContentsController {
                 jsonToMap.remove("views");
                 jsonToMap.remove("likes");
                 jsonToMap.remove("sid");
-
-                jsonToMap.remove("isrecommend");
-                jsonToMap.remove("istop");
-                jsonToMap.remove("isswiper");
                 jsonToMap.remove("replyTime");
+                if(!group.equals("administrator") && !group.equals("editor")){
+                    jsonToMap.remove("isrecommend");
+                    jsonToMap.remove("istop");
+                    jsonToMap.remove("isswiper");
+
+                }
 //                //状态重新变成待审核
 //                if(!group.equals("administrator")){
 //                    jsonToMap.put("status","waiting");
@@ -1155,9 +1158,11 @@ public class TypechoContentsController {
                 //根据后台的开关判断
                 if (isDraft.equals(0)) {
                     Integer contentAuditlevel = apiconfig.getContentAuditlevel();
+                    // 未开启则默认全部审核通过
                     if (contentAuditlevel.equals(0)) {
                         jsonToMap.put("status", "publish");
                     }
+                    // 如果开启审核 管理员默认发布 否则待审
                     if (contentAuditlevel.equals(1)) {
 
                         if (!group.equals("administrator") && !group.equals("editor")) {
@@ -1172,21 +1177,26 @@ public class TypechoContentsController {
                         }
 
                     }
+                    //除管理员外，文章默认待审核
                     if (contentAuditlevel.equals(2)) {
-                        //除管理员外，文章默认待审核
                         if (!group.equals("administrator") && !group.equals("editor")) {
                             jsonToMap.put("status", "waiting");
                         } else {
                             jsonToMap.put("status", "publish");
                         }
                     }
-                    jsonToMap.put("type", "post");
                 } else {
                     jsonToMap.put("status", "publish");
                     jsonToMap.put("type", "post_draft");
                 }
 
-
+                // 脱离上面判断 开始获取传参Status
+                if(!postStatus.isEmpty()){
+                    if (group.equals("administrator") || group.equals("editor")) {
+                        // 如果用户组不是管理员或编辑者，根据传参设置状态为传入的postStatus
+                        jsonToMap.put("status", postStatus);
+                    }
+                }
                 update = JSON.parseObject(JSON.toJSONString(jsonToMap), TypechoContents.class);
             }
 
