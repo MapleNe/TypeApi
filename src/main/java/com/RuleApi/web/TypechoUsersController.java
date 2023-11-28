@@ -370,6 +370,13 @@ public class TypechoUsersController {
                 JSONObject opt = JSONObject.parseObject(info.getOpt());
                 if (opt instanceof Object) {
                     opt = JSONObject.parseObject(info.getOpt());
+
+                    Integer headId = Integer.parseInt(opt.get("head_picture").toString());
+                    // 查询opt中head_picture的数据 并替换
+                    TypechoHeadpicture head_picture = headpictureService.selectByKey(headId);
+                    if(head_picture!=null){
+                        opt.put("head_picture",head_picture.getLink().toString());
+                    }
                 } else {
                     opt = null;
                 }

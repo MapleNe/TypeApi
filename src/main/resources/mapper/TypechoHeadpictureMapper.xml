@@ -16,7 +16,8 @@
         `name`,
         `link`,
         `status`,
-        `permission`
+        `permission`,
+        `creator`
     </sql>
 
     <!-- 插入数据 -->
@@ -36,7 +37,10 @@
                 `status`,
             </if>
             <if test ='null != permission'>
-                `permission`
+                `permission`,
+            </if>
+            <if test ='null != creator'>
+                `creator`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -53,7 +57,10 @@
                 #{status},
             </if>
             <if test ='null != permission'>
-                #{permission}
+                #{permission},
+            </if>
+            <if test ='null != creator'>
+                #{creator}
             </if>
         </trim>
     </insert>
@@ -67,7 +74,8 @@
             #{curr.name},
             #{curr.link},
             #{curr.status},
-            #{curr.permission}
+            #{curr.permission},
+            #{curr.creator}
             )
         </foreach>
     </insert>
@@ -79,7 +87,8 @@
             <if test ='null != name'>`name` = #{name},</if>
             <if test ='null != slug'>`link` = #{link},</if>
             <if test ='null != type'>`status` = #{status},</if>
-            <if test ='null != description'>`permission` = #{permission}</if>
+            <if test ='null != description'>`permission` = #{permission},</if>
+            <if test ='null != creator'>`creator` = #{creator}</if>
         </set>
         WHERE `id` = #{id}
     </update>
@@ -132,6 +141,9 @@
             <if test ='null != permission'>
                 and `permission` = #{permission}
             </if>
+            <if test ='null != creator'>
+                and `creator` = #{creator}
+            </if>
         </where>
     </select>
 
@@ -154,6 +166,9 @@
             </if>
             <if test ='null != TypechoHeadpicture.permission'>
                 and `permission` = #{TypechoHeadpicture.permission}
+            </if>
+            <if test ='null != TypechoHeadpicture.creator'>
+                and `creator` = #{TypechoHeadpicture.creator}
             </if>
 <!--            <if test ='null != searchKey'>-->
 <!--                and CONCAT(IFNULL(`name`, ''), IFNULL(`permission`, '')) LIKE CONCAT('%', #{searchKey}, '%')-->
@@ -183,6 +198,9 @@
             </if>
             <if test ='null != permission'>
                 and `permission` = #{permission}
+            </if>
+            <if test ='null != creator'>
+                and `creator` = #{creator}
             </if>
         </where>
     </select>

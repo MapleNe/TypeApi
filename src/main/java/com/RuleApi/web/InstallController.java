@@ -1415,12 +1415,23 @@ public class InstallController {
                     "  `type` int(10) DEFAULT 0 COMMENT '类型'," +
                     "  `status` int(10) DEFAULT 1 COMMENT '状态'," +
                     "  `permission` int(10) DEFAULT 0 COMMENT '权限'," +
+                    "  `creator` int(10) DEFAULT 0 COMMENT '创建人ID'," +
                     "  PRIMARY KEY (`id`)\n" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='头像框表';");
             text += "头像框模块创建完成。";
         } else {
             text += "头像框模块已存在，无需安装。";
         }
+
+        //查询头像框模块是否存在 creator 字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_headpicture' and column_name = 'creator';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_headpicture ADD `creator` int(10) DEFAULT NULL COMMENT '创建人ID'");
+            text += "动态模块，字段creator添加完成。";
+        } else {
+            text += "动态模块，字段creator已经存在，无需添加。";
+        }
+
         //安装应用表
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_app';", Integer.class);
         if (i == 0) {

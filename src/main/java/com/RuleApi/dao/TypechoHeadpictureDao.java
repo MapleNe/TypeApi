@@ -43,7 +43,7 @@ public interface TypechoHeadpictureDao {
     /**
      * [主键查询]
      **/
-    List<TypechoHeadpicture> selectByKey(Object key);
+    TypechoHeadpicture selectByKey(Object key);
 
     /**
      * [条件查询]

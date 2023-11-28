@@ -53,6 +53,9 @@ public class TypechoCommentsController {
     private TypechoRelationshipsService relationshipsService;
 
     @Autowired
+    private TypechoHeadpictureService headpictureService;
+
+    @Autowired
     private TypechoApiconfigService apiconfigService;
 
     @Autowired
@@ -255,6 +258,13 @@ public class TypechoCommentsController {
                             JSONObject opt = null;
                             if (userinfo.getOpt() != null && userinfo.getOpt() != "") {
                                 opt = JSONObject.parseObject(userinfo.getOpt());
+                                Integer headId = Integer.parseInt(opt.get("head_picture").toString());
+                                // 查询opt中head_picture的数据 并替换
+                                TypechoHeadpicture head_picture = headpictureService.selectByKey(headId);
+                                if(head_picture!=null){
+                                    opt.put("head_picture",head_picture.getLink().toString());
+                                }
+
                             }
                             json.put("avatar", avatar);
                             json.put("author", name);

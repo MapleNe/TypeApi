@@ -61,6 +61,9 @@ public class TypechoContentsController {
     private TypechoUserlogService userlogService;
 
     @Autowired
+    private  TypechoHeadpictureService headpictureService;
+
+    @Autowired
     private TypechoMetasService metasService;
 
     @Autowired
@@ -248,7 +251,15 @@ public class TypechoContentsController {
                         }
 
                         JSONObject opt = JSONObject.parseObject(author.getOpt());
-                        if (opt instanceof Object) opt = JSONObject.parseObject(author.getOpt());
+                        if (opt instanceof Object){
+                            opt = JSONObject.parseObject(author.getOpt());
+                            Integer headId = Integer.parseInt(opt.get("head_picture").toString());
+                            // 查询opt中head_picture的数据 并替换
+                            TypechoHeadpicture head_picture = headpictureService.selectByKey(headId);
+                            if(head_picture!=null){
+                                opt.put("head_picture",head_picture.getLink().toString());
+                            }
+                        }
 
                         authorInfo.put("name", name);
                         authorInfo.put("avatar", avatar);
@@ -547,7 +558,16 @@ public class TypechoContentsController {
                             Integer isfollow = fanService.total(fan);
 
                             JSONObject opt = JSONObject.parseObject(author.getOpt());
-                            if (opt instanceof Object) opt = JSONObject.parseObject(author.getOpt());
+                            if (opt instanceof Object) {
+                                opt = JSONObject.parseObject(author.getOpt());
+                                Integer headId = Integer.parseInt(opt.get("head_picture").toString());
+                                // 查询opt中head_picture的数据 并替换
+                                TypechoHeadpicture head_picture = headpictureService.selectByKey(headId);
+                                if(head_picture!=null){
+                                    opt.put("head_picture",head_picture.getLink().toString());
+                                }
+
+                            }
 
                             authorInfo.put("name", name);
                             authorInfo.put("avatar", avatar);

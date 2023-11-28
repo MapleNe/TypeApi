@@ -48,9 +48,7 @@ public class TypechoHeadpictureServiceImpl implements TypechoHeadpictureService 
     }
 
     @Override
-    public TypechoHeadpicture selectByKey(Object key) {
-        return (TypechoHeadpicture) dao.selectByKey(key);
-    }
+    public TypechoHeadpicture selectByKey(Object key) { return dao.selectByKey(key);}
 
     @Override
     public List<TypechoHeadpicture> selectList(TypechoHeadpicture TypechoHeadpicture) {

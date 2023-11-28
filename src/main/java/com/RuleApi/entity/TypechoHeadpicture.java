@@ -45,4 +45,9 @@ public class TypechoHeadpicture implements Serializable {
      * String permission
      ***/
     private String permission;
+
+    /***
+     * Integer creator
+     ***/
+    private Integer creator;
 }
