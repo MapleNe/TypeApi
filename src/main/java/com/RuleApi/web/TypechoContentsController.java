@@ -61,7 +61,7 @@ public class TypechoContentsController {
     private TypechoUserlogService userlogService;
 
     @Autowired
-    private  TypechoHeadpictureService headpictureService;
+    private TypechoHeadpictureService headpictureService;
 
     @Autowired
     private TypechoMetasService metasService;
@@ -251,13 +251,13 @@ public class TypechoContentsController {
                         }
 
                         JSONObject opt = JSONObject.parseObject(author.getOpt());
-                        if (opt instanceof Object){
+                        if (opt instanceof Object) {
                             opt = JSONObject.parseObject(author.getOpt());
                             Integer headId = Integer.parseInt(opt.get("head_picture").toString());
                             // 查询opt中head_picture的数据 并替换
                             TypechoHeadpicture head_picture = headpictureService.selectByKey(headId);
-                            if(head_picture!=null){
-                                opt.put("head_picture",head_picture.getLink().toString());
+                            if (head_picture != null) {
+                                opt.put("head_picture", head_picture.getLink().toString());
                             }
                         }
 
@@ -563,8 +563,8 @@ public class TypechoContentsController {
                                 Integer headId = Integer.parseInt(opt.get("head_picture").toString());
                                 // 查询opt中head_picture的数据 并替换
                                 TypechoHeadpicture head_picture = headpictureService.selectByKey(headId);
-                                if(head_picture!=null){
-                                    opt.put("head_picture",head_picture.getLink().toString());
+                                if (head_picture != null) {
+                                    opt.put("head_picture", head_picture.getLink().toString());
                                 }
 
                             }
@@ -690,6 +690,7 @@ public class TypechoContentsController {
     public String contentsAdd(@RequestParam(value = "params", required = false) String params,
                               @RequestParam(value = "token", required = false) String token,
                               @RequestParam(value = "text", required = false) String text,
+                              @RequestParam(value = "mid", required = false) String mid,
                               @RequestParam(value = "isMd", required = false, defaultValue = "1") Integer isMd,
                               @RequestParam(value = "isSpace", required = false, defaultValue = "0") Integer isSpace,
                               @RequestParam(value = "isDraft", required = false, defaultValue = "0") Integer isDraft,
@@ -770,9 +771,12 @@ public class TypechoContentsController {
 
                 //获取参数中的分类和标签
                 if (jsonToMap.get("category") == null) {
-                    jsonToMap.put("category", "1");
+                    jsonToMap.put("category", "0");
                 }
                 category = jsonToMap.get("category").toString();
+                if (jsonToMap.get("category").toString().isEmpty()) {
+                    category = mid;
+                }
                 if (jsonToMap.get("tag") != null) {
                     tag = jsonToMap.get("tag").toString();
                 }
@@ -896,22 +900,31 @@ public class TypechoContentsController {
 
             if (rows > 0) {
                 if (category.length() > 0) {
-                    Integer result = category.indexOf(",");
-                    if (result != -1) {
+                    if (category.contains(",")) {
+                        // 如果包含逗号，进行拆分处理
                         String[] categoryList = category.split(",");
                         List list = Arrays.asList(baseFull.threeClear(categoryList));
+
                         for (int v = 0; v < list.size(); v++) {
                             TypechoRelationships toCategory = new TypechoRelationships();
                             String id = list.get(v).toString();
                             if (!id.equals("")) {
-                                Integer mid = Integer.parseInt(id);
                                 toCategory.setCid(cid);
-                                toCategory.setMid(mid);
+                                toCategory.setMid(Integer.parseInt(id));
                                 List<TypechoRelationships> cList = relationshipsService.selectList(toCategory);
-                                if (cList.size() == 0) {
+                                if (cList.size() < 1) {
                                     relationshipsService.insert(toCategory);
                                 }
                             }
+                        }
+                    } else {
+                        // 如果不包含逗号，直接处理单一数据
+                        TypechoRelationships toCategory = new TypechoRelationships();
+                        toCategory.setCid(cid);
+                        toCategory.setMid(Integer.parseInt(category));
+                        List<TypechoRelationships> cList = relationshipsService.selectList(toCategory);
+                        if (cList.size() < 1) {
+                            relationshipsService.insert(toCategory);
                         }
                     }
                 }
@@ -924,9 +937,8 @@ public class TypechoContentsController {
                             TypechoRelationships toTag = new TypechoRelationships();
                             String id = list.get(v).toString();
                             if (!id.equals("")) {
-                                Integer mid = Integer.parseInt(id);
                                 toTag.setCid(cid);
-                                toTag.setMid(mid);
+                                toTag.setMid(Integer.parseInt(id));
                                 List<TypechoRelationships> mList = relationshipsService.selectList(toTag);
                                 if (mList.size() == 0) {
                                     relationshipsService.insert(toTag);
@@ -1158,7 +1170,7 @@ public class TypechoContentsController {
                 jsonToMap.remove("likes");
                 jsonToMap.remove("sid");
                 jsonToMap.remove("replyTime");
-                if(!group.equals("administrator") && !group.equals("editor")){
+                if (!group.equals("administrator") && !group.equals("editor")) {
                     jsonToMap.remove("isrecommend");
                     jsonToMap.remove("istop");
                     jsonToMap.remove("isswiper");
