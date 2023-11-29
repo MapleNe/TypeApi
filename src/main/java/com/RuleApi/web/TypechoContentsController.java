@@ -928,9 +928,8 @@ public class TypechoContentsController {
                         }
                     }
                 }
-                if (tag.length() > 0) {
-                    Integer result = tag.indexOf(",");
-                    if (result != -1) {
+                if (!tag.isEmpty()) {
+                    if (tag.contains(",")) {
                         String[] tagList = tag.split(",");
                         List list = Arrays.asList(baseFull.threeClear(tagList));
                         for (int v = 0; v < list.size(); v++) {
@@ -939,15 +938,16 @@ public class TypechoContentsController {
                             if (!id.equals("")) {
                                 toTag.setCid(cid);
                                 toTag.setMid(Integer.parseInt(id));
-                                List<TypechoRelationships> mList = relationshipsService.selectList(toTag);
-                                if (mList.size() == 0) {
-                                    relationshipsService.insert(toTag);
-                                }
+                                relationshipsService.insert(toTag);
                             }
                         }
+                    } else {
+                        TypechoRelationships toTag = new TypechoRelationships();
+                        toTag.setCid(cid);
+                        toTag.setMid(Integer.parseInt(tag));
+                        relationshipsService.insert(toTag);
                     }
                 }
-
 
                 //处理完分类标签后，处理挂载的商品
                 if (isPaid.equals(0)) {
@@ -1066,10 +1066,9 @@ public class TypechoContentsController {
     @ResponseBody
     public String contentsUpdate(@RequestParam(value = "params", required = false) String params,
                                  @RequestParam(value = "token", required = false) String token,
-                                 @RequestParam(value = "text", required = false) String text,
                                  @RequestParam(value = "postStatus", required = false) String postStatus,
                                  @RequestParam(value = "isDraft", required = false, defaultValue = "0") Integer isDraft,
-                                 @RequestParam(value = "isMd", required = false, defaultValue = "1") Integer isMd,
+                                 @RequestParam(value = "mid", required = false, defaultValue = "1") Integer mid,
                                  @RequestParam(value = "isPaid", required = false, defaultValue = "0") Integer isPaid,
                                  @RequestParam(value = "shopPice", required = false) Integer shopPice,
                                  @RequestParam(value = "shopText", required = false) String shopText,
@@ -1092,13 +1091,15 @@ public class TypechoContentsController {
             if (StringUtils.isNotBlank(params)) {
                 TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
                 jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
-                //支持两种模式提交评论内容
-                if (text == null) {
-                    text = jsonToMap.get("text").toString();
+
+                if (jsonToMap.containsKey("text")) {
+                    if (jsonToMap.get("text").toString().isEmpty()) {
+                        return Result.getResultJson(0, "文章内容不能为空", null);
+                    } else {
+
+                    }
                 }
-                if (text.length() < 1) {
-                    return Result.getResultJson(0, "文章内容不能为空", null);
-                }
+
                 //生成typecho数据库格式的修改时间戳
                 Long date = System.currentTimeMillis();
                 String userTime = String.valueOf(date).substring(0, 10);
@@ -1124,37 +1125,36 @@ public class TypechoContentsController {
 
 
                 //获取参数中的分类和标签（暂时不允许定义）
-                if (jsonToMap.get("category") == null) {
-                    jsonToMap.put("category", "0,");
+                if (jsonToMap.containsKey("category")) {
+                    category = jsonToMap.get("category").toString();
+                    if (category.isEmpty()) {
+                        category = mid.toString();
+                    }
+
                 }
-                category = jsonToMap.get("category").toString();
-                if (jsonToMap.get("tag") != null) {
-                    tag = jsonToMap.get("tag").toString();
+
+                if (jsonToMap.containsKey("tag")) {
+                    if (!jsonToMap.get("tag").toString().isEmpty()) {
+                        tag = jsonToMap.get("tag").toString();
+                    }
                 }
-                if (jsonToMap.get("text") == null) {
-                    jsonToMap.put("text", "暂无内容");
-                } else {
-                    //满足typecho的要求，加入markdown申明
-                    //是否开启代码拦截
-                    if (apiconfig.getDisableCode().equals(1)) {
-                        if (baseFull.haveCode(text).equals(1)) {
-                            return Result.getResultJson(0, "你的内容包含敏感代码，请修改后重试！", null);
+
+                if (jsonToMap.containsKey("text")) {
+                    if (jsonToMap.get("text").toString().isEmpty()) {
+                        return Result.getResultJson(0, "内容不可为空", null);
+                    } else {
+                        //满足typecho的要求，加入markdown申明
+                        //是否开启代码拦截
+                        if (apiconfig.getDisableCode().equals(1)) {
+                            if (baseFull.haveCode(jsonToMap.get("text").toString()).equals(1)) {
+                                return Result.getResultJson(0, "你的内容包含敏感代码，请修改后重试！", null);
+                            }
                         }
                     }
+                }
 
 
-                }
-                if (isMd.equals(1)) {
-                    boolean status = text.contains("<!--markdown-->");
-                    if (!status) {
-                        text = "<!--markdown-->" + text;
-
-                    }
-                }
-                if (isMd.equals(1)) {
-                    text = text.replace("||rn||", "\n");
-                }
-                jsonToMap.put("text", text);
+                jsonToMap.put("text", jsonToMap.get("text"));
                 //部分字段不允许定义
                 jsonToMap.remove("authorId");
                 jsonToMap.remove("commentsNum");
@@ -1198,7 +1198,7 @@ public class TypechoContentsController {
                     if (contentAuditlevel.equals(1)) {
 
                         if (!group.equals("administrator") && !group.equals("editor")) {
-                            Integer isForbidden = baseFull.getForbidden(forbidden, text);
+                            Integer isForbidden = baseFull.getForbidden(forbidden, jsonToMap.get("text").toString());
                             if (isForbidden.equals(0)) {
                                 jsonToMap.put("status", "publish");
                             } else {
@@ -1242,39 +1242,54 @@ public class TypechoContentsController {
 
             //文章添加完成后，再处理分类和标签，只有文章能设置标签和分类
             if (rows > 0) {
-                if (category != "") {
-                    Integer result = category.indexOf(",");
-                    if (result != -1) {
+                if (category.length() > 0) {
+                    if (category.contains(",")) {
+                        // 如果包含逗号，进行拆分处理
                         String[] categoryList = category.split(",");
                         List list = Arrays.asList(baseFull.threeClear(categoryList));
+
                         for (int v = 0; v < list.size(); v++) {
                             TypechoRelationships toCategory = new TypechoRelationships();
                             String id = list.get(v).toString();
                             if (!id.equals("")) {
-                                //如果不存在就添加
-                                Integer mid = Integer.parseInt(id);
                                 toCategory.setCid(cid);
-                                toCategory.setMid(mid);
-                                relationshipsService.insert(toCategory);
+                                toCategory.setMid(Integer.parseInt(id));
+                                List<TypechoRelationships> cList = relationshipsService.selectList(toCategory);
+                                if (cList.size() < 1) {
+                                    relationshipsService.insert(toCategory);
+                                }
                             }
+                        }
+                    } else {
+                        // 如果不包含逗号，直接处理单一数据
+                        TypechoRelationships toCategory = new TypechoRelationships();
+                        toCategory.setCid(cid);
+                        toCategory.setMid(Integer.parseInt(category));
+                        List<TypechoRelationships> cList = relationshipsService.selectList(toCategory);
+                        if (cList.size() < 1) {
+                            relationshipsService.insert(toCategory);
                         }
                     }
                 }
-                if (tag != "") {
-                    Integer result = tag.indexOf(",");
-                    if (result != -1) {
+
+                if (!tag.isEmpty()) {
+                    if (tag.contains(",")) {
                         String[] tagList = tag.split(",");
                         List list = Arrays.asList(baseFull.threeClear(tagList));
                         for (int v = 0; v < list.size(); v++) {
                             TypechoRelationships toTag = new TypechoRelationships();
                             String id = list.get(v).toString();
                             if (!id.equals("")) {
-                                Integer mid = Integer.parseInt(id);
                                 toTag.setCid(cid);
-                                toTag.setMid(mid);
+                                toTag.setMid(Integer.parseInt(id));
                                 relationshipsService.insert(toTag);
                             }
                         }
+                    } else {
+                        TypechoRelationships toTag = new TypechoRelationships();
+                        toTag.setCid(cid);
+                        toTag.setMid(Integer.parseInt(tag));
+                        relationshipsService.insert(toTag);
                     }
                 }
 
@@ -1311,8 +1326,6 @@ public class TypechoContentsController {
                 if (!sid.equals(0)) {
                     shop.setId(sid);
                 }
-
-
                 shop.setValue(shopText);
                 shop.setVipDiscount(shopDiscount);
                 shop.setIsView(0);
@@ -1320,7 +1333,6 @@ public class TypechoContentsController {
                 shop.setStatus(1);
                 shop.setPrice(shopPice);
                 shop.setType(4);
-                shop.setIsMd(isMd);
                 shop.setUid(info.getAuthorId());
                 if (sid.equals(0)) {
                     shop.setCid(cid);
