@@ -405,12 +405,15 @@ public class TypechoUserlogController {
                     TypechoUserlog searchParams = new TypechoUserlog();
                     searchParams.setCid(Integer.parseInt(cid));
                     searchParams.setUid(uid);
+                    searchParams.setType("likes");
                     List<TypechoUserlog> isLikes = service.selectList(searchParams);
                     // 如果不为空就取消点赞 并删除对应数据
                     if (isLikes.size()>0) {
                         TypechoContents contensjson = contentsService.selectByKey(cid);
                         Integer likes = contensjson.getLikes();
-                        likes--;
+                        if(likes >0){
+                            likes--;
+                        }
                         TypechoContents toContents = new TypechoContents();
                         toContents.setCid(Integer.parseInt(cid));
                         toContents.setLikes(likes);
