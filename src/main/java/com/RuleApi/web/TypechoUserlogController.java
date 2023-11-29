@@ -512,7 +512,8 @@ public class TypechoUserlogController {
                     log.setCid(cid);
                     List<TypechoUserlog> info = service.selectList(log);
                     if (info.size() > 0) {
-                        return Result.getResultJson(0, "已在你的收藏中！", null);
+                        service.delete(info.get(0).getId());
+                        return Result.getResultJson(0, "已取消收藏！", null);
                     }
                 }
                 //打赏，要扣余额
