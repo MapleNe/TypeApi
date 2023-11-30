@@ -770,13 +770,17 @@ public class TypechoContentsController {
 
 
                 //获取参数中的分类和标签
-                if (jsonToMap.get("category") == null) {
-                    jsonToMap.put("category", "0");
+                if (jsonToMap.containsKey("category")) {
+                    if (jsonToMap.get("category").toString().isEmpty()) {
+                        category = "1";
+                    } else {
+                        category = jsonToMap.get("category").toString();
+                    }
+                } else {
+                    return Result.getResultJson(0, "分类不可为空", null);
                 }
-                category = jsonToMap.get("category").toString();
-                if (jsonToMap.get("category").toString().isEmpty()) {
-                    category = mid;
-                }
+
+
                 if (jsonToMap.get("tag") != null) {
                     tag = jsonToMap.get("tag").toString();
                 }

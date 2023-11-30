@@ -374,8 +374,8 @@ public class TypechoUsersController {
                     Integer headId = Integer.parseInt(opt.get("head_picture").toString());
                     // 查询opt中head_picture的数据 并替换
                     TypechoHeadpicture head_picture = headpictureService.selectByKey(headId);
-                    if(head_picture!=null){
-                        opt.put("head_picture",head_picture.getLink().toString());
+                    if (head_picture != null) {
+                        opt.put("head_picture", head_picture.getLink().toString());
                     }
                 } else {
                     opt = null;
@@ -2352,6 +2352,7 @@ public class TypechoUsersController {
     @ResponseBody
     public String inbox(@RequestParam(value = "token", required = false) String token,
                         @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                        @RequestParam(value = "type", required = false, defaultValue = "1") String type,
                         @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit) {
         if (limit > 50) {
             limit = 50;
@@ -2375,7 +2376,9 @@ public class TypechoUsersController {
 
 
                 TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-
+                if (!type.isEmpty()) {
+                    query.setType(type);
+                }
                 PageList<TypechoInbox> pageList = inboxService.selectPage(query, page, limit);
                 List<TypechoInbox> list = pageList.getList();
                 if (list.size() < 1) {
@@ -2453,10 +2456,29 @@ public class TypechoUsersController {
         query.setTouid(uid);
         query.setIsread(0);
         Integer total = inboxService.total(query);
+        // 获取评论消息的数量
+        query.setType("comment");
+        Integer comments = inboxService.total(query);
+
+        // 获取系统消息的数量
+        query.setType("system");
+        Integer systems = inboxService.total(query);
+
+        // 获取财务的消息数量
+
+        query.setType("finance");
+        Integer finances = inboxService.total(query);
+
+        JSONObject data = new JSONObject();
+        data.put("total", total);
+        data.put("comments", comments);
+        data.put("systems", systems);
+        data.put("finances", finances);
+
         JSONObject response = new JSONObject();
         response.put("code", 1);
         response.put("msg", "");
-        response.put("data", total);
+        response.put("data", data);
         return response.toString();
     }
 
@@ -2583,7 +2605,7 @@ public class TypechoUsersController {
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             Integer uid = Integer.parseInt(map.get("uid").toString());
 
-            System.out.println(uid+"草"+touid);
+            System.out.println(uid + "草" + touid);
             if (uid.equals(touid)) {
                 return Result.getResultJson(0, "你不可以关注自己", null);
             }
