@@ -94,7 +94,7 @@
             <if test ='null != value'>`value` = #{value},</if>
             <if test ='null != created'>`value` = #{created}</if>
         </set>
-        WHERE `id` = #{id}
+        WHERE `type` = #{type} AND `touid` = #{touid}
     </update>
 
     <!-- 删除 -->

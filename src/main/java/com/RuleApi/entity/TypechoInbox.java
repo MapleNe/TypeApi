@@ -40,7 +40,7 @@ public class TypechoInbox implements Serializable {
     private Integer touid;
 
     /**
-     * isread  是否已读，0已读，1未读
+     * isread  是否已读，1已读，0未读
      */
     private Integer isread;
 

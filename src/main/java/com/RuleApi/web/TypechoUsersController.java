@@ -2488,7 +2488,8 @@ public class TypechoUsersController {
      */
     @RequestMapping(value = "/setRead")
     @ResponseBody
-    public String setRead(@RequestParam(value = "token", required = false) String token) {
+    public String setRead(@RequestParam(value = "token", required = false) String token,
+                          @RequestParam(value = "type", required = false) String type) {
         TypechoInbox query = new TypechoInbox();
         try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
@@ -2498,9 +2499,14 @@ public class TypechoUsersController {
 
             Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             Integer uid = Integer.parseInt(map.get("uid").toString());
+            if (!type.isEmpty() && type != "") {
+                jdbcTemplate.execute("UPDATE " + this.prefix + "_inbox SET isread = 1 WHERE touid = " + uid + " AND type = '" + type + "';");
+            } else {
+                jdbcTemplate.execute("UPDATE " + this.prefix + "_inbox SET isread = 1 WHERE touid = " + uid + ";");
+            }
 
-            jdbcTemplate.execute("UPDATE " + this.prefix + "_inbox SET isread = 1 WHERE touid=" + uid + ";");
-            return Result.getResultJson(1, "操作成功", null);
+            Integer code =  inboxService.update(query);
+            return Result.getResultJson(code, "操作成功", null);
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(0, "操作失败", null);
