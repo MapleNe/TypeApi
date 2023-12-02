@@ -393,7 +393,7 @@ public class TypechoMetasController {
                         Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
                         Object optObject = json.get("opt");
 
-                        if (optObject != null && !optObject.toString().isEmpty()) {
+                        if (optObject != null && !optObject.toString().isEmpty() &&optObject.toString()!="") {
                             JSONObject opt = JSONObject.parseObject(optObject.toString());
                             json.put("opt", opt);
                         }
