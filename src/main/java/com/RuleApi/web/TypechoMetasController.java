@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.RuleApi.entity.*;
 import com.RuleApi.service.*;
+import netscape.javascript.JSObject;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Comparator;
@@ -317,7 +318,7 @@ public class TypechoMetasController {
                                     Map<Object, Long> map = (Map<Object, Long>) o;
                                     return ((Number) map.getOrDefault("created", 0L)).longValue();
 
-                                }) .thenComparingInt(o -> {
+                                }).thenComparingInt(o -> {
                                     Map<Object, Integer> map = (Map<Object, Integer>) o;
                                     return ((Number) map.getOrDefault("views", 0)).intValue();
                                 })
@@ -376,14 +377,29 @@ public class TypechoMetasController {
                 jsonList = cacheList;
             } else {
                 PageList<TypechoMetas> pageList = service.selectPage(query, page, limit, searchKey, order);
-                jsonList = pageList.getList();
-                if (jsonList.size() < 1) {
+                List<TypechoMetas> list = pageList.getList();
+
+
+                if (list.size() < 1) {
                     JSONObject noData = new JSONObject();
                     noData.put("code", 1);
                     noData.put("msg", "");
                     noData.put("data", new ArrayList());
                     noData.put("count", 0);
                     return noData.toString();
+                } else {
+                    for (int i = 0; i < list.size(); i++) {
+
+                        Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
+                        Object optObject = json.get("opt");
+
+                        if (optObject != null && !optObject.toString().isEmpty()) {
+                            JSONObject opt = JSONObject.parseObject(optObject.toString());
+                            json.put("opt", opt);
+                        }
+                        // 根据具体需求决定是否将 json 添加到 jsonList
+                         jsonList.add(json);
+                    }
                 }
                 redisHelp.delete(this.dataprefix + "_" + "metasList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams, redisTemplate);
                 redisHelp.setList(this.dataprefix + "_" + "metasList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams, jsonList, 10, redisTemplate);
