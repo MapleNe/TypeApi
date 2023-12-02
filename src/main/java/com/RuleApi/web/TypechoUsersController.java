@@ -2504,9 +2504,7 @@ public class TypechoUsersController {
             } else {
                 jdbcTemplate.execute("UPDATE " + this.prefix + "_inbox SET isread = 1 WHERE touid = " + uid + ";");
             }
-
-            Integer code =  inboxService.update(query);
-            return Result.getResultJson(code, "操作成功", null);
+            return Result.getResultJson(1, "操作成功", null);
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(0, "操作失败", null);

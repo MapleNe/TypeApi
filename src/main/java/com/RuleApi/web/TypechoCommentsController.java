@@ -187,7 +187,7 @@ public class TypechoCommentsController {
                     TypechoComments selectParams = new TypechoComments();
                     selectParams.setAllparent(comments.getCoid());
                     selectParams.setStatus("approved");
-                    PageList<TypechoComments> pList = service.selectPage(selectParams, page, limit, searchKey, order);
+                    PageList<TypechoComments> pList = service.selectPage(selectParams, page, limit, searchKey, "created desc");
                     List<TypechoComments> commentsList = pList.getList();
                     Integer count = service.total(selectParams,searchKey);
 
