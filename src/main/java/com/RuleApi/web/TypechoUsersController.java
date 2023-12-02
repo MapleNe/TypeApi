@@ -2352,7 +2352,7 @@ public class TypechoUsersController {
     @ResponseBody
     public String inbox(@RequestParam(value = "token", required = false) String token,
                         @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                        @RequestParam(value = "type", required = false, defaultValue = "1") String type,
+                        @RequestParam(value = "type", required = false) String type,
                         @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit) {
         if (limit > 50) {
             limit = 50;
@@ -2370,64 +2370,53 @@ public class TypechoUsersController {
         query.setTouid(uid);
         Integer total = inboxService.total(query);
         try {
-            if (cacheList.size() > 0) {
-                jsonList = cacheList;
-            } else {
-
-
-                TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-                if (!type.isEmpty()) {
-                    query.setType(type);
-                }
-                PageList<TypechoInbox> pageList = inboxService.selectPage(query, page, limit);
-                List<TypechoInbox> list = pageList.getList();
-                if (list.size() < 1) {
-                    JSONObject noData = new JSONObject();
-                    noData.put("code", 1);
-                    noData.put("msg", "");
-                    noData.put("data", new ArrayList());
-                    noData.put("count", 0);
-                    noData.put("total", total);
-                    return noData.toString();
-                }
-                for (int i = 0; i < list.size(); i++) {
-                    Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
-                    TypechoInbox inbox = list.get(i);
-                    Integer userid = inbox.getUid();
-                    //获取用户信息
-                    Map userJson = UserStatus.getUserInfo(userid, apiconfigService, service);
-                    //获取用户等级
-                    TypechoComments comments = new TypechoComments();
-                    comments.setAuthorId(userid);
-                    Integer lv = commentsService.total(comments, null);
-                    userJson.put("lv", baseFull.getLv(lv));
-                    json.put("userJson", userJson);
-                    if (inbox.getType().equals("comment")) {
-                        TypechoContents contentsInfo = contentsService.selectByKey(inbox.getValue());
-                        if (contentsInfo != null) {
-                            json.put("contenTitle", contentsInfo.getTitle());
-                            //加入文章数据
-                            Map contentsJson = new HashMap();
-                            contentsJson.put("cid", contentsInfo.getCid());
-                            contentsJson.put("slug", contentsInfo.getSlug());
-                            contentsJson.put("title", contentsInfo.getTitle());
-                            contentsJson.put("type", contentsInfo.getType());
-                            json.put("contentsInfo", contentsJson);
-                        } else {
-                            json.put("contenTitle", "文章已删除");
-                        }
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+            if (!type.isEmpty()) {
+                query.setType(type);
+            }
+            PageList<TypechoInbox> pageList = inboxService.selectPage(query, page, limit);
+            List<TypechoInbox> list = pageList.getList();
+            if (list.size() < 1) {
+                JSONObject noData = new JSONObject();
+                noData.put("code", 1);
+                noData.put("msg", "");
+                noData.put("data", new ArrayList());
+                noData.put("count", 0);
+                noData.put("total", total);
+                return noData.toString();
+            }
+            for (int i = 0; i < list.size(); i++) {
+                Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
+                TypechoInbox inbox = list.get(i);
+                Integer userid = inbox.getUid();
+                //获取用户信息
+                Map userJson = UserStatus.getUserInfo(userid, apiconfigService, service);
+                //获取用户等级
+                TypechoComments comments = new TypechoComments();
+                comments.setAuthorId(userid);
+                Integer lv = commentsService.total(comments, null);
+                userJson.put("lv", baseFull.getLv(lv));
+                json.put("userJson", userJson);
+                if (inbox.getType().equals("comment")) {
+                    TypechoContents contentsInfo = contentsService.selectByKey(inbox.getValue());
+                    if (contentsInfo != null) {
+                        json.put("contenTitle", contentsInfo.getTitle());
+                        //加入文章数据
+                        Map contentsJson = new HashMap();
+                        contentsJson.put("cid", contentsInfo.getCid());
+                        contentsJson.put("slug", contentsInfo.getSlug());
+                        contentsJson.put("title", contentsInfo.getTitle());
+                        contentsJson.put("type", contentsInfo.getType());
+                        json.put("contentsInfo", contentsJson);
+                    } else {
+                        json.put("contenTitle", "文章已删除");
                     }
-
-                    jsonList.add(json);
                 }
-                redisHelp.delete(this.dataprefix + "_" + "inbox_" + page + "_" + limit + "_" + uid, redisTemplate);
-                redisHelp.setList(this.dataprefix + "_" + "inbox_" + page + "_" + limit + "_" + uid, jsonList, 3, redisTemplate);
+
+                jsonList.add(json);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            if (cacheList.size() > 0) {
-                jsonList = cacheList;
-            }
         }
         JSONObject response = new JSONObject();
         response.put("code", 1);
