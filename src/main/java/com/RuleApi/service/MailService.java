@@ -2,7 +2,7 @@ package com.RuleApi.service;
 
 import javax.mail.MessagingException;
 
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.mail.javamail.MimeMessageHelper; 
 
 public interface MailService {
 
