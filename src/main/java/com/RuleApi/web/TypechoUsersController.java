@@ -325,11 +325,14 @@ public class TypechoUsersController {
                 } else {
                     json.put("systemBan", 0);
                 }
+                // 获取用户等级
+                Integer level = baseFull.getLevel(user.getExperience());
                 json.put("contentsNum", contentsNum);
                 json.put("commentsNum", commentsNum);
                 json.put("assets", assets);
                 json.put("created", created);
                 json.put("experience", experience);
+                json.put("level", level);
                 json.put("isClock", isClock);
                 json.put("fanNum", fanNum);
                 json.put("followNum", followNum);
@@ -381,14 +384,15 @@ public class TypechoUsersController {
                     opt = null;
                 }
                 json.put("opt", opt);
-                //获取用户等级
-
+                //获取用户评论等级
                 Integer uid = Integer.parseInt(key);
-
                 TypechoComments comments = new TypechoComments();
                 comments.setAuthorId(uid);
                 Integer lv = commentsService.total(comments, null);
-                json.put("lv", baseFull.getLv(lv));
+                json.put("commentLv", baseFull.getLv(lv));
+                // 获取用户等级
+                Integer level = baseFull.getLevel(info.getExperience());
+                json.put("level", level);
                 //判断是否为VIP
                 json.put("isvip", 0);
                 Long date = System.currentTimeMillis();

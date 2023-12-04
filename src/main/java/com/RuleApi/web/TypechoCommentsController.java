@@ -163,14 +163,19 @@ public class TypechoCommentsController {
                     }
 
                     //如果存在上级评论
-                    Map<String, String> parentComments = new HashMap<String, String>();
+                    Map<String, Object> parentComments = new HashMap<String, Object>();
                     if (Integer.parseInt(json.get("parent").toString()) > 0) {
                         String coid = json.get("parent").toString();
                         TypechoComments parent = service.selectByKey(coid);
                         if (parent != null) {
                             if (parent.getStatus().equals("approved")) {
+                                // 获取用户等级
+                                TypechoUsers userInfo = usersService.selectByKey(parent.getAuthorId());
+                                Integer level = baseFull.getLevel(userInfo.getExperience());
                                 parentComments.put("author", parent.getAuthor());
                                 parentComments.put("authorId", parent.getAuthorId().toString());
+                                parentComments.put("level",level);
+                                parentComments.put("experience",userInfo.getExperience());
                                 parentComments.put("text", parent.getText());
                                 parentComments.put("created", JSONObject.toJSONString(parent.getCreated()));
 
@@ -183,7 +188,7 @@ public class TypechoCommentsController {
 
                     }
 
-                    List<Map<String, String>> sonCommentsList = new ArrayList<>();
+                    List<Map<String, Object>> sonCommentsList = new ArrayList<>();
                     TypechoComments selectParams = new TypechoComments();
                     selectParams.setAllparent(comments.getCoid());
                     selectParams.setStatus("approved");
@@ -194,12 +199,15 @@ public class TypechoCommentsController {
                     if (commentsList.size() > 0) {
                         for (int s = 0; s < commentsList.size(); s++) {
                             TypechoComments comment = commentsList.get(s);
-                            Map<String, String> sonComment = new HashMap<>();
+                            Map<String, Object> sonComment = new HashMap<>();
                             TypechoUsers userInfo = new TypechoUsers();
                             userInfo = usersService.selectByKey(comment.getAuthorId());
+                            // 获取用户等级
+                            Integer level = baseFull.getLevel(userInfo.getExperience());
                             sonComment.put("author", comment.getAuthor());
                             sonComment.put("authorId", String.valueOf(comment.getAuthorId()));
                             sonComment.put("avatar",userInfo.getAvatar());
+                            sonComment.put("level",level);
                             sonComment.put("text", comment.getText());
                             sonComment.put("created", String.valueOf(comment.getCreated()));
                             sonCommentsList.add(sonComment);
@@ -266,6 +274,8 @@ public class TypechoCommentsController {
                                 }
 
                             }
+                            // 获取用户等级
+                            Integer level = baseFull.getLevel(userinfo.getExperience());
                             json.put("avatar", avatar);
                             json.put("author", name);
                             json.put("opt", opt);
@@ -273,6 +283,7 @@ public class TypechoCommentsController {
                             json.put("mail", userinfo.getMail());
                             json.put("lv", baseFull.getLv(lv));
                             json.put("customize", userinfo.getCustomize());
+                            json.put("level",level);
                             json.put("experience", userinfo.getExperience());
                             //判断是否为VIP
                             json.put("isvip", 0);

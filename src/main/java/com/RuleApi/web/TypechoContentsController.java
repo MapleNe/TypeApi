@@ -260,11 +260,13 @@ public class TypechoContentsController {
                                 opt.put("head_picture", head_picture.getLink().toString());
                             }
                         }
-
+                        // 获取用户等级
+                        Integer level = baseFull.getLevel(author.getExperience());
                         authorInfo.put("name", name);
                         authorInfo.put("avatar", avatar);
                         authorInfo.put("customize", author.getCustomize());
                         authorInfo.put("opt", opt);
+                        authorInfo.put("level", level);
                         authorInfo.put("experience", author.getExperience());
                         authorInfo.put("introduce", author.getIntroduce());
                         //判断是否为VIP
@@ -568,11 +570,13 @@ public class TypechoContentsController {
                                 }
 
                             }
-
+                            // 获取用户等级
+                            Integer level = baseFull.getLevel(author.getExperience());
                             authorInfo.put("name", name);
                             authorInfo.put("avatar", avatar);
                             authorInfo.put("customize", author.getCustomize());
                             authorInfo.put("opt", opt);
+                            authorInfo.put("level",level);
                             authorInfo.put("experience", author.getExperience());
                             authorInfo.put("isfollow", isfollow);
                             authorInfo.put("introduce", author.getIntroduce());

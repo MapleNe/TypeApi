@@ -292,4 +292,22 @@ public class baseFull {
         return  isForbidden;
     }
 
+    // 计算等级
+    public Integer getLevel(Integer exp) {
+        Integer level = 1;
+
+        if (exp != null && exp > 0) {
+            int[] expRequirements = {300, 700, 7000, 19000, 37000, 61000, 91000, 127000, 169000, 217000, 271000, 331000, 397000, 469000, 547000, 631000};
+
+            for (int i = 0; i < expRequirements.length; i++) {
+                if (exp >= expRequirements[i]) {
+                    level = i + 1;
+                } else {
+                    break;
+                }
+            }
+        }
+        return level;
+    }
+
 }
