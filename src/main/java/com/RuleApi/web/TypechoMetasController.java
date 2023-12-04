@@ -6,7 +6,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.RuleApi.entity.*;
 import com.RuleApi.service.*;
-import netscape.javascript.JSObject;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Comparator;
