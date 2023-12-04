@@ -54,6 +54,7 @@ public class MailServiceImpl implements MailService{
             String fileName;
             //循环处理邮件的附件
             for (String attachmentFilePath : attachmentFilePaths) {
+
                 //获取该路径所对应的文件资源对象
                 resource = new FileSystemResource(new File(attachmentFilePath));
                 //判断该资源是否存在，当不存在时仅仅会打印一条警告日志，不会中断处理程序。
