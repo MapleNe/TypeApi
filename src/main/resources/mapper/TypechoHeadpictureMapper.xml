@@ -7,6 +7,7 @@
         <result column="id" property="id" />
         <result column="name" property="name" />
         <result column="link" property="link" />
+        <result column="type" property="type" />
         <result column="status" property="status" />
         <result column="permission" property="permission" />
     </resultMap>
@@ -15,13 +16,14 @@
         `id`,
         `name`,
         `link`,
+        `type`,
         `status`,
         `permission`,
         `creator`
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.RuleApi.entity.TypechoHeadpicture">
+    <insert id="insert" parameterType="com.RuleApi.entity.TypechoHeadpicture" keyProperty="id" useGeneratedKeys="true">
         INSERT INTO ${prefix}_headpicture
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != id'>
@@ -32,6 +34,9 @@
             </if>
             <if test ='null != link'>
                 `link`,
+            </if>
+            <if test ='null != type'>
+                `type`,
             </if>
             <if test ='null != status'>
                 `status`,
@@ -53,6 +58,9 @@
             <if test ='null != link'>
                 #{link},
             </if>
+            <if test ='null != type'>
+                #{type},
+            </if>
             <if test ='null != status'>
                 #{status},
             </if>
@@ -73,6 +81,7 @@
             #{curr.id},
             #{curr.name},
             #{curr.link},
+            #{curr.type},
             #{curr.status},
             #{curr.permission},
             #{curr.creator}
@@ -86,7 +95,8 @@
         <set>
             <if test ='null != name'>`name` = #{name},</if>
             <if test ='null != slug'>`link` = #{link},</if>
-            <if test ='null != type'>`status` = #{status},</if>
+            <if test ='null != type'>`type` = #{type},</if>
+            <if test ='null != status'>`status` = #{status},</if>
             <if test ='null != description'>`permission` = #{permission},</if>
             <if test ='null != creator'>`creator` = #{creator}</if>
         </set>
@@ -135,6 +145,9 @@
             <if test ='null != link'>
                 and `link` = #{link}
             </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
             <if test ='null != status'>
                 and `status` = #{status}
             </if>
@@ -160,6 +173,9 @@
             </if>
             <if test ='null != TypechoHeadpicture.link'>
                 and `link` = #{TypechoHeadpicture.link}
+            </if>
+            <if test ='null != TypechoHeadpicture.type'>
+                and `type` = #{TypechoHeadpicture.type}
             </if>
             <if test ='null != TypechoHeadpicture.status'>
                 and `status` = #{TypechoHeadpicture.status}
@@ -192,6 +208,9 @@
             </if>
             <if test ='null != link'>
                 and `link` = #{link}
+            </if>
+            <if test ='null != link'>
+                and `type` = #{type}
             </if>
             <if test ='null != status'>
                 and `status` = #{status}

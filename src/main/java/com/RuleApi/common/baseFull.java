@@ -293,8 +293,10 @@ public class baseFull {
     }
 
     // 计算等级
-    public Integer getLevel(Integer exp) {
+    public List<Integer> getLevel(Integer exp) {
+        List<Integer> result = new ArrayList<>();
         Integer level = 1;
+        Integer nextExp = 999999; // 默认值，表示没有下一个等级
 
         if (exp != null && exp > 0) {
             int[] expRequirements = {300, 700, 7000, 19000, 37000, 61000, 91000, 127000, 169000, 217000, 271000, 331000, 397000, 469000, 547000, 631000};
@@ -306,8 +308,12 @@ public class baseFull {
                     break;
                 }
             }
+            if (level-1 < expRequirements.length) {
+                nextExp = expRequirements[level-1];
+            }
         }
-        return level;
+        result.add(level);
+        result.add(nextExp);
+        return result;
     }
-
 }

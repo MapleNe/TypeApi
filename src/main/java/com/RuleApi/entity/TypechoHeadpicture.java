@@ -37,7 +37,7 @@ public class TypechoHeadpicture implements Serializable {
     private Integer Status;
 
     /***
-     * Integer Status
+     * Integer type
      ***/
     private Integer type;
 

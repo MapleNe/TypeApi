@@ -261,12 +261,15 @@ public class TypechoContentsController {
                             }
                         }
                         // 获取用户等级
-                        Integer level = baseFull.getLevel(author.getExperience());
+                        List<Integer> levelAndExp = baseFull.getLevel(author.getExperience());
+                        Integer level = levelAndExp.get(0);
+                        Integer nextExp = levelAndExp.get(1);
                         authorInfo.put("name", name);
                         authorInfo.put("avatar", avatar);
                         authorInfo.put("customize", author.getCustomize());
                         authorInfo.put("opt", opt);
                         authorInfo.put("level", level);
+                        authorInfo.put("nextExp",nextExp);
                         authorInfo.put("experience", author.getExperience());
                         authorInfo.put("introduce", author.getIntroduce());
                         //判断是否为VIP
@@ -571,12 +574,16 @@ public class TypechoContentsController {
 
                             }
                             // 获取用户等级
-                            Integer level = baseFull.getLevel(author.getExperience());
+                            List<Integer> levelAndExp = baseFull.getLevel(author.getExperience());
+                            Integer level = levelAndExp.get(0);
+                            Integer nextExp = levelAndExp.get(1);
+
                             authorInfo.put("name", name);
                             authorInfo.put("avatar", avatar);
                             authorInfo.put("customize", author.getCustomize());
                             authorInfo.put("opt", opt);
                             authorInfo.put("level",level);
+                            authorInfo.put("nextExp",nextExp);
                             authorInfo.put("experience", author.getExperience());
                             authorInfo.put("isfollow", isfollow);
                             authorInfo.put("introduce", author.getIntroduce());

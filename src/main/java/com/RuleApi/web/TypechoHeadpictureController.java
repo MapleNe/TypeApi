@@ -2,9 +2,11 @@ package com.RuleApi.web;
 
 import com.RuleApi.common.*;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.RuleApi.entity.*;
 import com.RuleApi.service.*;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -81,7 +83,22 @@ public class TypechoHeadpictureController {
 
             insert.setCreator(Integer.parseInt(userInfo.get("uid").toString()));
 
-            int code = service.insert(insert);
+            insert = JSON.parseObject(JSON.toJSONString(insert), TypechoHeadpicture.class);
+            Integer code = service.insert(insert);
+            // 给用户添加头像框ID
+            Integer id = insert.getId();
+            if (id != 0 && id != null) {
+                JSONArray headList = new JSONArray();
+                TypechoUsers user = usersService.selectByKey(userInfo.get("uid"));
+                if (user != null) {
+                    if (user.getHead_picture() != null && !user.getHead_picture().isEmpty()) {
+                        headList = JSONArray.parseArray(user.getHead_picture());
+                    }
+                }
+                headList.add(id);
+                user.setHead_picture(headList.toString());
+                usersService.update(user);
+            }
 
             return Result.getResultJson(code, code > 0 ? "添加成功" : "添加失败", null);
 
@@ -92,6 +109,80 @@ public class TypechoHeadpictureController {
             return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
         }
     }
+
+
+    /***
+     * 获取头像框
+     */
+
+    @RequestMapping(value = "/headList")
+    @ResponseBody
+    public String headpictureList(
+            @RequestParam(value = "searchParams", required = false) String searchParams,
+            @RequestParam(value = "uid", required = false) Integer uid,
+            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+            @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
+            @RequestParam(value = "order", required = false, defaultValue = "permission desc") String order,
+            @RequestParam(value = "token", required = false, defaultValue = "permission desc") String token
+    ) {
+        // 限制 limit 的范围
+        limit = (limit > 50) ? 50 : limit;
+
+        Integer total = 0;
+        List<Map<String, Object>> jsonList = new ArrayList<>();
+
+        if (StringUtils.isNotBlank(searchParams)) {
+            JSONObject object = JSON.parseObject(searchParams);
+            TypechoHeadpicture query = new TypechoHeadpicture();
+            query.setStatus(object.getInteger("status"));
+            query.setType(object.getInteger("type"));
+            // 如果传入了token就查自己的头像框
+            if(!token.isEmpty() && token!=null){
+                Map<Object, Object> userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+                if(!userInfo.isEmpty() && userInfo!=null){
+                    query.setId(Integer.parseInt(userInfo.get("uid").toString()));
+                }
+            }
+            total = service.total(query);
+            PageList<TypechoHeadpicture> Pagelist = service.selectPage(query, page, limit, order);
+            List<TypechoHeadpicture> list = Pagelist.getList();
+
+            for (TypechoHeadpicture headpicture : list) {
+                Map<String, Object> json = new HashMap<>();
+                json.put("id", headpicture.getId());
+                json.put("name", headpicture.getName());
+                json.put("link", headpicture.getLink());
+                json.put("type", headpicture.getType());
+                json.put("permission", headpicture.getPermission());
+                // 添加其他属性...
+
+                // 获取用户拥有的头像框
+                Integer isActive = 0;
+                if (uid != null) {
+                    TypechoUsers userInfo = usersService.selectByKey(uid);
+                    if (userInfo != null && StringUtils.isNotBlank(userInfo.getHead_picture())) {
+                        List<String> headList = JSONArray.parseArray(userInfo.getHead_picture(), String.class);
+                        if (headList.contains(headpicture.getId().toString())) {
+                            isActive = 1;
+                        }
+                    }
+                }
+
+                json.put("isActive", isActive);
+                jsonList.add(json);
+            }
+        }
+
+        JSONObject response = new JSONObject();
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", jsonList);
+        response.put("count", jsonList.size());
+        response.put("total", total);
+        return response.toString();
+    }
+
+
 
     // 检查用户权限
     private boolean hasPermission(Map<Object, Object> userInfo) {
@@ -105,13 +196,14 @@ public class TypechoHeadpictureController {
 
     // 处理头像信息
     private TypechoHeadpicture handleHeadPicture(String params, Map<Object, Object> userInfo) {
-        Map<String, Object> jsonInfo = JSONObject.parseObject(JSON.parseObject(params).toString());
-
+        Map<String, Object> jsonInfo = JSONObject.parseObject(params);
         // 如果不是 Administrator 或者 editor，只能为私人，不能公开
+
         if (!isAdministratorOrEditor(userInfo)) {
             jsonInfo.put("type", 0);
             jsonInfo.put("permission", 0);
         }
+        System.out.println("打印权限"+jsonInfo);
 
         // 检查 name 和 link 是否为空
         if (isNullOrEmpty(jsonInfo.get("name")) || isNullOrEmpty(jsonInfo.get("link"))) {
@@ -125,8 +217,14 @@ public class TypechoHeadpictureController {
 
     // 检查是否是 Administrator 或者 editor
     private boolean isAdministratorOrEditor(Map<Object, Object> userInfo) {
-        String permission = userInfo.get("group").toString();
-        return permission.equals("administrator") || permission.equals("editor");
+        Object groupValue = userInfo.get("group");
+        if (groupValue != null) {
+            String permission = groupValue.toString();
+            return permission.equals("administrator") || permission.equals("editor");
+        } else {
+            // 处理空值的情况，这里可以根据实际需求做相应的处理，例如返回false或抛出异常。
+            return false;
+        }
     }
 
     // 检查字符串是否为 null 或为空
