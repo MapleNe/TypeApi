@@ -87,7 +87,7 @@ public class TypechoHeadpictureController {
             Integer code = service.insert(insert);
             // 给用户添加头像框ID
             Integer id = insert.getId();
-            Map <String, Object> result = new HashMap();
+            Map<String, Object> result = new HashMap();
             if (id != 0 && id != null) {
                 JSONArray headList = new JSONArray();
                 TypechoUsers user = usersService.selectByKey(userInfo.get("uid"));
@@ -96,7 +96,7 @@ public class TypechoHeadpictureController {
                         headList = JSONArray.parseArray(user.getHead_picture());
                     }
                 }
-                result.put("id",id);
+                result.put("id", id);
                 headList.add(id);
                 user.setHead_picture(headList.toString());
                 usersService.update(user);
@@ -121,11 +121,10 @@ public class TypechoHeadpictureController {
     @ResponseBody
     public String headpictureList(
             @RequestParam(value = "searchParams", required = false) String searchParams,
-            @RequestParam(value = "uid", required = false) Integer uid,
             @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
             @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
             @RequestParam(value = "order", required = false, defaultValue = "permission desc") String order,
-            @RequestParam(value = "token", required = false, defaultValue = "permission desc") String token
+            @RequestParam(value = "token", required = false) String token
     ) {
         // 限制 limit 的范围
         limit = (limit > 50) ? 50 : limit;
@@ -139,9 +138,9 @@ public class TypechoHeadpictureController {
             query.setStatus(object.getInteger("status"));
             query.setType(object.getInteger("type"));
             // 如果传入了token就查自己的头像框
-            if(!token.isEmpty() && token!=null){
+            if (!token.isEmpty() && token != null) {
                 Map<Object, Object> userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-                if(!userInfo.isEmpty() && userInfo!=null){
+                if (!userInfo.isEmpty() && userInfo != null) {
                     query.setId(Integer.parseInt(userInfo.get("uid").toString()));
                 }
             }
@@ -157,15 +156,17 @@ public class TypechoHeadpictureController {
                 json.put("type", headpicture.getType());
                 json.put("permission", headpicture.getPermission());
                 // 添加其他属性...
-
-                // 获取用户拥有的头像框
                 Integer isActive = 0;
-                if (uid != null) {
-                    TypechoUsers userInfo = usersService.selectByKey(uid);
-                    if (userInfo != null && StringUtils.isNotBlank(userInfo.getHead_picture())) {
-                        List<String> headList = JSONArray.parseArray(userInfo.getHead_picture(), String.class);
-                        if (headList.contains(headpicture.getId().toString())) {
-                            isActive = 1;
+                if (!token.isEmpty() && token != null) {
+                    Map<Object, Object> user = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+                    if (user.get("uid") != null) {
+                        // 获取用户拥有的头像框
+                        TypechoUsers userInfo = usersService.selectByKey(user.get("uid"));
+                        if (userInfo != null && StringUtils.isNotBlank(userInfo.getHead_picture())) {
+                            List<String> headList = JSONArray.parseArray(userInfo.getHead_picture(), String.class);
+                            if (headList.contains(headpicture.getId().toString())) {
+                                isActive = 1;
+                            }
                         }
                     }
                 }
@@ -183,7 +184,6 @@ public class TypechoHeadpictureController {
         response.put("total", total);
         return response.toString();
     }
-
 
 
     // 检查用户权限
