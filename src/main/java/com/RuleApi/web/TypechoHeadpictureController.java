@@ -142,7 +142,7 @@ public class TypechoHeadpictureController {
             if (!token.isEmpty() && token != null &&self) {
                 Map<Object, Object> userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
                 if (!userInfo.isEmpty() && userInfo != null) {
-                    query.setId(Integer.parseInt(userInfo.get("uid").toString()));
+                    query.setCreator(Integer.parseInt(userInfo.get("uid").toString()));
                 }
             }
             total = service.total(query);
