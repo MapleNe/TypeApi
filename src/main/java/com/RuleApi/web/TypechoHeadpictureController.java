@@ -87,6 +87,7 @@ public class TypechoHeadpictureController {
             Integer code = service.insert(insert);
             // 给用户添加头像框ID
             Integer id = insert.getId();
+            Map <String, Object> result = new HashMap();
             if (id != 0 && id != null) {
                 JSONArray headList = new JSONArray();
                 TypechoUsers user = usersService.selectByKey(userInfo.get("uid"));
@@ -95,12 +96,13 @@ public class TypechoHeadpictureController {
                         headList = JSONArray.parseArray(user.getHead_picture());
                     }
                 }
+                result.put("id",id);
                 headList.add(id);
                 user.setHead_picture(headList.toString());
                 usersService.update(user);
             }
 
-            return Result.getResultJson(code, code > 0 ? "添加成功" : "添加失败", null);
+            return Result.getResultJson(code, code > 0 ? "添加成功" : "添加失败", result);
 
         } catch (NumberFormatException e) {
             return Result.getResultJson(0, "数字格式异常：" + e.getMessage(), null);
@@ -203,7 +205,6 @@ public class TypechoHeadpictureController {
             jsonInfo.put("type", 0);
             jsonInfo.put("permission", 0);
         }
-        System.out.println("打印权限"+jsonInfo);
 
         // 检查 name 和 link 是否为空
         if (isNullOrEmpty(jsonInfo.get("name")) || isNullOrEmpty(jsonInfo.get("link"))) {
