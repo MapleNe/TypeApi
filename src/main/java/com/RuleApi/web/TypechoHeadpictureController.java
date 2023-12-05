@@ -124,7 +124,8 @@ public class TypechoHeadpictureController {
             @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
             @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
             @RequestParam(value = "order", required = false, defaultValue = "permission desc") String order,
-            @RequestParam(value = "token", required = false) String token
+            @RequestParam(value = "token", required = false) String token,
+            @RequestParam(value = "self", required = false) boolean self
     ) {
         // 限制 limit 的范围
         limit = (limit > 50) ? 50 : limit;
@@ -137,8 +138,8 @@ public class TypechoHeadpictureController {
             TypechoHeadpicture query = new TypechoHeadpicture();
             query.setStatus(object.getInteger("status"));
             query.setType(object.getInteger("type"));
-            // 如果传入了token就查自己的头像框
-            if (!token.isEmpty() && token != null) {
+            // 如果传入了token与self就查自己的头像框
+            if (!token.isEmpty() && token != null &&self) {
                 Map<Object, Object> userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
                 if (!userInfo.isEmpty() && userInfo != null) {
                     query.setId(Integer.parseInt(userInfo.get("uid").toString()));
