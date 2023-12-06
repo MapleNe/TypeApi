@@ -836,7 +836,7 @@ public class TypechoContentsController {
                         redisHelp.setRedis(this.dataprefix + "_" + logUid + "_postNum", "1", 86400, redisTemplate);
                     } else {
                         Integer post_Num = Integer.parseInt(postNum) + 1;
-                        if (post_Num > apiconfig.getPostMax()) {
+                        if (post_Num > apiconfig.getPostMax() &&apiconfig.getPostMax()!=-1) {
                             return Result.getResultJson(0, "你已超过最大发布数量限制，请您24小时后再操作", null);
                         } else {
                             redisHelp.setRedis(this.dataprefix + "_" + logUid + "_postNum", post_Num.toString(), 86400, redisTemplate);
