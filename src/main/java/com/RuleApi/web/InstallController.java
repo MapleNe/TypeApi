@@ -317,7 +317,7 @@ public class InstallController {
         //查询分类表是否存在iswaterfall字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_metas' and column_name = 'iswaterfall';", Integer.class);
         if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_contents ADD iswaterfall integer(1) DEFAULT 0;");
+            jdbcTemplate.execute("alter table " + prefix + "_metas ADD iswaterfall integer(1) DEFAULT 0;");
             text += "内容模块，字段iswaterfall添加完成。";
         } else {
             text += "内容模块，字段iswaterfall已经存在，无需添加。";
