@@ -212,6 +212,7 @@ public class InstallController {
                     "  `description` varchar(200) DEFAULT NULL," +
                     "  `count` int(10) unsigned DEFAULT '0'," +
                     "  `order` int(10) unsigned DEFAULT '0'," +
+                    "  `iswaterfall` int DEFAULT '0'," +
                     "  `parent` int(10) unsigned DEFAULT '0'," +
                     "  PRIMARY KEY (`mid`)," +
                     "  KEY `slug` (`slug`)" +
@@ -312,6 +313,16 @@ public class InstallController {
         } else {
             text += "内容模块，字段istop已经存在，无需添加。";
         }
+
+        //查询分类表是否存在iswaterfall字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_metas' and column_name = 'iswaterfall';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_contents ADD iswaterfall integer(1) DEFAULT 0;");
+            text += "内容模块，字段iswaterfall添加完成。";
+        } else {
+            text += "内容模块，字段iswaterfall已经存在，无需添加。";
+        }
+
         //查询文章表是否存在images字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'images';", Integer.class);
         if (i == 0) {

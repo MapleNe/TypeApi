@@ -65,6 +65,11 @@ public class TypechoMetas implements Serializable {
     private String opt;
 
     /**
+     * iswaterfall
+     */
+    private Integer iswaterfall;
+
+    /**
      * isrecommend
      */
     private Integer isrecommend;
