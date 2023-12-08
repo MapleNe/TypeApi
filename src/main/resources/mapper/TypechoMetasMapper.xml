@@ -15,6 +15,7 @@
         <result column="parent" property="parent" />
         <result column="imgurl" property="imgurl" />
         <result column="opt" property="opt" />
+        <result column="iswaterfall" property="iswaterfall" />
         <result column="isrecommend" property="isrecommend" />
     </resultMap>
 
@@ -29,6 +30,7 @@
         `parent`,
         `imgurl`,
         `opt`,
+        `iswaterfall`,
         `isrecommend`
     </sql>
 
@@ -63,6 +65,9 @@
             <if test ='null != opt'>
                 `opt`,
             </if>
+            <if test ='null != iswaterfall'>
+                `iswaterfall`,
+            </if>
             <if test ='null != imgurl'>
                 `imgurl`
             </if>
@@ -95,6 +100,9 @@
             <if test ='null != opt'>
                 #{opt},
             </if>
+            <if test ='null != iswaterfall'>
+                #{iswaterfall},
+            </if>
             <if test ='null != imgurl'>
                 #{imgurl}
             </if>
@@ -112,6 +120,7 @@
                 #{curr.type},
                 #{curr.description},
                 #{curr.count},
+                #{curr.opt},
                 #{curr.orderKey},
                 #{curr.parent}
             )
@@ -130,6 +139,7 @@
             <if test ='null != orderKey'>`order` = #{orderKey},</if>
             <if test ='null != imgurl'>`imgurl` = #{imgurl},</if>
             <if test ='null != opt'>`opt` = #{opt},</if>
+            <if test ='null != iswaterfall'>`iswaterfall` = #{iswaterfall},</if>
             <if test ='null != isrecommend'>`isrecommend` = #{isrecommend}</if>
         </set>
         WHERE `mid` = #{mid}
@@ -192,6 +202,12 @@
             <if test ='null != parent'>
                 and `parent` = #{parent}
             </if>
+            <if test ='null != opt'>
+                and `opt` = #{opt}
+            </if>
+            <if test ='null != iswaterfall'>
+                and `iswaterfall` = #{iswaterfall}
+            </if>
             <if test ='null != parent'>
                 and `isrecommend` = #{isrecommend}
             </if>
@@ -226,6 +242,12 @@
             </if>
             <if test ='null != typechoMetas.parent'>
                 and `parent` = #{typechoMetas.parent}
+            </if>
+            <if test ='null != typechoMetas.opt'>
+                and `opt` = #{typechoMetas.opt}
+            </if>
+            <if test ='null != typechoMetas.iswaterfall'>
+                and `iswaterfall` = #{typechoMetas.iswaterfall}
             </if>
             <if test ='null != typechoMetas.isrecommend'>
                 and `isrecommend` = #{typechoMetas.isrecommend}
@@ -267,6 +289,9 @@
             </if>
             <if test ='null != parent'>
                 and `parent` = #{parent}
+            </if>
+            <if test ='null != iswaterfall'>
+                and `iswaterfall` = #{iswaterfall}
             </if>
             <if test ='null != isrecommend'>
                 and `isrecommend` = #{isrecommend}

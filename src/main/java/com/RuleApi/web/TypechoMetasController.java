@@ -6,7 +6,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.RuleApi.entity.*;
 import com.RuleApi.service.*;
-import netscape.javascript.JSObject;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Comparator;
@@ -393,7 +392,7 @@ public class TypechoMetasController {
                         Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
                         Object optObject = json.get("opt");
 
-                        if (optObject != null && !optObject.toString().isEmpty()) {
+                        if (optObject != null && !optObject.toString().isEmpty() &&optObject.toString()!="") {
                             JSONObject opt = JSONObject.parseObject(optObject.toString());
                             json.put("opt", opt);
                         }

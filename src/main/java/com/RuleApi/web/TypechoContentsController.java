@@ -260,11 +260,16 @@ public class TypechoContentsController {
                                 opt.put("head_picture", head_picture.getLink().toString());
                             }
                         }
-
+                        // 获取用户等级
+                        List<Integer> levelAndExp = baseFull.getLevel(author.getExperience());
+                        Integer level = levelAndExp.get(0);
+                        Integer nextExp = levelAndExp.get(1);
                         authorInfo.put("name", name);
                         authorInfo.put("avatar", avatar);
                         authorInfo.put("customize", author.getCustomize());
                         authorInfo.put("opt", opt);
+                        authorInfo.put("level", level);
+                        authorInfo.put("nextExp",nextExp);
                         authorInfo.put("experience", author.getExperience());
                         authorInfo.put("introduce", author.getIntroduce());
                         //判断是否为VIP
@@ -568,11 +573,17 @@ public class TypechoContentsController {
                                 }
 
                             }
+                            // 获取用户等级
+                            List<Integer> levelAndExp = baseFull.getLevel(author.getExperience());
+                            Integer level = levelAndExp.get(0);
+                            Integer nextExp = levelAndExp.get(1);
 
                             authorInfo.put("name", name);
                             authorInfo.put("avatar", avatar);
                             authorInfo.put("customize", author.getCustomize());
                             authorInfo.put("opt", opt);
+                            authorInfo.put("level",level);
+                            authorInfo.put("nextExp",nextExp);
                             authorInfo.put("experience", author.getExperience());
                             authorInfo.put("isfollow", isfollow);
                             authorInfo.put("introduce", author.getIntroduce());
@@ -825,7 +836,7 @@ public class TypechoContentsController {
                         redisHelp.setRedis(this.dataprefix + "_" + logUid + "_postNum", "1", 86400, redisTemplate);
                     } else {
                         Integer post_Num = Integer.parseInt(postNum) + 1;
-                        if (post_Num > apiconfig.getPostMax()) {
+                        if (post_Num > apiconfig.getPostMax() &&apiconfig.getPostMax()!=-1) {
                             return Result.getResultJson(0, "你已超过最大发布数量限制，请您24小时后再操作", null);
                         } else {
                             redisHelp.setRedis(this.dataprefix + "_" + logUid + "_postNum", post_Num.toString(), 86400, redisTemplate);

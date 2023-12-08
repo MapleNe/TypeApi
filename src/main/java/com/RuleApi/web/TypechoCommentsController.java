@@ -163,14 +163,25 @@ public class TypechoCommentsController {
                     }
 
                     //如果存在上级评论
-                    Map<String, String> parentComments = new HashMap<String, String>();
+                    Map<String, Object> parentComments = new HashMap<String, Object>();
                     if (Integer.parseInt(json.get("parent").toString()) > 0) {
                         String coid = json.get("parent").toString();
                         TypechoComments parent = service.selectByKey(coid);
                         if (parent != null) {
                             if (parent.getStatus().equals("approved")) {
+                                // 获取用户等级
+                                TypechoUsers userInfo = usersService.selectByKey(parent.getAuthorId());
+
+                                List<Integer> levelAndExp = baseFull.getLevel(userInfo.getExperience());
+
+                                Integer level = levelAndExp.get(0);
+                                Integer nextExp = levelAndExp.get(1);
+
                                 parentComments.put("author", parent.getAuthor());
                                 parentComments.put("authorId", parent.getAuthorId().toString());
+                                parentComments.put("level", level);
+                                parentComments.put("nextExp", nextExp);
+                                parentComments.put("experience", userInfo.getExperience());
                                 parentComments.put("text", parent.getText());
                                 parentComments.put("created", JSONObject.toJSONString(parent.getCreated()));
 
@@ -183,23 +194,31 @@ public class TypechoCommentsController {
 
                     }
 
-                    List<Map<String, String>> sonCommentsList = new ArrayList<>();
+                    List<Map<String, Object>> sonCommentsList = new ArrayList<>();
                     TypechoComments selectParams = new TypechoComments();
                     selectParams.setAllparent(comments.getCoid());
                     selectParams.setStatus("approved");
                     PageList<TypechoComments> pList = service.selectPage(selectParams, page, limit, searchKey, "created desc");
                     List<TypechoComments> commentsList = pList.getList();
-                    Integer count = service.total(selectParams,searchKey);
+                    Integer count = service.total(selectParams, searchKey);
 
                     if (commentsList.size() > 0) {
                         for (int s = 0; s < commentsList.size(); s++) {
                             TypechoComments comment = commentsList.get(s);
-                            Map<String, String> sonComment = new HashMap<>();
+                            Map<String, Object> sonComment = new HashMap<>();
                             TypechoUsers userInfo = new TypechoUsers();
                             userInfo = usersService.selectByKey(comment.getAuthorId());
+                            // 获取用户等级
+                            List<Integer> levelAndExp = baseFull.getLevel(userInfo.getExperience());
+
+                            Integer level = levelAndExp.get(0);
+                            Integer nextExp = levelAndExp.get(1);
+
                             sonComment.put("author", comment.getAuthor());
                             sonComment.put("authorId", String.valueOf(comment.getAuthorId()));
-                            sonComment.put("avatar",userInfo.getAvatar());
+                            sonComment.put("avatar", userInfo.getAvatar());
+                            sonComment.put("level", level);
+                            sonComment.put("nextExp", nextExp);
                             sonComment.put("text", comment.getText());
                             sonComment.put("created", String.valueOf(comment.getCreated()));
                             sonCommentsList.add(sonComment);
@@ -261,11 +280,16 @@ public class TypechoCommentsController {
                                 Integer headId = Integer.parseInt(opt.get("head_picture").toString());
                                 // 查询opt中head_picture的数据 并替换
                                 TypechoHeadpicture head_picture = headpictureService.selectByKey(headId);
-                                if(head_picture!=null){
-                                    opt.put("head_picture",head_picture.getLink().toString());
+                                if (head_picture != null) {
+                                    opt.put("head_picture", head_picture.getLink().toString());
                                 }
 
                             }
+                            // 获取用户等级
+                            List <Integer> levelAndExp = baseFull.getLevel(userinfo.getExperience());
+                            Integer level = levelAndExp.get(0);
+                            Integer nextExp = levelAndExp.get(1);
+
                             json.put("avatar", avatar);
                             json.put("author", name);
                             json.put("opt", opt);
@@ -273,6 +297,8 @@ public class TypechoCommentsController {
                             json.put("mail", userinfo.getMail());
                             json.put("lv", baseFull.getLv(lv));
                             json.put("customize", userinfo.getCustomize());
+                            json.put("level", level);
+                            json.put("nextExp",nextExp);
                             json.put("experience", userinfo.getExperience());
                             //判断是否为VIP
                             json.put("isvip", 0);
@@ -301,7 +327,7 @@ public class TypechoCommentsController {
                         contentsJson.put("slug", contentsInfo.getSlug());
                         contentsJson.put("title", contentsInfo.getTitle());
                         contentsJson.put("type", contentsInfo.getType());
-                        contentsJson.put("authorId",contentsInfo.getAuthorId());
+                        contentsJson.put("authorId", contentsInfo.getAuthorId());
                         List<TypechoRelationships> relationships = relationshipsService.selectByKey(cid);
                         if (relationships.size() > 0) {
                             TypechoRelationships rinfo = relationships.get(0);

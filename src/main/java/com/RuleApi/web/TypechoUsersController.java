@@ -325,11 +325,18 @@ public class TypechoUsersController {
                 } else {
                     json.put("systemBan", 0);
                 }
+                // 获取用户等级
+                List<Integer> levelAndExp = baseFull.getLevel(user.getExperience());
+                Integer level = levelAndExp.get(0);
+                Integer nextExp = levelAndExp.get(1);
+
                 json.put("contentsNum", contentsNum);
                 json.put("commentsNum", commentsNum);
                 json.put("assets", assets);
                 json.put("created", created);
                 json.put("experience", experience);
+                json.put("level", level);
+                json.put("nextExp", nextExp);
                 json.put("isClock", isClock);
                 json.put("fanNum", fanNum);
                 json.put("followNum", followNum);
@@ -381,14 +388,19 @@ public class TypechoUsersController {
                     opt = null;
                 }
                 json.put("opt", opt);
-                //获取用户等级
-
+                //获取用户评论等级
                 Integer uid = Integer.parseInt(key);
-
                 TypechoComments comments = new TypechoComments();
                 comments.setAuthorId(uid);
                 Integer lv = commentsService.total(comments, null);
-                json.put("lv", baseFull.getLv(lv));
+                json.put("commentLv", baseFull.getLv(lv));
+                // 获取用户等级
+
+                List<Integer> levelAndExp = baseFull.getLevel(info.getExperience());
+                Integer level = levelAndExp.get(0);
+                Integer nextExp = levelAndExp.get(1);
+                json.put("level", level);
+                json.put("nextExp",nextExp);
                 //判断是否为VIP
                 json.put("isvip", 0);
                 Long date = System.currentTimeMillis();
@@ -1803,70 +1815,6 @@ public class TypechoUsersController {
             return Result.getResultJson(0, "操作失败", null);
         }
 
-    }
-
-    /***
-     * 获取头像框
-     */
-
-    @RequestMapping(value = "/headpictureList")
-    @ResponseBody
-    public String headpictureList(
-            @RequestParam(value = "searchParams", required = false) String searchParams,
-            @RequestParam(value = "uid", required = false) Integer uid,
-            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-            @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
-            @RequestParam(value = "order", required = false, defaultValue = "permission desc") String order
-    ) {
-        // 限制 limit 的范围
-        limit = (limit > 50) ? 50 : limit;
-
-        Integer total = 0;
-        List<Map<String, Object>> jsonList = new ArrayList<>();
-
-        if (StringUtils.isNotBlank(searchParams)) {
-            JSONObject object = JSON.parseObject(searchParams);
-            TypechoHeadpicture query = new TypechoHeadpicture();
-            query.setStatus(object.getInteger("status"));
-            query.setType(object.getInteger("type"));
-
-            total = headpictureService.total(query);
-            PageList<TypechoHeadpicture> Pagelist = headpictureService.selectPage(query, page, limit, order);
-            List<TypechoHeadpicture> list = Pagelist.getList();
-
-            for (TypechoHeadpicture headpicture : list) {
-                Map<String, Object> json = new HashMap<>();
-                json.put("id", headpicture.getId());
-                json.put("name", headpicture.getName());
-                json.put("link", headpicture.getLink());
-                json.put("type", headpicture.getType());
-                json.put("permission", headpicture.getPermission());
-                // 添加其他属性...
-
-                // 获取用户拥有的头像框
-                Integer isActive = 0;
-                if (uid != null) {
-                    TypechoUsers userInfo = service.selectByKey(uid);
-                    if (userInfo != null && StringUtils.isNotBlank(userInfo.getHead_picture())) {
-                        List<String> headList = JSONArray.parseArray(userInfo.getHead_picture(), String.class);
-                        if (headList.contains(headpicture.getId().toString())) {
-                            isActive = 1;
-                        }
-                    }
-                }
-
-                json.put("isActive", isActive);
-                jsonList.add(json);
-            }
-        }
-
-        JSONObject response = new JSONObject();
-        response.put("code", 1);
-        response.put("msg", "");
-        response.put("data", jsonList);
-        response.put("count", jsonList.size());
-        response.put("total", total);
-        return response.toString();
     }
 
 
