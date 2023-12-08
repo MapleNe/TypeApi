@@ -303,13 +303,13 @@ public class baseFull {
 
             for (int i = 0; i < expRequirements.length; i++) {
                 if (exp >= expRequirements[i]) {
-                    level = i + 1;
+                    level = i + 2;
                 } else {
                     break;
                 }
             }
             if (level-1 < expRequirements.length) {
-                nextExp = expRequirements[level-1];
+                nextExp = (level < expRequirements.length) ? expRequirements[level-1] : 999999;
             }
         }
         result.add(level);
