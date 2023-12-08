@@ -73,6 +73,9 @@ public class TypechoCommentsController {
     @Autowired
     private TypechoInboxService inboxService;
 
+    @Autowired
+    private task task;
+
     @Value("${webinfo.CommentCache}")
     private Integer CommentCache;
 
@@ -672,31 +675,18 @@ public class TypechoCommentsController {
                     userlog.setCid(Integer.parseInt(curtime));
                     userlog.setType("reviewExp");
                     Integer size = userlogService.total(userlog);
-                    //只有前三次评论获得经验
-                    if (size < 3) {
-                        userlog.setNum(reviewExp);
-                        userlog.setCreated(Integer.parseInt(created));
-                        userlogService.insert(userlog);
-                        //修改用户资产
-                        TypechoUsers oldUser = usersService.selectByKey(logUid);
-                        Integer experience = oldUser.getExperience();
-                        experience = experience + reviewExp;
-                        TypechoUsers updateUser = new TypechoUsers();
-                        updateUser.setUid(logUid);
-                        updateUser.setExperience(experience);
-                        usersService.update(updateUser);
-                        addtext = "，获得" + reviewExp + "经验值";
-                    }
                 }
 
             }
+            //每日任务评论
+            String regain = task.sign(logUid, "comment");
             editFile.setLog("用户" + logUid + "提交发布评论，IP：" + ip);
             //清理列表reids缓存
             redisHelp.deleteKeysWithPattern("*" + this.dataprefix + "_commentsList_1*", redisTemplate);
             JSONObject response = new JSONObject();
             response.put("code", rows > 0 ? 1 : 0);
             response.put("data", rows);
-            response.put("msg", rows > 0 ? "发布成功" + addtext : "发布失败");
+            response.put("msg", rows > 0 ? "发布成功" + regain : "发布失败");
             return response.toString();
         } catch (Exception e) {
             e.printStackTrace();
