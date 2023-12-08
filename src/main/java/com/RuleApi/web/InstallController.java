@@ -701,23 +701,6 @@ public class InstallController {
         } else {
             text += "商品分类表已存在，无需安装。";
         }
-        //判断每日任务表是否存在
-        i = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '" + prefix + "_task';", Integer.class);
-        if (i == 0) {
-            jdbcTemplate.execute("CREATE TABLE `" + prefix + "_task` (" +
-                    "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT," +
-                    "  `uid` int(10) unsigned NOT NULL," +
-                    "  `comment` int(10) NOT NULL DEFAULT '0'," +
-                    "  `contents` int(10) NOT NULL DEFAULT '0'," +
-                    "  `reward` int(10) NOT NULL DEFAULT '0'," +
-                    "  `follow` int(10) NOT NULL DEFAULT '0'," +
-                    "  `time` int(10) NOT NULL DEFAULT '0'," +
-                    "  PRIMARY KEY (`id`)" +
-                    ") ENGINE=MyISAM AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;");
-            text += "每日任务表创建完成。";
-        } else {
-            text += "每日任务表已存在，无需安装。";
-        }
         //判断充值记录表是否存在
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_paylog';", Integer.class);
         if (i == 0) {
@@ -1241,104 +1224,6 @@ public class InstallController {
             text += "配置中心模块，字段uploadFilesMax添加完成。";
         } else {
             text += "配置中心模块，字段uploadFilesMax已经存在，无需添加。";
-        }
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'follow';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `follow` int(11) DEFAULT '0' COMMENT '每日任务关注次数'");
-            text+="配置中心模块，字段follow添加完成。";
-        }else{
-            text+="配置中心模块，字段follow已经存在，无需添加。";
-        }
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'contents';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `contents` int(11) DEFAULT '0' COMMENT '每日任务发帖次数'");
-            text+="配置中心模块，字段contents添加完成。";
-        }else{
-            text+="配置中心模块，字段contents已经存在，无需添加。";
-        }
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'comment';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `comment` int(11) DEFAULT '0' COMMENT '每日任务评论次数'");
-            text+="配置中心模块，字段comment添加完成。";
-        }else{
-            text+="配置中心模块，字段comment已经存在，无需添加。";
-        }
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'reward';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `reward` int(11) DEFAULT '0' COMMENT '每日任务打赏次数'");
-            text+="配置中心模块，字段reward添加完成。";
-        }else{
-            text+="配置中心模块，字段reward已经存在，无需添加。";
-        }
-
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'followExp';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `followExp` int(11) DEFAULT '0' COMMENT '每日任务关注赠送经验'");
-            text+="配置中心模块，字段followExp添加完成。";
-        }else{
-            text+="配置中心模块，字段followExp已经存在，无需添加。";
-        }
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'contentsExp';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `contentsExp` int(11) DEFAULT '0' COMMENT '每日任务发帖赠送经验'");
-            text+="配置中心模块，字段contentsExp添加完成。";
-        }else{
-            text+="配置中心模块，字段contentsExp已经存在，无需添加。";
-        }
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'commentExp';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `commentExp` int(11) DEFAULT '0' COMMENT '每日任务评论赠送经验'");
-            text+="配置中心模块，字段commentExp添加完成。";
-        }else{
-            text+="配置中心模块，字段commentExp已经存在，无需添加。";
-        }
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'rewardExp';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `rewardExp` int(11) DEFAULT '0' COMMENT '每日任务打赏赠送经验'");
-            text+="配置中心模块，字段rewardExp添加完成。";
-        }else{
-            text+="配置中心模块，字段rewardExp已经存在，无需添加。";
-        }
-
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'followScore';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `followScore` int(11) DEFAULT '0' COMMENT '每日任务关注赠送积分'");
-            text+="配置中心模块，字段followScore添加完成。";
-        }else{
-            text+="配置中心模块，字段followScore已经存在，无需添加。";
-        }
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'contentsScore';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `contentsScore` int(11) DEFAULT '0' COMMENT '每日任务发帖赠送积分'");
-            text+="配置中心模块，字段contentsScore添加完成。";
-        }else{
-            text+="配置中心模块，字段contentsScore已经存在，无需添加。";
-        }
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'commentScore';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `commentScore` int(11) DEFAULT '0' COMMENT '每日任务评论赠送积分'");
-            text+="配置中心模块，字段commentScore添加完成。";
-        }else{
-            text+="配置中心模块，字段commentScore已经存在，无需添加。";
-        }
-
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '"+prefix+"_apiconfig' and column_name = 'rewardScore';", Integer.class);
-        if (i == 0){
-            jdbcTemplate.execute("alter table "+prefix+"_apiconfig ADD `rewardScore` int(11) DEFAULT '0' COMMENT '每日任务打赏赠送积分'");
-            text+="配置中心模块，字段rewardScore添加完成。";
-        }else{
-            text+="配置中心模块，字段rewardScore已经存在，无需添加。";
         }
 
         try {
