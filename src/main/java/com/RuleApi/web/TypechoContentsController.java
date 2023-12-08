@@ -93,6 +93,8 @@ public class TypechoContentsController {
     @Autowired
     private TypechoAdsService adsService;
 
+    @Autowired
+    private task task;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -706,6 +708,7 @@ public class TypechoContentsController {
             Map jsonToMap = new HashMap();
             String category = "";
             String tag = "";
+            String regain = "";
             Integer sid = -1;
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
@@ -1014,19 +1017,8 @@ public class TypechoContentsController {
                     userlog.setCid(Integer.parseInt(curtime));
                     userlog.setType("postExp");
                     Integer size = userlogService.total(userlog);
-                    //只有前三次发布文章获得经验
-                    if (size < 3) {
-                        userlog.setNum(postExp);
-                        userlog.setCreated(Integer.parseInt(created));
-                        userlogService.insert(userlog);
-                        //修改用户资产
-                        TypechoUsers oldUser = usersService.selectByKey(logUid);
-                        Integer experience = oldUser.getExperience();
-                        experience = experience + postExp;
-                        updateUser.setExperience(experience);
-
-
-                    }
+                    //每日任务发帖、
+                    regain = task.sign(logUid, "contents");
                 }
                 usersService.update(updateUser);
 
@@ -1052,7 +1044,7 @@ public class TypechoContentsController {
             JSONObject response = new JSONObject();
             response.put("code", rows > 0 ? 1 : 0);
             response.put("data", rows);
-            response.put("msg", rows > 0 ? resText : "发布失败");
+            response.put("msg", rows > 0 ? resText+regain : "发布失败");
             redisHelp.deleteKeysWithPattern("*" + this.dataprefix + "_contentsList_1*", redisTemplate);
             return response.toString();
         } catch (Exception e) {

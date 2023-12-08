@@ -72,6 +72,9 @@ public class TypechoUserlogController {
     private TypechoInboxService inboxService;
 
     @Autowired
+    private task task;
+
+    @Autowired
     private PushService pushService;
 
     @Autowired
@@ -357,7 +360,6 @@ public class TypechoUserlogController {
             TypechoUserlog insert = null;
             String agent = request.getHeader("User-Agent");
             String ip = baseFull.getIpAddr(request);
-
             //生成随机积分
             Random r = new Random();
 
@@ -556,7 +558,8 @@ public class TypechoUserlogController {
                     newUser.setUid(uid);
                     newUser.setAssets(Assets);
                     usersService.update(newUser);
-
+                    //每日任务打赏
+                    clock = task.sign(uid, "reward");
                     //给文章的作者增加积分
 
                     TypechoUsers toUser = usersService.selectByKey(authorid);
