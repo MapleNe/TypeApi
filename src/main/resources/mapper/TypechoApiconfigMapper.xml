@@ -103,18 +103,6 @@
         <result column="uploadPicMax" property="uploadPicMax" />
         <result column="uploadMediaMax" property="uploadMediaMax" />
         <result column="uploadFilesMax" property="uploadFilesMax" />
-        <result column="reward" property="reward" />
-        <result column="comment" property="comment" />
-        <result column="contents" property="contents" />
-        <result column="follow" property="follow" />
-        <result column="rewardExp" property="followExp" />
-        <result column="commentExp" property="commentExp" />
-        <result column="contentsExp" property="contentsExp" />
-        <result column="followExp" property="followExp" />
-        <result column="rewardScore" property="rewardScore" />
-        <result column="commentScore" property="commentScore" />
-        <result column="contentsScore" property="contentsScore" />
-        <result column="followScore" property="followScore" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -217,20 +205,7 @@
 
         `uploadPicMax`,
         `uploadMediaMax`,
-        `uploadFilesMax`,
-
-        `reward`,
-        `comment`,
-        `contents`,
-        `follow`,
-        `rewardExp`,
-        `commentExp`,
-        `contentsExp`,
-        `followExp`,
-        `rewardScore`,
-        `commentScore`,
-        `contentsScore`,
-        `followScore`
+        `uploadFilesMax`
     </sql>
 
     <!-- 插入数据 -->
@@ -515,43 +490,7 @@
                 `uploadMediaMax`,
             </if>
             <if test ='null != uploadFilesMax'>
-                `uploadFilesMax`,
-            </if>
-            <if test ='null != reward'>
-                `reward`,
-            </if>
-            <if test ='null != comment'>
-                `comment`,
-            </if>
-            <if test ='null != contents'>
-                `contents`,
-            </if>
-            <if test ='null != follow'>
-                `follow`,
-            </if>
-            <if test ='null != rewardExp'>
-                `rewardExp`,
-            </if>
-            <if test ='null != commentExp'>
-                `commentExp`,
-            </if>
-            <if test ='null != contentsExp'>
-                `contentsExp`,
-            </if>
-            <if test ='null != followExp'>
-                `followExp`,
-            </if>
-            <if test ='null != rewardScore'>
-                `rewardScore`,
-            </if>
-            <if test ='null != commentScore'>
-                `commentScore`,
-            </if>
-            <if test ='null != contentsScore'>
-                `contentsScore`,
-            </if>
-            <if test ='null != followScore'>
-                `followScore`,
+                `uploadFilesMax`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -833,43 +772,7 @@
                 #{uploadMediaMax},
             </if>
             <if test ='null != uploadFilesMax'>
-                #{uploadFilesMax},
-            </if>
-            <if test ='null != reward'>
-                #{reward},
-            </if>
-            <if test ='null != comment'>
-                #{comment},
-            </if>
-            <if test ='null != contents'>
-                #{contents},
-            </if>
-            <if test ='null != follow'>
-                #{follow},
-            </if>
-            <if test ='null != rewardExp'>
-                #{rewardExp},
-            </if>
-            <if test ='null != commentExp'>
-                #{commentExp},
-            </if>
-            <if test ='null != contentsExp'>
-                #{contentsExp},
-            </if>
-            <if test ='null != followExp'>
-                #{followExp},
-            </if>
-            <if test ='null != rewardScore'>
-                #{rewardScore},
-            </if>
-            <if test ='null != commentScore'>
-                #{commentScore},
-            </if>
-            <if test ='null != contentsScore'>
-                #{contentsScore},
-            </if>
-            <if test ='null != followScore'>
-                #{followScore}
+                #{uploadFilesMax}
             </if>
         </trim>
     </insert>
@@ -974,19 +877,7 @@
             <if test ='null != adsGiftAward'>`adsGiftAward` = #{adsGiftAward},</if>
             <if test ='null != uploadPicMax'>`uploadPicMax` = #{uploadPicMax},</if>
             <if test ='null != uploadMediaMax'>`uploadMediaMax` = #{uploadMediaMax},</if>
-            <if test ='null != uploadFilesMax'>`uploadFilesMax` = #{uploadFilesMax},</if>
-            <if test ='null != reward'>`reward` = #{reward},</if>
-            <if test ='null != comment'>`comment` = #{comment},</if>
-            <if test ='null != contents'>`contents` = #{contents},</if>
-            <if test ='null != follow'>`follow` = #{follow},</if>
-            <if test ='null != rewardExp'>`rewardExp` = #{rewardExp},</if>
-            <if test ='null != commentExp'>`commentExp` = #{commentExp},</if>
-            <if test ='null != contentsExp'>`contentsExp` = #{contentsExp},</if>
-            <if test ='null != followExp'>`followExp` = #{followExp},</if>
-            <if test ='null != rewardScore'>`rewardScore` = #{rewardScore},</if>
-            <if test ='null != commentScore'>`commentScore` = #{commentScore},</if>
-            <if test ='null != contentsScore'>`contentsScore` = #{contentsScore},</if>
-            <if test ='null != followScore'>`followScore` = #{followScore}</if>
+            <if test ='null != uploadFilesMax'>`uploadFilesMax` = #{uploadFilesMax}</if>
         </set>
         WHERE `id` = #{id}
     </update>

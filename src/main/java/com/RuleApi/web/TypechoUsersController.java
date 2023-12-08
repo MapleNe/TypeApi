@@ -93,11 +93,6 @@ public class TypechoUsersController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    private TypechoTaskService taskService;
-
-    @Autowired
-    private task task;
 
     @Value("${mybatis.configuration.variables.prefix}")
     private String prefix;
@@ -2597,12 +2592,10 @@ public class TypechoUsersController {
                 Long date = System.currentTimeMillis();
                 String created = String.valueOf(date).substring(0, 10);
                 fan.setCreated(Integer.parseInt(created));
-                //每日任务关注
-                String regain = task.sign(uid, "follow");
                 int rows = fanService.insert(fan);
                 JSONObject response = new JSONObject();
                 response.put("code", rows);
-                response.put("msg", rows > 0 ? "关注成功"+regain : "关注失败");
+                response.put("msg", rows > 0 ? "关注成功" : "关注失败");
                 return response.toString();
             }
 
@@ -3220,67 +3213,5 @@ public class TypechoUsersController {
         }
     }
 
-    /***
-     * 获取每日任务记录
-     * @param params Bean对象JSON字符串
-     */
-    @RequestMapping(value = "/taskList")
-    @ResponseBody
-    public String taskList(@RequestParam(value = "token", required = false) String token,
-                           HttpServletRequest request) {
-        try {
-            System.out.println(task.sign(1,"contents"));
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-            }
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer uid = Integer.parseInt(map.get("uid").toString());
-            //攻击拦截结束
-            TypechoApiconfig apiconfig = apiconfigService.selectByKey(1);
-            Map<String, Object> json = new HashMap<>();
-            json.put("rewardfund", apiconfig.getReward());
-            json.put("contentsfund", apiconfig.getContents());
-            json.put("commentfund", apiconfig.getComment());
-            json.put("followfund", apiconfig.getFollow());
-            json.put("rewardExp", apiconfig.getRewardExp());
-            json.put("contentsExp", apiconfig.getContentsExp());
-            json.put("commentExp", apiconfig.getCommentExp());
-            json.put("followExp", apiconfig.getFollowExp());
-            json.put("rewardScore", apiconfig.getRewardScore());
-            json.put("contentsScore", apiconfig.getContentsScore());
-            json.put("commentScore", apiconfig.getCommentScore());
-            json.put("followScore", apiconfig.getFollowScore());
-            TypechoTask query = new TypechoTask();
-            query.setUid(uid);
-            List<TypechoTask> taskList = taskService.selectList(query);
-            if(taskList.isEmpty()){
-                json.put("reward",0);
-                json.put("contents",0);
-                json.put("comment",0);
-                json.put("follow",0);
-                JSONObject noData = new JSONObject();
-                noData.put("code", 1);
-                noData.put("msg", "");
-                noData.put("data", json);
-                return noData.toString();
-            }else{
-                json.put("reward",taskList.get(0).getReward());
-                json.put("contents",taskList.get(0).getContents());
-                json.put("comment",taskList.get(0).getComment());
-                json.put("follow",taskList.get(0).getFollow());
-                JSONObject noData = new JSONObject();
-                noData.put("code", 1);
-                noData.put("msg", "");
-                noData.put("data", json);
-                return noData.toString();
-            }
-        }catch(Exception e){
-            e.printStackTrace();
-            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
-        }
-
-    }
 
 }
