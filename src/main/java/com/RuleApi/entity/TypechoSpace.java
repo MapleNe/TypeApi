@@ -1,7 +1,12 @@
 package com.RuleApi.entity;
 
 import java.io.Serializable;
+
+import com.alibaba.fastjson.JSONArray;
 import lombok.Data;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 

@@ -162,8 +162,6 @@ public class TypechoSpaceController {
             }
             //限制结束
 
-
-
             //判断用户经验值
             Integer spaceMinExp = apiconfig.getSpaceMinExp();
             TypechoUsers curUser = usersService.selectByKey(uid);
@@ -435,12 +433,6 @@ public class TypechoSpaceController {
                     return Result.getResultJson(0,"该动态被设置为仅自己可见",null);
                 }
                 String spaceText = space.getText();
-                String forbidden = apiconfig.getForbidden();
-                Integer textForbidden = baseFull.getForbidden(forbidden,spaceText);
-                if(textForbidden.equals(1)){
-                    spaceText = "内容违规，无法展示";
-                    space.setText(spaceText);
-                }
                 spaceInfoJson = JSONObject.parseObject(JSONObject.toJSONString(space), Map.class);
                 //获取创建人信息
                 Integer userid = space.getUid();
@@ -673,6 +665,12 @@ public class TypechoSpaceController {
                     TypechoComments comments = new TypechoComments();
                     comments.setAuthorId(userid);
                     Integer lv = commentsService.total(comments,searchKey);
+                    if(json.get("pic") != null && !json.get("pic").toString().isEmpty()) {
+                        String[] urls = json.get("pic").toString().split(",");
+                        List<String> images = Arrays.asList(urls);
+                        json.put("images",images);
+                    }
+
                     userJson.put("lv", baseFull.getLv(lv));
                     json.put("userJson",userJson);
                     if (uStatus != 0) {
