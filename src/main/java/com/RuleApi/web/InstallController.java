@@ -157,6 +157,8 @@ public class InstallController {
                     "  `password` varchar(32) DEFAULT NULL," +
                     "  `commentsNum` int(10) unsigned DEFAULT '0'," +
                     "  `allowComment` char(1) DEFAULT '0'," +
+                    "  `price` int(10) DEFAULT '0'," +
+                    "  `discount` float(2) DEFAULT '1'," +
                     "  `allowPing` char(1) DEFAULT '0'," +
                     "  `images` longtext," +
                     "  `opt` longtext," +
@@ -286,6 +288,23 @@ public class InstallController {
             text += "内容模块，字段likes添加完成。";
         } else {
             text += "内容模块，字段likes已经存在，无需添加。";
+        }
+
+        //查询文章表是否存在 price 字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'price';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_contents ADD price integer(10) DEFAULT 0;");
+            text += "内容模块，字段price添加完成。";
+        } else {
+            text += "内容模块，字段price已经存在，无需添加。";
+        }
+        //查询文章表是否存在 discount 字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'discount';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_contents ADD discount float(2) DEFAULT 1;");
+            text += "内容模块，字段discount添加完成。";
+        } else {
+            text += "内容模块，字段discount已经存在，无需添加。";
         }
 
         //查询文章表是否存在mid字段
@@ -713,12 +732,22 @@ public class InstallController {
                     "  `paytype` varchar(255) DEFAULT '' COMMENT '支付类型'," +
                     "  `uid` int(11) DEFAULT '-1' COMMENT '充值人ID'," +
                     "  `created` int(10) DEFAULT NULL," +
+                    "  `cid` int(10) DEFAULT NULL," +
                     "  `status` int(11) DEFAULT '0' COMMENT '支付状态（0未支付，1已支付）'," +
                     "  PRIMARY KEY (`pid`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='支付渠道充值记录';");
             text += "资产日志模块创建完成。";
         } else {
             text += "资产日志模块已经存在，无需添加。";
+        }
+
+        //查询聊天室模块是否存在isView字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_paylog' and column_name = 'cid';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_paylog ADD `cid` int(10) DEFAULT NULL COMMENT '文章id'");
+            text += "资产日志模块，字段cid添加完成。";
+        } else {
+            text += "资产日志模块，字段cid已经存在，无需添加。";
         }
 
         //添加卡密充值模块

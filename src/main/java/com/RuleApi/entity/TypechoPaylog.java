@@ -55,7 +55,13 @@ public class TypechoPaylog implements Serializable {
     private Integer created;
 
     /**
+     * cid
+     */
+    private Integer cid;
+
+    /**
      * status  支付状态（0未支付，1已支付）
      */
     private Integer status;
+
 }

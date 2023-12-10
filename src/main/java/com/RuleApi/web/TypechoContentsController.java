@@ -6,7 +6,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.RuleApi.entity.*;
 import com.RuleApi.service.*;
-import net.dreamlu.mica.core.result.R;
 import net.dreamlu.mica.xss.core.XssCleanIgnore;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +26,11 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.commonmark.node.*;
 import org.commonmark.parser.Parser;
@@ -50,6 +53,9 @@ public class TypechoContentsController {
 
     @Autowired
     private TypechoShopService shopService;
+
+    @Autowired
+    private TypechoPaylogService paylogService;
 
     @Autowired
     private TypechoFieldsService fieldsService;
@@ -191,6 +197,47 @@ public class TypechoContentsController {
                     text = renderer.render(document);
 
                 }
+                // 用正则表达式匹配并替换[hide type=pay]这是付费查看的内容[/hide]，并根据type值替换成相应的提示
+                Integer isReply = 0;
+                Integer isPaid = 0;
+                if (uid != null && uid != 0) {
+                    // 获取评论状态
+                    TypechoComments replyStatus = new TypechoComments();
+                    replyStatus.setCid(typechoContents.getCid());
+                    replyStatus.setAuthorId(uid);
+                    Integer rStatus = commentsService.total(replyStatus, "");
+                    if (rStatus > 0) {
+                        isReply = 1;
+                    }
+                    // 获取购买状态
+                    TypechoPaylog paylog = new TypechoPaylog();
+                    paylog.setPaytype("article");
+                    paylog.setUid(uid);
+                    paylog.setCid(typechoContents.getCid());
+                    Integer pStatus = paylogService.total(paylog);
+                    if (pStatus > 0) {
+                        isPaid = 1;
+                    }
+                }
+
+                Pattern pattern = Pattern.compile("\\[hide type=(pay|reply)\\](.*?)\\[/hide\\]");
+                Matcher matcher = pattern.matcher(text);
+                StringBuffer replacedText = new StringBuffer();
+                while (matcher.find()) {
+                    String type = matcher.group(1);
+                    String content = matcher.group(2);
+                    String replacement = "";
+                    if ("pay".equals(type) && isPaid == 0 && uid != typechoContents.getAuthorId()) {
+                        replacement = "【付费查看：这是付费内容，付费后可查看】";
+                    } else if ("reply".equals(type) && isReply == 0 && uid != typechoContents.getAuthorId()) {
+                        replacement = "【回复查看：这是回复内容，回复后可查看】";
+                    } else {
+                        replacement = content;  // 如果不需要替换，则保持原样
+                    }
+                    matcher.appendReplacement(replacedText, replacement);
+
+                }
+                text = matcher.appendTail(replacedText).toString();
 
                 // 获取是否islike && isMark
                 Integer isLike = 0;
@@ -269,7 +316,7 @@ public class TypechoContentsController {
                         authorInfo.put("customize", author.getCustomize());
                         authorInfo.put("opt", opt);
                         authorInfo.put("level", level);
-                        authorInfo.put("nextExp",nextExp);
+                        authorInfo.put("nextExp", nextExp);
                         authorInfo.put("experience", author.getExperience());
                         authorInfo.put("introduce", author.getIntroduce());
                         //判断是否为VIP
@@ -582,8 +629,8 @@ public class TypechoContentsController {
                             authorInfo.put("avatar", avatar);
                             authorInfo.put("customize", author.getCustomize());
                             authorInfo.put("opt", opt);
-                            authorInfo.put("level",level);
-                            authorInfo.put("nextExp",nextExp);
+                            authorInfo.put("level", level);
+                            authorInfo.put("nextExp", nextExp);
                             authorInfo.put("experience", author.getExperience());
                             authorInfo.put("isfollow", isfollow);
                             authorInfo.put("introduce", author.getIntroduce());
@@ -705,10 +752,8 @@ public class TypechoContentsController {
                               @RequestParam(value = "isMd", required = false, defaultValue = "1") Integer isMd,
                               @RequestParam(value = "isSpace", required = false, defaultValue = "0") Integer isSpace,
                               @RequestParam(value = "isDraft", required = false, defaultValue = "0") Integer isDraft,
-                              @RequestParam(value = "isPaid", required = false, defaultValue = "0") Integer isPaid,
-                              @RequestParam(value = "shopPice", required = false) Integer shopPice,
-                              @RequestParam(value = "shopText", required = false) String shopText,
-                              @RequestParam(value = "shopDiscount", required = false, defaultValue = "1.0") String shopDiscount,
+                              @RequestParam(value = "price", required = false, defaultValue = "0") Integer price,
+                              @RequestParam(value = "discount", required = false, defaultValue = "1") Float discount,
                               HttpServletRequest request) {
         try {
             TypechoContents insert = null;
@@ -836,7 +881,7 @@ public class TypechoContentsController {
                         redisHelp.setRedis(this.dataprefix + "_" + logUid + "_postNum", "1", 86400, redisTemplate);
                     } else {
                         Integer post_Num = Integer.parseInt(postNum) + 1;
-                        if (post_Num > apiconfig.getPostMax() &&apiconfig.getPostMax()!=-1) {
+                        if (post_Num > apiconfig.getPostMax() && apiconfig.getPostMax() != -1) {
                             return Result.getResultJson(0, "你已超过最大发布数量限制，请您24小时后再操作", null);
                         } else {
                             redisHelp.setRedis(this.dataprefix + "_" + logUid + "_postNum", post_Num.toString(), 86400, redisTemplate);
@@ -902,6 +947,9 @@ public class TypechoContentsController {
                 insert = JSON.parseObject(JSON.toJSONString(jsonToMap), TypechoContents.class);
 
             }
+            // 处理文章价格 直接设置就行
+            insert.setPrice(price);
+            insert.setDiscount(discount);
 
 
             int rows = service.insert(insert);
@@ -963,23 +1011,6 @@ public class TypechoContentsController {
                         relationshipsService.insert(toTag);
                     }
                 }
-
-                //处理完分类标签后，处理挂载的商品
-                if (isPaid.equals(0)) {
-                    if (sid > -1) {
-                        Integer uid = Integer.parseInt(map.get("uid").toString());
-                        //判断商品是不是自己的
-                        TypechoShop shop = new TypechoShop();
-                        shop.setUid(uid);
-                        shop.setId(sid);
-                        Integer num = shopService.total(shop, null);
-                        if (num >= 1) {
-                            shop.setCid(cid);
-                            shopService.update(shop);
-                        }
-                    }
-                }
-
 
             }
             Long date = System.currentTimeMillis();
@@ -1043,22 +1074,6 @@ public class TypechoContentsController {
 
             }
             //添加付费阅读
-            if (isPaid.equals(1)) {
-                TypechoShop shop = new TypechoShop();
-                shop.setValue(shopText);
-                shop.setUid(logUid);
-                shop.setVipDiscount(shopDiscount);
-                shop.setIsView(0);
-                shop.setCreated(Integer.parseInt(created));
-                shop.setNum(-1);
-                shop.setStatus(1);
-                shop.setPrice(shopPice);
-                shop.setType(4);
-                shop.setCid(cid);
-                shop.setUid(logUid);
-                shop.setIsMd(isMd);
-                shopService.insert(shop);
-            }
             editFile.setLog("用户" + logUid + "请求发布了新文章");
             JSONObject response = new JSONObject();
             response.put("code", rows > 0 ? 1 : 0);
@@ -1084,10 +1099,8 @@ public class TypechoContentsController {
                                  @RequestParam(value = "postStatus", required = false) String postStatus,
                                  @RequestParam(value = "isDraft", required = false, defaultValue = "0") Integer isDraft,
                                  @RequestParam(value = "mid", required = false, defaultValue = "1") Integer mid,
-                                 @RequestParam(value = "isPaid", required = false, defaultValue = "0") Integer isPaid,
-                                 @RequestParam(value = "shopPice", required = false) Integer shopPice,
-                                 @RequestParam(value = "shopText", required = false) String shopText,
-                                 @RequestParam(value = "shopDiscount", required = false, defaultValue = "1.0") String shopDiscount) {
+                                 @RequestParam(value = "price", required = false, defaultValue = "0") Integer price,
+                                 @RequestParam(value = "discount", required = false, defaultValue = "1.0") String discount) {
 
         try {
             TypechoContents update = null;
@@ -1095,7 +1108,6 @@ public class TypechoContentsController {
             TypechoContents info = new TypechoContents();
             String category = "";
             String tag = "";
-            Integer sid = -1;
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
@@ -1119,10 +1131,7 @@ public class TypechoContentsController {
                 Long date = System.currentTimeMillis();
                 String userTime = String.valueOf(date).substring(0, 10);
                 jsonToMap.put("modified", userTime);
-                //获取商品id
-                if (jsonToMap.get("sid") != null) {
-                    sid = Integer.parseInt(jsonToMap.get("sid").toString());
-                }
+
                 info = service.selectByKey(jsonToMap.get("cid").toString());
                 if (info == null) {
                     return Result.getResultJson(0, "文章不存在", null);
@@ -1175,7 +1184,6 @@ public class TypechoContentsController {
                 jsonToMap.remove("commentsNum");
                 jsonToMap.remove("allowPing");
                 jsonToMap.remove("allowFeed");
-                jsonToMap.remove("allowComment");
                 jsonToMap.remove("password");
                 jsonToMap.remove("orderKey");
                 jsonToMap.remove("parent");
@@ -1307,55 +1315,6 @@ public class TypechoContentsController {
                         relationshipsService.insert(toTag);
                     }
                 }
-
-                //处理完分类标签后，处理挂载的商品
-                if (isPaid.equals(0)) {
-                    if (sid > -1) {
-                        Integer uid = Integer.parseInt(map.get("uid").toString());
-                        //判断商品是不是自己的
-                        TypechoShop shop = new TypechoShop();
-                        shop.setUid(uid);
-                        shop.setId(sid);
-                        Integer num = shopService.total(shop, null);
-                        if (num >= 1) {
-                            //如果是，去数据库将其它商品的cid改为0
-                            TypechoShop rmshop = new TypechoShop();
-                            rmshop.setCid(cid);
-                            List<TypechoShop> list = shopService.selectList(rmshop);
-                            for (int i = 0; i < list.size(); i++) {
-                                list.get(i).setCid(-1);
-                                shopService.update(list.get(i));
-                            }
-                            //清除完之前的时候，修改新的
-                            shop.setCid(cid);
-                            shopService.update(shop);
-                        }
-
-                    }
-                }
-
-            }
-            //编辑付费阅读
-            if (isPaid.equals(1)) {
-                TypechoShop shop = new TypechoShop();
-                if (!sid.equals(0)) {
-                    shop.setId(sid);
-                }
-                shop.setValue(shopText);
-                shop.setVipDiscount(shopDiscount);
-                shop.setIsView(0);
-                shop.setNum(-1);
-                shop.setStatus(1);
-                shop.setPrice(shopPice);
-                shop.setType(4);
-                shop.setUid(info.getAuthorId());
-                if (sid.equals(0)) {
-                    shop.setCid(cid);
-                    shopService.insert(shop);
-                } else {
-                    shopService.update(shop);
-                }
-
             }
 
             editFile.setLog("用户" + logUid + "请求修改了文章" + cid);
@@ -1785,6 +1744,92 @@ public class TypechoContentsController {
         } catch (Exception e) {
             return Result.getResultJson(0, "操作失败", null);
         }
+    }
+
+    /**
+     * 购买文章隐藏内容
+     */
+    @RequestMapping(value = "/buyHide")
+    @ResponseBody
+    public String buyHide(@RequestParam(value = "token", required = true) String token,
+                          @RequestParam(value = "cid", required = true) Integer cid) {
+        try {
+            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+            if (uStatus == 0) {
+                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+            } else {
+
+                // 获取文章信息中的价格
+                TypechoContents articleInfo = service.selectByKey(cid);
+                String price = "0";
+                if (articleInfo.getPrice() > 0) {
+                    price = String.valueOf(-articleInfo.getPrice());
+                }
+
+                // 获取用户信息
+                Map userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+                TypechoUsers user = usersService.selectByKey(userInfo.get("uid"));
+                Integer points = user.getAssets();
+                if (points < articleInfo.getPrice()) {
+                    return Result.getResultJson(1, "积分不足", null);
+                }
+
+                // 查询是否已经购买过
+                TypechoPaylog buyStatus = new TypechoPaylog();
+                buyStatus.setUid(Integer.parseInt(userInfo.get("uid").toString()));
+                buyStatus.setCid(cid);
+                Integer isBuy = paylogService.total(buyStatus);
+                if (isBuy > 0) {
+                    return Result.getResultJson(1, "无需重复购买", null);
+                }
+
+                // 判断是否是VIP然后执行折扣
+                Long date = System.currentTimeMillis();
+                String curTime = String.valueOf(date).substring(0, 10);
+                Integer viptime = user.getVip();
+                Boolean isVip = false;
+                if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
+                    if (articleInfo.getPrice() > 0) {
+                        price = "-" + (articleInfo.getPrice() * articleInfo.getDiscount());
+                    }
+                    isVip = true;
+                }
+                // 获取日期 生成订单
+                Long timestamp = System.currentTimeMillis();
+                // 获取当前日期和时间
+                LocalDateTime currentDateTime = LocalDateTime.now();
+                // 定义日期时间格式
+                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+                // 格式化日期时间
+                String formattedDate = currentDateTime.format(dateFormatter);
+                // 写入购买日志
+                TypechoPaylog paylog = new TypechoPaylog();
+                paylog.setOutTradeNo(formattedDate + timestamp);
+                paylog.setCid(cid);
+                paylog.setTotalAmount(price);
+                paylog.setStatus(1);
+                paylog.setPaytype("article");
+                paylog.setCreated(Integer.parseInt(timestamp.toString().substring(0, 10)));
+                paylog.setUid(Integer.parseInt(userInfo.get("uid").toString()));
+                paylog.setSubject("查看文章【" + articleInfo.getTitle() + "】");
+                Integer code = paylogService.insert(paylog);
+                if (code > 0) {
+                    if (isVip) {
+                        user.setAssets((int) Math.floor(points - (articleInfo.getPrice() * articleInfo.getDiscount())));
+                    } else {
+                        user.setAssets(points - articleInfo.getPrice());
+                    }
+                    usersService.update(user);
+                    return Result.getResultJson(code, "购买成功", null);
+
+                }
+                return Result.getResultJson(0, "接口错误", null);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(0, "接口错误", null);
+        }
+
     }
 
     /**

@@ -12,6 +12,7 @@
         <result column="paytype" property="paytype" />
         <result column="uid" property="uid" />
         <result column="created" property="created" />
+        <result column="cid" property="cid" />
         <result column="status" property="status" />
     </resultMap>
 
@@ -24,6 +25,7 @@
         `paytype`,
         `uid`,
         `created`,
+        `cid`,
         `status`
     </sql>
 
@@ -55,6 +57,9 @@
             <if test ='null != created'>
                 `created`,
             </if>
+            <if test ='null != cid'>
+                `cid`,
+            </if>
             <if test ='null != status'>
                 `status`
             </if>
@@ -84,6 +89,9 @@
             <if test ='null != created'>
                 #{created},
             </if>
+            <if test ='null != cid'>
+                #{cid},
+            </if>
             <if test ='null != status'>
                 #{status}
             </if>
@@ -103,6 +111,7 @@
                 #{curr.paytype},
                 #{curr.uid},
                 #{curr.created},
+                #{curr.cid},
                 #{curr.status}
             )
         </foreach>
@@ -119,6 +128,7 @@
             <if test ='null != paytype'>`paytype` = #{paytype},</if>
             <if test ='null != uid'>`uid` = #{uid},</if>
             <if test ='null != created'>`created` = #{created},</if>
+            <if test ='null != cid'>`cid` = #{cid},</if>
             <if test ='null != status'>`status` = #{status}</if>
         </set>
         WHERE `pid` = #{pid}
@@ -174,6 +184,9 @@
             <if test ='null != created'>
                 and `created` = #{created}
             </if>
+            <if test ='null != cid'>
+                and `cid` = #{cid}
+            </if>
             <if test ='null != status'>
                 and `status` = #{status}
             </if>
@@ -210,6 +223,9 @@
             <if test ='null != typechoPaylog.created'>
                 and `created` = #{typechoPaylog.created}
             </if>
+            <if test ='null != typechoPaylog.cid'>
+                and `cid` = #{typechoPaylog.cid}
+            </if>
             <if test ='null != typechoPaylog.status'>
                 and `status` = #{typechoPaylog.status}
             </if>
@@ -245,6 +261,9 @@
             </if>
             <if test ='null != created'>
                 and `created` = #{created}
+            </if>
+            <if test ='null != cid'>
+                and `cid` = #{cid}
             </if>
             <if test ='null != status'>
                 and `status` = #{status}

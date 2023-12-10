@@ -144,5 +144,15 @@ public class TypechoContents implements Serializable {
      */
     private String opt;
 
+    /**
+     * price 价格
+     */
+    private Integer price;
+
+    /**
+     * discount 折扣
+     */
+    private Float discount;
+
 
 }
