@@ -1748,6 +1748,7 @@ public class TypechoContentsController {
                           @RequestParam(value = "cid", required = true) Integer cid) {
         try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+            TypechoApiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             } else {
@@ -1759,6 +1760,8 @@ public class TypechoContentsController {
                     price = String.valueOf(-articleInfo.getPrice());
                 }
 
+                // 获取全站配置中的会员折扣
+                TypechoApiconfig config = apiconfigService.selectByKey(0);
                 // 获取用户信息
                 Map userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
                 TypechoUsers user = usersService.selectByKey(userInfo.get("uid"));
@@ -1783,9 +1786,12 @@ public class TypechoContentsController {
                 Boolean isVip = false;
                 if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
                     if (articleInfo.getPrice() > 0) {
-                        price = "-" + (articleInfo.getPrice() * articleInfo.getDiscount());
+                        // 判断折扣更低
+                        price = "-" + ((int) Math.floor(articleInfo.getPrice() * articleInfo.getDiscount() > Float.valueOf(apiconfig.getVipDiscount()) ? Float.valueOf(apiconfig.getVipDiscount()) : articleInfo.getDiscount()));
                     }
                     isVip = true;
+                } else {
+                    price = "-" + (articleInfo.getPrice() * articleInfo.getDiscount());
                 }
                 // 获取日期 生成订单
                 Long timestamp = System.currentTimeMillis();
@@ -1808,11 +1814,17 @@ public class TypechoContentsController {
                 Integer code = paylogService.insert(paylog);
                 if (code > 0) {
                     if (isVip) {
-                        user.setAssets((int) Math.floor(points - (articleInfo.getPrice() * articleInfo.getDiscount())));
+                        user.setAssets((int) Math.floor(points - (articleInfo.getPrice() * articleInfo.getPrice() * articleInfo.getDiscount() > Float.valueOf(apiconfig.getVipDiscount()) ? Float.valueOf(apiconfig.getVipDiscount()) : articleInfo.getDiscount())));
                     } else {
-                        user.setAssets(points - articleInfo.getPrice());
+                        user.setAssets((int) Math.floor(points - articleInfo.getPrice() * Float.valueOf(articleInfo.getDiscount())));
                     }
                     usersService.update(user);
+                    // 完成之后给 文章作者加米
+                    TypechoUsers author = usersService.selectByKey(articleInfo.getAuthorId());
+                    Integer authorPoints = author.getAssets();
+                    authorPoints += (int) Math.floor(articleInfo.getPrice() * articleInfo.getDiscount());
+                    author.setAssets(authorPoints);
+                    usersService.update(author);
                     return Result.getResultJson(code, "购买成功", null);
 
                 }
