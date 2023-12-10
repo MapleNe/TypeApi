@@ -752,8 +752,6 @@ public class TypechoContentsController {
                               @RequestParam(value = "isMd", required = false, defaultValue = "1") Integer isMd,
                               @RequestParam(value = "isSpace", required = false, defaultValue = "0") Integer isSpace,
                               @RequestParam(value = "isDraft", required = false, defaultValue = "0") Integer isDraft,
-                              @RequestParam(value = "price", required = false, defaultValue = "0") Integer price,
-                              @RequestParam(value = "discount", required = false, defaultValue = "1") Float discount,
                               HttpServletRequest request) {
         try {
             TypechoContents insert = null;
@@ -947,11 +945,6 @@ public class TypechoContentsController {
                 insert = JSON.parseObject(JSON.toJSONString(jsonToMap), TypechoContents.class);
 
             }
-            // 处理文章价格 直接设置就行
-            insert.setPrice(price);
-            insert.setDiscount(discount);
-
-
             int rows = service.insert(insert);
 
             Integer cid = insert.getCid();
