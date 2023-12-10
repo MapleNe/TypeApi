@@ -1761,7 +1761,6 @@ public class TypechoContentsController {
                 }
 
                 // 获取全站配置中的会员折扣
-                TypechoApiconfig config = apiconfigService.selectByKey(0);
                 // 获取用户信息
                 Map userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
                 TypechoUsers user = usersService.selectByKey(userInfo.get("uid"));
