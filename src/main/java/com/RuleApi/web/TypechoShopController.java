@@ -135,6 +135,9 @@ public class TypechoShopController {
                     Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
                     TypechoShop shop = list.get(i);
                     Integer userid = shop.getUid();
+                    if (json.get("imgurl") != null && !json.get("imgurl").toString().isEmpty() && !json.get("imgurl").toString().equals("")) {
+                        json.put("imgurl", JSONArray.parse(json.get("imgurl").toString()));
+                    }
                     //获取用户信息
                     Map userJson = UserStatus.getUserInfo(userid,apiconfigService,usersService);
                     json.put("userJson",userJson);
@@ -185,6 +188,16 @@ public class TypechoShopController {
             }else{
                 TypechoShop info =  service.selectByKey(key);
                 Map shopinfo = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
+                // 格式化商品图片为Array
+                if (shopinfo.get("imgurl") != null && !shopinfo.get("imgurl").toString().isEmpty() && !shopinfo.get("imgurl").toString().equals("")) {
+                    shopinfo.put("imgurl", JSONArray.parse(shopinfo.get("imgurl").toString()));
+                }
+                // 或者发布者信息
+                Map bossInfo = JSONObject.parseObject(JSONObject.toJSONString(usersService.selectByKey(shopinfo.get("uid"))));
+                bossInfo.remove("password");
+                bossInfo.remove("assets");
+
+                shopinfo.put("bossInfo",bossInfo);
                 if(uStatus==0){
                     shopinfo.remove("value");
                     redisHelp.delete(this.dataprefix+"_"+"spaceInfo_"+key,redisTemplate);
