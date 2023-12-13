@@ -633,11 +633,21 @@ public class InstallController {
                     "  `value` text COMMENT '收费显示（除实体外，这个字段购买后显示）'," +
                     "  `cid` int(11) DEFAULT '-1' COMMENT '所属文章'," +
                     "  `uid` int(11) DEFAULT '0' COMMENT '发布人'," +
+                    "  `uid` longtext DEFAULT NULL COMMENT '规格'," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='商品表';");
             text += "积分商城模块创建完成。";
         } else {
             text += "积分商城模块已经存在，无需添加。";
+        }
+
+        //查询商品表是否存在 specs 字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_shop' and column_name = 'specs';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_shop ADD specs longtext NULL COMMENT '规格';");
+            text += "积分商城模块，字段specs添加完成。";
+        } else {
+            text += "积分商城模块，字段specs已经存在，无需添加。";
         }
 
         //查询商品表是否存在vipDiscount字段
@@ -648,6 +658,7 @@ public class InstallController {
         } else {
             text += "积分商城模块，字段vipDiscount已经存在，无需添加。";
         }
+
         //查询商品表是否存在created字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_shop' and column_name = 'created';", Integer.class);
         if (i == 0) {

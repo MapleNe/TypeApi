@@ -1,6 +1,8 @@
 package com.RuleApi.entity;
 
 import java.io.Serializable;
+
+import com.alibaba.fastjson.JSONArray;
 import lombok.Data;
 import java.util.Date;
 import java.util.List;
@@ -97,6 +99,12 @@ public class TypechoShop implements Serializable {
      * subtype  子类型
      */
     private Integer subtype;
+
+    /***
+     * specs 规格
+     */
+
+    private String specs;
 
     /**
      * isView  是否可见
