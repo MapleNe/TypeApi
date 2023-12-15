@@ -272,6 +272,7 @@
         </plugins>
     </build>
 
+
     <!-- 启用阿里云镜像下载依赖 -->
     <repositories>
         <repository>
