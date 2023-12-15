@@ -633,7 +633,7 @@ public class InstallController {
                     "  `value` text COMMENT '收费显示（除实体外，这个字段购买后显示）'," +
                     "  `cid` int(11) DEFAULT '-1' COMMENT '所属文章'," +
                     "  `uid` int(11) DEFAULT '0' COMMENT '发布人'," +
-                    "  `uid` longtext DEFAULT NULL COMMENT '规格'," +
+                    "  `specs` longtext DEFAULT NULL COMMENT '规格'," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='商品表';");
             text += "积分商城模块创建完成。";
