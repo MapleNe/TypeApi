@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.TypeApi.dao.InboxDao">
+
+    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Inbox" >
+        <result column="id" property="id" />
+        <result column="type" property="type" />
+        <result column="uid" property="uid" />
+        <result column="text" property="text" />
+        <result column="touid" property="touid" />
+        <result column="isread" property="isread" />
+        <result column="value" property="value" />
+        <result column="created" property="created" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        `id`,
+        `type`,
+        `uid`,
+        `text`,
+        `touid`,
+        `isread`,
+        `value`,
+        `created`
+    </sql>
+
+    <!-- 插入数据 -->
+    <insert id="insert" parameterType="com.TypeApi.entity.Inbox">
+        INSERT INTO ${prefix}_inbox
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                `id`,
+            </if>
+            <if test ='null != type'>
+                `type`,
+            </if>
+            <if test ='null != uid'>
+                `uid`,
+            </if>
+            <if test ='null != text'>
+                `text`,
+            </if>
+            <if test ='null != touid'>
+                `touid`,
+            </if>
+            <if test ='null != isread'>
+                `isread`,
+            </if>
+            <if test ='null != value'>
+                `value`,
+            </if>
+            <if test ='null != created'>
+                `created`
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                #{id},
+            </if>
+            <if test ='null != type'>
+                #{type},
+            </if>
+            <if test ='null != uid'>
+                #{uid},
+            </if>
+            <if test ='null != text'>
+                #{text},
+            </if>
+            <if test ='null != touid'>
+                #{touid},
+            </if>
+            <if test ='null != isread'>
+                #{isread},
+            </if>
+            <if test ='null != value'>
+                #{value},
+            </if>
+            <if test ='null != created'>
+                #{created}
+            </if>
+        </trim>
+    </insert>
+
+    <!-- 更新 -->
+    <update id="update" parameterType="com.TypeApi.entity.Inbox">
+        UPDATE ${prefix}_inbox
+        <set>
+            <if test ='null != type'>`type` = #{type},</if>
+            <if test ='null != uid'>`uid` = #{uid},</if>
+            <if test ='null != text'>`text` = #{text},</if>
+            <if test ='null != touid'>`touid` = #{touid},</if>
+            <if test ='null != isread'>`isread` = #{isread},</if>
+            <if test ='null != value'>`value` = #{value},</if>
+            <if test ='null != created'>`value` = #{created}</if>
+        </set>
+        WHERE `type` = #{type} AND `touid` = #{touid}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="delete">
+        DELETE FROM ${prefix}_inbox
+        WHERE `id` = #{key}
+    </delete>
+
+
+    <!-- 主键查询 -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_inbox
+        WHERE `id` = #{key}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_inbox
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != uid'>
+                and `uid` = #{uid}
+            </if>
+            <if test ='null != text'>
+                and `text` = #{text}
+            </if>
+            <if test ='null != touid'>
+                and `touid` = #{touid}
+            </if>
+            <if test ='null != isread'>
+                and `isread` = #{isread}
+            </if>
+            <if test ='null != value'>
+                and `value` = #{value}
+            </if>
+            <if test ='null != created'>
+                and `created` = #{created}
+            </if>
+        </where>
+    </select>
+
+    <!-- 分页条件查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_inbox
+        <where>
+            <if test ='null != inbox.id'>
+                and `id` = #{inbox.id}
+            </if>
+            <if test ='null != inbox.type'>
+                and `type` = #{inbox.type}
+            </if>
+            <if test ='null != inbox.uid'>
+                and `uid` = #{inbox.uid}
+            </if>
+            <if test ='null != inbox.text'>
+                and `text` = #{inbox.text}
+            </if>
+            <if test ='null != inbox.touid'>
+                and `touid` = #{inbox.touid}
+            </if>
+            <if test ='null != inbox.isread'>
+                and `isread` = #{inbox.isread}
+            </if>
+            <if test ='null != inbox.value'>
+                and `value` = #{inbox.value}
+            </if>
+            <if test ='null != inbox.created'>
+                and `created` = #{inbox.created}
+            </if>
+        </where>
+        order by created desc
+        limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
+    </select>
+
+    <!-- 总量查询 -->
+    <select id="total" resultType="java.lang.Integer">
+        SELECT count(*) FROM ${prefix}_inbox
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != uid'>
+                and `uid` = #{uid}
+            </if>
+            <if test ='null != text'>
+                and `text` = #{text}
+            </if>
+            <if test ='null != touid'>
+                and `touid` = #{touid}
+            </if>
+            <if test ='null != isread'>
+                and `isread` = #{isread}
+            </if>
+            <if test ='null != value'>
+                and `value` = #{value}
+            </if>
+            <if test ='null != created'>
+                and `created` = #{created}
+            </if>
+        </where>
+    </select>
+</mapper>

@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.TypeApi.dao.InvitationDao">
+
+    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Invitation" >
+        <result column="id" property="id" />
+        <result column="code" property="code" />
+        <result column="created" property="created" />
+        <result column="uid" property="uid" />
+        <result column="status" property="status" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        `id`,
+        `code`,
+        `created`,
+        `uid`,
+        `status`
+    </sql>
+
+    <!-- 插入数据 -->
+    <insert id="insert" parameterType="com.TypeApi.entity.Invitation">
+        INSERT INTO ${prefix}_invitation
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                `id`,
+            </if>
+            <if test ='null != code'>
+                `code`,
+            </if>
+            <if test ='null != created'>
+                `created`,
+            </if>
+            <if test ='null != uid'>
+                `uid`,
+            </if>
+            <if test ='null != status'>
+                `status`
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                #{id},
+            </if>
+            <if test ='null != code'>
+                #{code},
+            </if>
+            <if test ='null != created'>
+                #{created},
+            </if>
+            <if test ='null != uid'>
+                #{uid},
+            </if>
+            <if test ='null != status'>
+                #{status}
+            </if>
+        </trim>
+    </insert>
+
+    <!-- 批量插入数据 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO ${prefix}_invitation ( <include refid="Base_Column_List" /> ) VALUES
+        <foreach collection="list" item="curr" index="index" separator=",">
+            (
+                #{curr.id},
+                #{curr.code},
+                #{curr.created},
+                #{curr.uid},
+                #{curr.status}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 更新 -->
+    <update id="update" parameterType="com.TypeApi.entity.Invitation">
+        UPDATE ${prefix}_invitation
+        <set>
+            <if test ='null != code'>`code` = #{code},</if>
+            <if test ='null != created'>`created` = #{created},</if>
+            <if test ='null != uid'>`uid` = #{uid},</if>
+            <if test ='null != status'>`status` = #{status}</if>
+        </set>
+        WHERE `id` = #{id}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="delete">
+        DELETE FROM ${prefix}_invitation
+        WHERE `id` = #{key}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="batchDelete" parameterType = "java.util.List">
+        DELETE FROM ${prefix}_invitation WHERE id IN
+        <foreach collection="list"  item="item" open="(" separator="," close=")"  >
+            #{item}
+        </foreach>
+    </delete>
+
+    <!-- 主键查询 -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_invitation
+        WHERE `id` = #{key}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_invitation
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != code'>
+                and `code` = #{code}
+            </if>
+            <if test ='null != created'>
+                and `created` = #{created}
+            </if>
+            <if test ='null != uid'>
+                and `uid` = #{uid}
+            </if>
+            <if test ='null != status'>
+                and `status` = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 分页条件查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_invitation
+        <where>
+            <if test ='null != invitation.id'>
+                and `id` = #{invitation.id}
+            </if>
+            <if test ='null != invitation.code'>
+                and `code` = #{invitation.code}
+            </if>
+            <if test ='null != invitation.created'>
+                and `created` = #{invitation.created}
+            </if>
+            <if test ='null != invitation.uid'>
+                and `uid` = #{invitation.uid}
+            </if>
+            <if test ='null != invitation.status'>
+                and `status` = #{invitation.status}
+            </if>
+        </where>
+        limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
+    </select>
+
+    <!-- 总量查询 -->
+    <select id="total" resultType="java.lang.Integer">
+        SELECT count(*) FROM ${prefix}_invitation
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != code'>
+                and `code` = #{code}
+            </if>
+            <if test ='null != created'>
+                and `created` = #{created}
+            </if>
+            <if test ='null != uid'>
+                and `uid` = #{uid}
+            </if>
+            <if test ='null != status'>
+                and `status` = #{status}
+            </if>
+        </where>
+    </select>
+</mapper>
