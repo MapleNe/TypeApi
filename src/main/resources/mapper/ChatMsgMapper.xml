@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.TypeApi.dao.ChatMsgDao">
+
+    <resultMap id="BaseResultMap" type="com.TypeApi.entity.ChatMsg" >
+        <result column="id" property="id" />
+        <result column="uid" property="uid" />
+        <result column="cid" property="cid" />
+        <result column="text" property="text" />
+        <result column="created" property="created" />
+        <result column="type" property="type" />
+        <result column="url" property="url" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        `id`,
+        `uid`,
+        `cid`,
+        `text`,
+        `created`,
+        `type`,
+        `url`
+    </sql>
+
+    <!-- 插入数据 -->
+    <insert id="insert" parameterType="com.TypeApi.entity.ChatMsg">
+        INSERT INTO ${prefix}_chat_msg
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                `id`,
+            </if>
+            <if test ='null != uid'>
+                `uid`,
+            </if>
+            <if test ='null != cid'>
+                `cid`,
+            </if>
+            <if test ='null != text'>
+                `text`,
+            </if>
+            <if test ='null != created'>
+                `created`,
+            </if>
+            <if test ='null != type'>
+                `type`,
+            </if>
+            <if test ='null != url'>
+                `url`
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != id'>
+                #{id},
+            </if>
+            <if test ='null != uid'>
+                #{uid},
+            </if>
+            <if test ='null != cid'>
+                #{cid},
+            </if>
+            <if test ='null != text'>
+                #{text},
+            </if>
+            <if test ='null != created'>
+                #{created},
+            </if>
+            <if test ='null != type'>
+                #{type},
+            </if>
+            <if test ='null != url'>
+                #{url}
+            </if>
+        </trim>
+    </insert>
+
+    <!-- 批量插入数据 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO ${prefix}_chat_msg ( <include refid="Base_Column_List" /> ) VALUES
+        <foreach collection="list" item="curr" index="index" separator=",">
+            (
+                #{curr.id},
+                #{curr.uid},
+                #{curr.cid},
+                #{curr.text},
+                #{curr.created},
+                #{curr.type},
+                #{curr.url}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 更新 -->
+    <update id="update" parameterType="com.TypeApi.entity.ChatMsg">
+        UPDATE ${prefix}_chat_msg
+        <set>
+            <if test ='null != uid'>`uid` = #{uid},</if>
+            <if test ='null != cid'>`cid` = #{cid},</if>
+            <if test ='null != text'>`text` = #{text},</if>
+            <if test ='null != created'>`created` = #{created},</if>
+            <if test ='null != type'>`type` = #{type},</if>
+            <if test ='null != url'>`url` = #{url}</if>
+        </set>
+        WHERE `id` = #{id}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="delete">
+        DELETE FROM ${prefix}_chat_msg
+        WHERE `cid` = #{key}
+    </delete>
+
+    <delete id="deleteMsg">
+        DELETE FROM ${prefix}_chat_msg
+        WHERE `id` = #{key}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="batchDelete" parameterType = "java.util.List">
+        DELETE FROM ${prefix}_chat_msg WHERE id IN
+        <foreach collection="list"  item="item" open="(" separator="," close=")"  >
+            #{item}
+        </foreach>
+    </delete>
+
+    <!-- 主键查询 -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_chat_msg
+        WHERE `id` = #{key}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_chat_msg
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != uid'>
+                and `uid` = #{uid}
+            </if>
+            <if test ='null != cid'>
+                and `cid` = #{cid}
+            </if>
+            <if test ='null != text'>
+                and `text` = #{text}
+            </if>
+            <if test ='null != created'>
+                and `created` = #{created}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != url'>
+                and `url` = #{url}
+            </if>
+        </where>
+        order by created desc
+    </select>
+
+    <!-- 分页条件查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_chat_msg
+        <where>
+            <if test ='null != chatMsg.id'>
+                and `id` = #{chatMsg.id}
+            </if>
+            <if test ='null != chatMsg.uid'>
+                and `uid` = #{chatMsg.uid}
+            </if>
+            <if test ='null != chatMsg.cid'>
+                and `cid` = #{chatMsg.cid}
+            </if>
+            <if test ='null != chatMsg.text'>
+                and `text` = #{chatMsg.text}
+            </if>
+            <if test ='null != chatMsg.created'>
+                and `created` = #{chatMsg.created}
+            </if>
+            <if test ='null != chatMsg.type'>
+                and `type` = #{chatMsg.type}
+            </if>
+            <if test ='null != chatMsg.url'>
+                and `url` = #{chatMsg.url}
+            </if>
+        </where>
+        order by created desc
+        limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
+    </select>
+
+    <!-- 总量查询 -->
+    <select id="total" resultType="java.lang.Integer">
+        SELECT count(*) FROM ${prefix}_chat_msg
+        <where>
+            <if test ='null != id'>
+                and `id` = #{id}
+            </if>
+            <if test ='null != uid'>
+                and `uid` = #{uid}
+            </if>
+            <if test ='null != cid'>
+                and `cid` = #{cid}
+            </if>
+            <if test ='null != text'>
+                and `text` = #{text}
+            </if>
+            <if test ='null != created'>
+                and `created` = #{created}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != url'>
+                and `url` = #{url}
+            </if>
+        </where>
+        order by created desc
+    </select>
+</mapper>

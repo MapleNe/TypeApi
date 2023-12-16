@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.TypeApi.dao.RelationshipsDao">
+
+    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Relationships" >
+        <result column="cid" property="cid" />
+        <result column="mid" property="mid" />
+        <collection property="contents" ofType="com.TypeApi.entity.Article">
+            <id  property="cid"  column="cid" />
+            <result column="title" property="title" />
+            <result column="slug" property="slug" />
+            <result column="created" property="created" />
+            <result column="modified" property="modified" />
+            <result column="text" property="text" />
+            <result column="order" property="orderKey" />
+            <result column="authorId" property="authorId" />
+            <result column="template" property="template" />
+            <result column="type" property="type" />
+            <result column="status" property="status" />
+            <result column="password" property="password" />
+            <result column="commentsNum" property="commentsNum" />
+            <result column="allowComment" property="allowComment" />
+            <result column="allowPing" property="allowPing" />
+            <result column="allowFeed" property="allowFeed" />
+            <result column="parent" property="parent" />
+            <result column="views" property="views" />
+            <result column="likes" property="likes" />
+        </collection>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        `cid`,
+        `mid`
+    </sql>
+
+    <sql id="Contents_Column_List">
+        r.cid,
+        r.mid,
+        c.title,
+        c.slug,
+        c.created,
+        c.modified,
+        c.text,
+        c.order,
+        c.authorId,
+        c.template,
+        c.type,
+        c.status,
+        c.password,
+        c.commentsNum,
+        c.allowComment,
+        c.allowPing,
+        c.allowFeed,
+        c.parent,
+        c.views,
+        c.likes
+    </sql>
+
+    <!-- 插入数据 -->
+    <insert id="insert" parameterType="com.TypeApi.entity.Relationships">
+        INSERT INTO ${prefix}_relationships
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != cid'>
+                `cid`,
+            </if>
+            <if test ='null != mid'>
+                `mid`
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != cid'>
+                #{cid},
+            </if>
+            <if test ='null != mid'>
+                #{mid}
+            </if>
+        </trim>
+    </insert>
+
+    <!-- 批量插入数据 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO ${prefix}_relationships ( <include refid="Base_Column_List" /> ) VALUES
+        <foreach collection="list" item="curr" index="index" separator=",">
+            (
+                #{curr.cid},
+                #{curr.mid}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 更新 -->
+    <update id="update" parameterType="com.TypeApi.entity.Relationships">
+        UPDATE ${prefix}_relationships
+        <set>
+            <if test ='null != mid'>`mid` = #{mid}</if>
+        </set>
+        WHERE `cid` = #{cid}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="delete">
+        DELETE FROM ${prefix}_relationships
+        WHERE `cid` = #{key}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="batchDelete" parameterType = "java.util.List">
+        DELETE FROM ${prefix}_relationships WHERE cid IN
+        <foreach collection="list"  item="item" open="(" separator="," close=")"  >
+            #{item}
+        </foreach>
+    </delete>
+
+    <!-- 主键查询 -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_relationships
+        WHERE `cid` = #{key}
+    </select>
+    <!-- 条件查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_relationships
+        <where>
+            <if test ='null != cid'>
+                and `cid` = #{cid}
+            </if>
+            <if test ='null != mid'>
+                and `mid` = #{mid}
+            </if>
+        </where>
+    </select>
+
+    <!-- 分页条件查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Contents_Column_List" />
+        FROM ${prefix}_relationships r inner join ${prefix}_contents c on r.cid = c.cid
+        <where>
+            <if test ='null != relationships.cid'>
+                and r.cid = #{relationships.cid}
+            </if>
+            <if test ='null != relationships.mid'>
+                and r.mid = #{relationships.mid}
+            </if>
+            <if test ='null != relationships.contents.type'>
+                and c.type = #{relationships.contents.type}
+            </if>
+            <if test ='null != relationships.contents.status'>
+                and c.status = #{relationships.contents.status}
+            </if>
+            and c.status = "publish"
+            order by r.cid desc
+        </where>
+        limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
+    </select>
+
+    <!-- 总量查询 -->
+    <select id="total" resultType="java.lang.Integer">
+        SELECT count(*) FROM ${prefix}_relationships
+        <where>
+            <if test ='null != cid'>
+                and `cid` = #{cid}
+            </if>
+            <if test ='null != mid'>
+                and `mid` = #{mid}
+            </if>
+        </where>
+    </select>
+</mapper>

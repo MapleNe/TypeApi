@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.TypeApi.dao.UsersDao">
+
+    <resultMap id="BaseResultMap" type="com.TypeApi.entity.Users" >
+        <result column="uid" property="uid" />
+        <result column="name" property="name" />
+        <result column="password" property="password" />
+        <result column="mail" property="mail" />
+        <result column="url" property="url" />
+        <result column="screenName" property="screenName" />
+        <result column="created" property="created" />
+        <result column="activated" property="activated" />
+        <result column="logged" property="logged" />
+        <result column="group" property="groupKey" />
+        <result column="authCode" property="authCode" />
+        <result column="introduce" property="introduce" />
+        <result column="assets" property="assets" />
+        <result column="address" property="address" />
+        <result column="pay" property="pay" />
+        <result column="customize" property="customize" />
+        <result column="avatar" property="avatar" />
+        <result column="experience" property="experience" />
+        <result column="clientId" property="clientId" />
+        <result column="bantime" property="bantime" />
+        <result column="posttime" property="posttime" />
+        <result column="userBg" property="userBg" />
+        <result column="sex" property="sex" />
+        <result column="opt" property="opt" />
+        <result column="medal" property="medal" />
+        <result column="head_picture" property="head_picture" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        `uid`,
+        `name`,
+        `password`,
+        `mail`,
+        `url`,
+        `screenName`,
+        `created`,
+        `activated`,
+        `logged`,
+        `group`,
+        `authCode`,
+        `introduce`,
+        `assets`,
+        `address`,
+        `pay`,
+        `customize`,
+        `vip`,
+        `avatar`,
+        `experience`,
+        `clientId`,
+        `bantime`,
+        `posttime`,
+        `userBg`,
+        `sex`,
+        `opt`,
+        `medal`,
+        `head_picture`
+    </sql>
+
+    <!-- 插入数据 -->
+    <insert id="insert" parameterType="com.TypeApi.entity.Users" keyProperty="uid" useGeneratedKeys="true">
+        INSERT INTO ${prefix}_users
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != uid'>
+                `uid`,
+            </if>
+            <if test ='null != name'>
+                `name`,
+            </if>
+            <if test ='null != password'>
+                `password`,
+            </if>
+            <if test ='null != mail'>
+                `mail`,
+            </if>
+            <if test ='null != url'>
+                `url`,
+            </if>
+            <if test ='null != screenName'>
+                `screenName`,
+            </if>
+            <if test ='null != created'>
+                `created`,
+            </if>
+            <if test ='null != activated'>
+                `activated`,
+            </if>
+            <if test ='null != logged'>
+                `logged`,
+            </if>
+            <if test ='null != groupKey'>
+                `group`,
+            </if>
+            <if test ='null != authCode'>
+                `authCode`,
+            </if>
+            <if test ='null != avatar'>
+                `avatar`,
+            </if>
+            <if test ='null != clientId'>
+                `clientId`,
+            </if>
+            <if test ='null != bantime'>
+                `bantime`
+            </if>
+
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != uid'>
+                #{uid},
+            </if>
+            <if test ='null != name'>
+                #{name},
+            </if>
+            <if test ='null != password'>
+                #{password},
+            </if>
+            <if test ='null != mail'>
+                #{mail},
+            </if>
+            <if test ='null != url'>
+                #{url},
+            </if>
+            <if test ='null != screenName'>
+                #{screenName},
+            </if>
+            <if test ='null != created'>
+                #{created},
+            </if>
+            <if test ='null != activated'>
+                #{activated},
+            </if>
+            <if test ='null != logged'>
+                #{logged},
+            </if>
+            <if test ='null != groupKey'>
+                #{groupKey},
+            </if>
+            <if test ='null != authCode'>
+                #{authCode},
+            </if>
+            <if test ='null != avatar'>
+                #{avatar},
+            </if>
+            <if test ='null != clientId'>
+                #{clientId},
+            </if>
+            <if test ='null != bantime'>
+                #{bantime}
+            </if>
+
+        </trim>
+    </insert>
+
+    <!-- 批量插入数据 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO ${prefix}_users ( <include refid="Base_Column_List" /> ) VALUES
+        <foreach collection="list" item="curr" index="index" separator=",">
+            (
+                #{curr.uid},
+                #{curr.name},
+                #{curr.password},
+                #{curr.mail},
+                #{curr.url},
+                #{curr.screenName},
+                #{curr.created},
+                #{curr.activated},
+                #{curr.logged},
+                #{curr.groupKey},
+                #{curr.authCode},
+                #{curr.bantime}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 更新 -->
+    <update id="update" parameterType="com.TypeApi.entity.Users">
+        UPDATE ${prefix}_users
+        <set>
+            <if test ='null != name'>`name` = #{name},</if>
+            <if test ='null != password'>`password` = #{password},</if>
+            <if test ='null != mail'>`mail` = #{mail},</if>
+            <if test ='null != url'>`url` = #{url},</if>
+            <if test ='null != screenName'>`screenName` = #{screenName},</if>
+            <if test ='null != created'>`created` = #{created},</if>
+            <if test ='null != activated'>`activated` = #{activated},</if>
+            <if test ='null != logged'>`logged` = #{logged},</if>
+            <if test ='null != groupKey'>`group` = #{groupKey},</if>
+            <if test ='null != authCode'>`authCode` = #{authCode},</if>
+            <if test ='null != introduce'>`introduce` = #{introduce},</if>
+            <if test ='null != assets'>`assets` = #{assets},</if>
+            <if test ='null != address'>`address` = #{address},</if>
+            <if test ='null != pay'>`pay` = #{pay},</if>
+            <if test ='null != customize'>`customize` = #{customize},</if>
+            <if test ='null != vip'>`vip` = #{vip},</if>
+            <if test ='null != avatar'>`avatar` = #{avatar},</if>
+            <if test ='null != experience'>`experience` = #{experience},</if>
+            <if test ='null != clientId'>`clientId` = #{clientId},</if>
+            <if test ='null != bantime'>`bantime` = #{bantime},</if>
+            <if test ='null != posttime'>`posttime` = #{posttime},</if>
+            <if test ='null != userBg'>`userBg` = #{userBg},</if>
+            <if test ='null != sex'>`sex` = #{sex},</if>
+            <if test ='null != medal'>`medal` = #{medal},</if>
+            <if test ='null != opt'>`opt` = #{opt},</if>
+            <if test ='null != head_picture'>`head_picture` = #{head_picture}</if>
+        </set>
+        WHERE `uid` = #{uid}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="delete">
+        DELETE FROM ${prefix}_users
+        WHERE `uid` = #{key}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="batchDelete" parameterType = "java.util.List">
+        DELETE FROM ${prefix}_users WHERE uid IN
+        <foreach collection="list"  item="item" open="(" separator="," close=")"  >
+            #{item}
+        </foreach>
+    </delete>
+
+    <!-- 主键查询 -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_users
+        WHERE `uid` = #{key}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_users
+        <where>
+            <if test ='null != uid'>
+                and `uid` = #{uid}
+            </if>
+            <if test ='null != name'>
+                and `name` = #{name}
+            </if>
+            <if test ='null != password'>
+                and `password` = #{password}
+            </if>
+            <if test ='null != mail'>
+                and `mail` = #{mail}
+            </if>
+            <if test ='null != url'>
+                and `url` = #{url}
+            </if>
+            <if test ='null != screenName'>
+                and `screenName` = #{screenName}
+            </if>
+            <if test ='null != created'>
+                and `created` = #{created}
+            </if>
+            <if test ='null != activated'>
+                and `activated` = #{activated}
+            </if>
+            <if test ='null != logged'>
+                and `logged` = #{logged}
+            </if>
+            <if test ='null != groupKey'>
+                and `group` = #{groupKey}
+            </if>
+            <if test ='null != authCode'>
+                and `authCode` = #{authCode}
+            </if>
+        </where>
+    </select>
+
+    <!-- 分页条件查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ${prefix}_users
+        <where>
+            <if test ='null != users.uid'>
+                and `uid` = #{users.uid}
+            </if>
+            <if test ='null != users.name'>
+                and `name` = #{users.name}
+            </if>
+
+            <if test ='null != users.password'>
+                and `password` = #{users.password}
+            </if>
+            <if test ='null != users.mail'>
+                and `mail` = #{users.mail}
+            </if>
+            <if test ='null != users.url'>
+                and `url` = #{users.url}
+            </if>
+            <if test ='null != users.screenName'>
+                and `screenName` = #{users.screenName}
+            </if>
+            <if test ='null != users.created'>
+                and `created` = #{users.created}
+            </if>
+            <if test ='null != users.activated'>
+                and `activated` = #{users.activated}
+            </if>
+            <if test ='null != users.logged'>
+                and `logged` = #{users.logged}
+            </if>
+            <if test ='null != users.groupKey'>
+                and `group` = #{users.groupKey}
+            </if>
+            <if test ='null != users.authCode'>
+                and `authCode` = #{users.authCode}
+            </if>
+            <if test ='null != users.experience'>
+                and `experience` = #{users.experience}
+            </if>
+            <if test ='null != users.vip'>
+                and `vip` > UNIX_TIMESTAMP() or `vip` = 1
+            </if>
+            <if test ='null != users.bantime'>
+                and `bantime` > UNIX_TIMESTAMP() or `bantime` = 1
+            </if>
+            <if test ='null != searchKey'>
+                and CONCAT(IFNULL(`name`, ''), IFNULL(`screenName`, ''), IFNULL(`uid`, ''), IFNULL(`mail`, '')) LIKE CONCAT('%', #{searchKey}, '%')
+            </if>
+
+        </where>
+        <if test ='"" != order'>
+            order by ${order} desc
+        </if>
+        limit ${page}, ${pageSize}
+    </select>
+
+    <!-- 总量查询 -->
+    <select id="total" resultType="java.lang.Integer">
+        SELECT count(*) FROM ${prefix}_users
+        <where>
+            <if test ='null != users.uid'>
+                and `uid` = #{users.uid}
+            </if>
+            <if test ='null != users.name'>
+                and `name` = #{users.name}
+            </if>
+            <if test ='null != users.password'>
+                and `password` = #{users.password}
+            </if>
+            <if test ='null != users.mail'>
+                and `mail` = #{users.mail}
+            </if>
+            <if test ='null != users.url'>
+                and `url` = #{users.url}
+            </if>
+            <if test ='null != users.screenName'>
+                and `screenName` = #{users.screenName}
+            </if>
+            <if test ='null != users.created'>
+                and `created` = #{users.created}
+            </if>
+            <if test ='null != users.activated'>
+                and `activated` = #{users.activated}
+            </if>
+            <if test ='null != users.logged'>
+                and `logged` = #{users.logged}
+            </if>
+            <if test ='null != users.groupKey'>
+                and `group` = #{users.groupKey}
+            </if>
+            <if test ='null != users.authCode'>
+                and `authCode` = #{users.authCode}
+            </if>
+            <if test ='null != searchKey'>
+                and CONCAT(IFNULL(`name`, ''), IFNULL(`screenName`, ''), IFNULL(`uid`, ''), IFNULL(`mail`, '')) LIKE CONCAT('%', #{searchKey}, '%')
+            </if>
+        </where>
+    </select>
+</mapper>
