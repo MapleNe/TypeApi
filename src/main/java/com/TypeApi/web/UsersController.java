@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Controller
-@RequestMapping(value = "/typechoUsers")
+@RequestMapping(value = "/user")
 public class UsersController {
 
     @Autowired
