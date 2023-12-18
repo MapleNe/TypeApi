@@ -22,7 +22,7 @@ import java.util.*;
 
 @Component
 @Controller
-@RequestMapping(value = "/TypechoHeadpicture")
+@RequestMapping(value = "/headpicture")
 public class HeadpictureController {
     @Autowired
     private UsersService usersService;

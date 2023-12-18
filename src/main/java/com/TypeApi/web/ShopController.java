@@ -26,7 +26,7 @@ import java.util.*;
  * @date 2022/01/27
  */
 @Controller
-@RequestMapping(value = "/typechoShop")
+@RequestMapping(value = "/shop")
 public class ShopController {
 
     @Autowired

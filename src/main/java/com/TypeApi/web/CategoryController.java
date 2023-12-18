@@ -33,7 +33,7 @@ import java.util.Map;
  */
 @Component
 @Controller
-@RequestMapping(value = "/typechoMetas")
+@RequestMapping(value = "/category")
 public class CategoryController {
 
     @Autowired
@@ -347,9 +347,9 @@ public class CategoryController {
      * @param page         页码
      * @param limit        每页显示数量
      */
-    @RequestMapping(value = "/metasList")
+    @RequestMapping(value = "/categoryList")
     @ResponseBody
-    public String metasList(@RequestParam(value = "searchParams", required = false) String searchParams,
+    public String categoryList(@RequestParam(value = "searchParams", required = false) String searchParams,
                             @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
                             @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
                             @RequestParam(value = "searchKey", required = false, defaultValue = "") String searchKey,

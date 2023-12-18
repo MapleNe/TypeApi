@@ -29,7 +29,7 @@ import java.util.*;
  */
 @Component
 @Controller
-@RequestMapping(value = "/typechoComments")
+@RequestMapping(value = "/comments")
 public class CommentsController {
 
     @Autowired
