@@ -65,7 +65,7 @@ public class InstallController {
             Integer i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_users';", Integer.class);
             if (i.equals(0)) {
                 code = 101;
-                msg = "Typecho未安装或者数据表前缀不正确。";
+                msg = "数据库未安装";
             }
         } catch (Exception e) {
             code = 102;
@@ -80,13 +80,13 @@ public class InstallController {
     /***
      * 安装Typecho数据库
      */
-    @RequestMapping(value = "/typechoInstall")
+    @RequestMapping(value = "/databaseInstall")
     @ResponseBody
-    public String typechoInstall(@RequestParam(value = "webkey", required = false, defaultValue = "") String webkey, @RequestParam(value = "name", required = false) String name, @RequestParam(value = "password", required = false) String password) {
+    public String databaseInstall(@RequestParam(value = "webkey", required = false, defaultValue = "") String webkey, @RequestParam(value = "username", required = false) String username, @RequestParam(value = "password", required = false) String password,@RequestParam(value = "email", required = false) String email) {
         if (!webkey.equals(this.key)) {
             return Result.getResultJson(0, "请输入正确的访问KEY。如果忘记，可在服务器/opt/application.properties中查看", null);
         }
-        if (name == null || password == null) {
+        if (username == null || password == null) {
             return Result.getResultJson(0, "请求参数错误！", null);
         }
         String isRepeated = redisHelp.getRedis("isTypechoInstall", redisTemplate);
@@ -133,12 +133,13 @@ public class InstallController {
             Long date = System.currentTimeMillis();
             String userTime = String.valueOf(date).substring(0, 10);
             Users user = new Users();
-            user.setName(name);
+            user.setName(username);
             user.setPassword(passwd);
             user.setCreated(Integer.parseInt(userTime));
             user.setGroupKey("administrator");
+            user.setMail(email);
             usersService.insert(user);
-            text += "管理员" + name + "添加完成。";
+            text += "管理员" + username + "添加完成。";
             //安装内容表
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_contents` (" +
                     "  `mid` int(10) unsigned NOT NULL," +
@@ -1562,7 +1563,7 @@ public class InstallController {
         text += " ------ 执行结束，安装执行完成";
 
         redisHelp.setRedis(this.dataprefix + "_" + "isInstall", "1", 60, redisTemplate);
-        return text;
+        return Result.getResultJson(1,text,null);
     }
 
     /***
