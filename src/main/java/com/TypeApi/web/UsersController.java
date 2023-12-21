@@ -1532,7 +1532,10 @@ public class UsersController {
                 //jsonToMap.remove("introduce");
                 jsonToMap.remove("assets");
                 jsonToMap.remove("experience");
-                jsonToMap.remove("vip");
+                if(!map.get("group").toString().equals("administrator")){
+                    jsonToMap.remove("vip");
+
+                }
                 if (jsonToMap.get("screenName") != null) {
                     //验证用户名是否违禁
                     String screenName = jsonToMap.get("screenName").toString();
