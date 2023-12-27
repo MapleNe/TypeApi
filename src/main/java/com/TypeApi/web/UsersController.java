@@ -2240,7 +2240,7 @@ public class UsersController {
      */
     @RequestMapping(value = "/invitationExcel")
     @ResponseBody
-    public void invitationExcel(@RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit, @RequestParam(value = "token", required = false) String token, HttpServletResponse response) throws IOException {
+    public void invitationExcel(@RequestParam(value = "limit",required = false) Integer limit, @RequestParam(value = "token", required = false) String token, HttpServletResponse response) throws IOException {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet("邀请码列表");
 

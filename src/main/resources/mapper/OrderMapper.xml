@@ -8,6 +8,7 @@
         <result column="price" property="price" />
         <result column="paid" property="paid" />
         <result column="user_id" property="user_id" />
+        <result column="boss_id" property="boss_id" />
         <result column="product" property="product" />
         <result column="product_name" property="product_name" />
         <result column="specs" property="specs" />
@@ -19,11 +20,13 @@
         `orders`,
         `price`,
         `paid`,
+        `boss_id`,
         `user_id`,
         `product`,
         `product_name`,
         `specs`,
         `tracking_name`,
+        `isTracking`,
         `created`
     </sql>
     <!-- 插入-->
@@ -45,6 +48,9 @@
             <if test ='null != user_id'>
                 `user_id`,
             </if>
+            <if test ='null != boss_id'>
+                `boss_id`,
+            </if>
             <if test ='null != product'>
                 `product`,
             </if>
@@ -56,6 +62,12 @@
             </if>
             <if test ='null != tracking_number'>
                 `tracking_number`,
+            </if>
+            <if test ='null != isTracking'>
+                `isTracking`,
+            </if>
+            <if test ='null != address'>
+                `address`,
             </if>
             <if test ='null != created'>
                 `created`
@@ -77,6 +89,9 @@
             <if test ='null != user_id'>
                 #{user_id},
             </if>
+            <if test ='null != boss_id'>
+                #{boss_id},
+            </if>
             <if test ='null != product'>
                 #{product},
             </if>
@@ -88,6 +103,12 @@
             </if>
             <if test ='null != tracking_number'>
                 #{tracking_number},
+            </if>
+            <if test ='null != isTracking'>
+                #{isTracking},
+            </if>
+            <if test ='null != address'>
+                #{address},
             </if>
             <if test ='null != created'>
                 #{created}
@@ -103,10 +124,13 @@
             #{curr.id},
             #{curr.orders},
             #{curr.price},
+             #{curr.user_id},
             #{curr.product},
             #{curr.product_name},
             #{curr.specs},
+            #{curr.address},
             #{curr.tracking_number},
+             #{curr.isTracking},
             #{curr.created}
             )
         </foreach>
@@ -119,8 +143,11 @@
             <if test ='null != price'>`price` = #{price},</if>
             <if test ='null != product'>`product` = #{product},</if>
             <if test ='null != product_name'>`product_name` = #{product_name},</if>
+            <if test ='null != paid'>`paid` = #{paid},</if>
             <if test ='null != specs'>`specs` = #{specs},</if>
             <if test ='null != tracking_number'>`tracking_number` = #{tracking_number},</if>
+            <if test ='null != isTracking'>`isTracking` = #{isTracking},</if>
+            <if test ='null != address'>`address` = #{address},</if>
             <if test ='null != created'>`created` = #{created}</if>
         </set>
         WHERE `id` = #{id}
@@ -176,11 +203,20 @@
             <if test ='null != price'>
                 and `price` = #{price}
             </if>
+            <if test ='null != boss_id'>
+                and `boss_id` = #{boss_id}
+            </if>
+            <if test ='null != user_id'>
+                and `user_id` = #{user_id}
+            </if>
             <if test ='null != orderKey'>
                 and `order` = #{orderKey}
             </if>
             <if test ='null != tracking_number'>
                 and `tracking_number` = #{tracking_number}
+            </if>
+            <if test ='null != isTracking'>
+                and `isTracking` = #{isTracking}
             </if>
         </where>
     </select>
@@ -204,6 +240,12 @@
             <if test ='null != typechoOrder.product'>
                 and `product` = #{typechoOrder.product}
             </if>
+            <if test ='null != typechoOrder.user_id'>
+                and `user_id` = #{typechoOrder.user_id}
+            </if>
+            <if test ='null != typechoOrder.boss_id'>
+                and `boss_id` = #{typechoOrder.boss_id}
+            </if>
             <if test ='null != typechoOrder.product_name'>
                 and `product_name` = #{typechoOrder.product_name}
             </if>
@@ -212,6 +254,9 @@
             </if>
             <if test ='null != typechoOrder.tracking_number'>
                 and `tracking_number` = #{typechoOrder.tracking_number}
+            </if>
+            <if test ='null != typechoOrder.isTracking'>
+                and `isTracking` = #{typechoOrder.isTracking}
             </if>
 
            

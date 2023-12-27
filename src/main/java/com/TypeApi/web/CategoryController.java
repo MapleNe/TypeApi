@@ -350,10 +350,10 @@ public class CategoryController {
     @RequestMapping(value = "/list")
     @ResponseBody
     public String categoryList(@RequestParam(value = "searchParams", required = false) String searchParams,
-                            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                            @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
-                            @RequestParam(value = "searchKey", required = false, defaultValue = "") String searchKey,
-                            @RequestParam(value = "order", required = false, defaultValue = "") String order) {
+                               @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                               @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
+                               @RequestParam(value = "searchKey", required = false, defaultValue = "") String searchKey,
+                               @RequestParam(value = "order", required = false, defaultValue = "") String order) {
         Category query = new Category();
         String sqlParams = "null";
         if (limit > 50) {
@@ -392,12 +392,19 @@ public class CategoryController {
                         Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
                         Object optObject = json.get("opt");
 
-                        if (optObject != null && !optObject.toString().isEmpty() &&optObject.toString()!="") {
+                        if (optObject != null && !optObject.toString().isEmpty() && optObject.toString() != "") {
                             JSONObject opt = JSONObject.parseObject(optObject.toString());
                             json.put("opt", opt);
                         }
+                        // 获取二级分类
+                        Category subCategorySearch = new Category();
+                        subCategorySearch.setParent(Integer.parseInt(json.get("mid").toString()));
+                        List<Category> subCategory  = service.selectList(subCategorySearch);
+                        System.out.println("打印子分类查询"+subCategorySearch+subCategory);
+                        json.put("subCategory", subCategory);
+
                         // 根据具体需求决定是否将 json 添加到 jsonList
-                         jsonList.add(json);
+                        jsonList.add(json);
                     }
                 }
                 redisHelp.delete(this.dataprefix + "_" + "metasList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams, redisTemplate);

@@ -641,6 +641,55 @@ public class InstallController {
             text += "积分商城模块已经存在，无需添加。";
         }
 
+        //订单表
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_order';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("CREATE TABLE `" + prefix + "_order` (" +
+                    "  `id` int NOT NULL AUTO_INCREMENT," +
+                    "  `orders` text DEFAULT NULL COMMENT '商品订单'," +
+                    "  `price` int DEFAULT 0 COMMENT '商品价格'," +
+                    "  `paid` int DEFAULT 0 COMMENT '支付状态'," +
+                    "  `user_id` int NOT NULL COMMENT '购买用户'," +
+                    "  `boss_id` int NOT NULL COMMENT '老板ID'," +
+                    "  `product` int NOT NULL COMMENT '商品ID'," +
+                    "  `product_name` text COMMENT '商品标题'," +
+                    "  `specs` text  COMMENT '商品规格'," +
+                    "  `tracking_name` text NULL COMMENT '快递单'," +
+                    "  `address` text NOT NUll COMMENT '地址'," +
+                    "  `created` bigint DEFAULT NULL COMMENT '创建时间'," +
+                    "  PRIMARY KEY (`id`)" +
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='订单号表';");
+            text += "订单模块创建完成。";
+        } else {
+            text += "订单已经存在，无需添加。";
+        }
+        // 检测订单表 是否存在 boss_id
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_order' and column_name = 'boss_id';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_order ADD boss_id int NOT NULL  COMMENT '老板ID';");
+            text += "订单模块，字段boss_id添加完成。";
+        } else {
+            text += "订单模块，字段boss_id已经存在，无需添加。";
+        }
+
+        // 检测订单表 是否存在 address
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_order' and column_name = 'address';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_order ADD address text NOT NULL  COMMENT '地址';");
+            text += "订单模块，字段address添加完成。";
+        } else {
+            text += "订单模块，字段address已经存在，无需添加。";
+        }
+
+        // 检测订单表 是否存在 isTracking
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_order' and column_name = 'isTracking';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_order ADD isTracking int DEFAULT 0 COMMENT '地址';");
+            text += "订单模块，字段isTracking添加完成。";
+        } else {
+            text += "订单模块，字段isTracking已经存在，无需添加。";
+        }
+
         //查询商品表是否存在 specs 字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_shop' and column_name = 'specs';", Integer.class);
         if (i == 0) {

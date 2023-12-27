@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.math.BigInteger;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -61,6 +63,9 @@ public class ShopController {
 
     @Autowired
     private SpaceService spaceService;
+
+    @Autowired
+    private OrderService orderService;
 
 
     @Autowired
@@ -111,7 +116,6 @@ public class ShopController {
         }
         total = service.total(query, searchKey);
         List cacheList = redisHelp.getList(this.dataprefix + "_" + "shopList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams + "_" + order + "_" + uid, redisTemplate);
-
 
         try {
             if (cacheList.size() > 0) {
@@ -561,21 +565,88 @@ public class ShopController {
             // 验证用户登录状态
             Boolean isLogin = false;
             Map userInfo = null;
+            Apiconfig apiconfig = new Apiconfig();
             if (UStatus.getStatus(token, this.dataprefix, redisTemplate) > 0) {
                 isLogin = true;
                 userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+                apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             } else {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
+            // 获取到商品信息
+            Shop userOrder = service.selectByKey(product);
+            JSONObject spcesInfo = null;
+            // 将 specs 的 JSON 字符串转换为对象列表
+            JSONArray spcesList = JSONArray.parseArray(userOrder.getSpecs());
+            for (int i = 0; i < spcesList.size(); i++) {
+                JSONObject obj = spcesList.getJSONObject(i);
+                if (obj.getInteger("id") != null && obj.getInteger("id") == specs) {
+                    spcesInfo = obj;
+                }
+            }
+
             // 通过验证 写入商品信息
+            Order newData = new Order();
+            // 先计算价格，VIP价格以及商品打折
+            Boolean isVip = false;
+            Integer price = 0;
+            long timeStamp = System.currentTimeMillis();
+            long currentTime = timeStamp / 1000;
+            if (Integer.parseInt(userInfo.get("vip").toString()) > currentTime) isVip = true;
+            // 如果是VIP就开始计算折扣 商品折扣大于系统全局折扣 否则就不打折
+            if (isVip) {
+                // 商品折扣优先级大于系统折扣 先判断商品折扣是否小于1
+                if (Float.parseFloat(userOrder.getVipDiscount()) < 1) {
+                    // 先判断specs中有没有设置价格
+                    if (spcesInfo.getInteger("price") > 0) {
+                        price = (int) (spcesInfo.getInteger("price") * Float.parseFloat(userOrder.getVipDiscount()));
+                    } else {
+                        price = (int) (userOrder.getPrice() * Float.parseFloat(userOrder.getVipDiscount()));
+                    }
+                } else {
+                    if (spcesInfo.getInteger("price") > 0) {
+                        price = (int) (spcesInfo.getInteger("price") * Float.parseFloat(apiconfig.getVipDiscount()));
+                    } else {
+                        price = (int) (userOrder.getPrice() * Float.parseFloat(apiconfig.getVipDiscount()));
+                    }
+                }
+            } else {
+                if (spcesInfo.getInteger("price") > 0) {
+                    price = spcesInfo.getInteger("price");
 
+                } else {
+                    price = userOrder.getPrice();
+                }
+            }
 
+            // 处理商品订单 使用系统时间戳+格式化时间
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+            String orders = dateFormat.format(timeStamp) + timeStamp + userInfo.get("uid").toString();
+
+            // 整合信息准备新增数据
+            newData.setOrders(orders);
+            newData.setPrice(price);
+            newData.setPaid(0);
+            newData.setUser_id(Integer.parseInt(userInfo.get("uid").toString()));
+            newData.setBoss_id(userOrder.getUid());
+            newData.setProduct(product);
+            newData.setProduct_name(userOrder.getTitle());
+            newData.setSpecs(spcesInfo.toString());
+            newData.setCreated((int) (timeStamp));
+
+            Integer status = orderService.insert(newData);
+            if (status > 0) {
+                Map data = new HashMap<>();
+                data.put("orderId", newData.getId());
+                return Result.getResultJson(1, "订单生成成功", data);
+            } else {
+                return Result.getResultJson(0, "订单生成失败", null);
+            }
 
         } catch (Exception err) {
             err.printStackTrace();
             return Result.getResultJson(0, "接口异常", null);
         }
-        return Result.getResultJson(1, "", null);
     }
 
     /***
@@ -660,187 +731,170 @@ public class ShopController {
     /***
      * 购买商品
      */
-    @RequestMapping(value = "/buyShop")
+    @RequestMapping(value = "/buy")
     @ResponseBody
-    public String buyShop(@RequestParam(value = "sid", required = false) String sid, @RequestParam(value = "token", required = false) String token) {
+    public String buy(@RequestParam(value = "id", required = true) String id, @RequestParam(value = "token", required = true) String token) {
+
         try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
-
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer uid = Integer.parseInt(map.get("uid").toString());
-            Shop shopinfo = service.selectByKey(sid);
-            Integer aid = shopinfo.getUid();
-
-            if (uid.equals(aid)) {
-                return Result.getResultJson(0, "你不可以买自己的商品", null);
-            }
-            Double vipDiscount = Double.valueOf(shopinfo.getVipDiscount());
-
-            Users usersinfo = usersService.selectByKey(uid.toString());
-            Integer price = shopinfo.getPrice();
-            //判断是否为VIP，是VIP则乘以折扣
-            Long date = System.currentTimeMillis();
-            String curTime = String.valueOf(date).substring(0, 10);
-            Integer viptime = usersinfo.getVip();
-            if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
-                double newPrice = price;
-                newPrice = newPrice * vipDiscount;
-                price = (int) newPrice;
-            }
-            Integer oldAssets = usersinfo.getAssets();
-            if (price > oldAssets) {
-                return Result.getResultJson(0, "积分余额不足", null);
-            }
-
-            Integer status = shopinfo.getStatus();
-            if (!status.equals(1)) {
-                return Result.getResultJson(0, "该商品已下架", null);
-            }
-            Integer num = shopinfo.getNum();
-            if (!num.equals(-1)) {
-                if (num < 1) {
-                    return Result.getResultJson(0, "该商品已售完", null);
-                }
-            }
-
-            if (price < 0) {
-                return Result.getResultJson(0, "该商品价格参数异常，无法交易", null);
-            }
-            Integer Assets = oldAssets - price;
-            usersinfo.setAssets(Assets);
-            //生成用户日志，这里的cid用于商品id
-            Userlog log = new Userlog();
-            log.setType("buy");
-            log.setUid(uid);
-            log.setCid(Integer.parseInt(sid));
-
-            //判断商品类型，如果是实体商品需要设置收货地址
-            Integer type = shopinfo.getType();
-            String address = usersinfo.getAddress();
-            if (type.equals(1)) {
-                if (address == null || address == "") {
-                    return Result.getResultJson(0, "购买实体商品前，需要先设置收货地址", null);
-                }
-            } else {
-                //判断是否购买，非实体商品不能多次购买
-                Integer isBuy = userlogService.total(log);
-                if (isBuy > 0) {
-                    return Result.getResultJson(0, "你已经购买过了", null);
-                }
-            }
-
-
-            log.setNum(Assets);
-            log.setToid(aid);
-            log.setCreated(Integer.parseInt(curTime));
-            userlogService.insert(log);
-
-
-            //生成购买者资产日志
-            Paylog paylog = new Paylog();
-            paylog.setStatus(1);
-            paylog.setCreated(Integer.parseInt(curTime));
-            paylog.setUid(uid);
-            paylog.setOutTradeNo(curTime + "buyshop");
-            paylog.setTotalAmount("-" + price);
-            paylog.setPaytype("buyshop");
-            paylog.setSubject("购买商品");
-            paylogService.insert(paylog);
-
-            //修改用户账户
-            usersService.update(usersinfo);
-            //修改商品剩余数量
-            if (!num.equals(-1)) {
-                Integer shopnum = shopinfo.getNum();
-                shopnum = shopnum - 1;
-                shopinfo.setNum(shopnum);
-            }
-
-
-            //更新商品卖出数量
-            Integer sellNum = shopinfo.getSellNum();
-            sellNum = sellNum + 1;
-            shopinfo.setSellNum(sellNum);
-            service.update(shopinfo);
-
-
-            //修改店家资产
-            Users minfo = usersService.selectByKey(aid);
-            Integer mAssets = minfo.getAssets();
-            mAssets = mAssets + price;
-            minfo.setAssets(mAssets);
-            usersService.update(minfo);
-            //生成店家资产日志
-
-            Paylog paylogB = new Paylog();
-            paylogB.setStatus(1);
-            paylogB.setCreated(Integer.parseInt(curTime));
-            paylogB.setUid(aid);
-            paylogB.setOutTradeNo(curTime + "sellshop");
-            paylogB.setTotalAmount(price.toString());
-            paylogB.setPaytype("sellshop");
-            paylogB.setSubject("出售商品收益");
-            paylogService.insert(paylogB);
-
+            Map info = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-            //给店家发送邮件
-            if (apiconfig.getIsEmail().equals(2)) {
-                String email = minfo.getMail();
-                String name = minfo.getName();
-                String title = shopinfo.getTitle();
-                if (email != null) {
-                    try {
-                        MailService.send("您有新的商品订单，用户" + name, "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title></title><meta charset=\"utf-8\" /><style>*{padding:0px;margin:0px;box-sizing:border-box;}html{box-sizing:border-box;}body{font-size:15px;background:#fff}.main{margin:20px auto;max-width:500px;border:solid 1px #2299dd;overflow:hidden;}.main h1{display:block;width:100%;background:#2299dd;font-size:18px;color:#fff;text-align:center;padding:15px;}.text{padding:30px;}.text p{margin:10px 0px;line-height:25px;}.text p span{color:#2299dd;font-weight:bold;font-size:22px;margin-left:5px;}</style></head><body><div class=\"main\"><h1>商品订单</h1><div class=\"text\"><p>用户 " + name + "，你的商品<" + title + ">有一个新的订单。</p><p>请及时打开APP进行处理！</p></div></div></body></html>",
-                                new String[]{email}, new String[]{});
-                    } catch (Exception e) {
-                        System.err.println("邮箱发信配置错误：" + e);
-                    }
-                }
+            // 验证通过 获取用户信息
+            Users userInfo = usersService.selectByKey(info.get("uid").toString());
+            Integer money = userInfo.getAssets();
+            // 获取订单信息
+            Order orderInfo = orderService.selectByKey(id);
+            // 获取商品信息
+
+            Shop product = service.selectByKey(orderInfo.getProduct());
+
+            // 判断库存
+            if (product.getNum() < 1) {
+                return Result.getResultJson(0, "商品库存不足", null);
             }
 
-            //发送消息通知
-            String created = String.valueOf(date).substring(0, 10);
-            Inbox inbox = new Inbox();
-            inbox.setUid(uid);
-            inbox.setTouid(shopinfo.getUid());
-            inbox.setType("finance");
-            if (shopinfo.getTitle() == null) {
-                inbox.setText("你的商品有新的订单。");
+            // 检测订单属于权限
+            if (!info.get("uid").equals(orderInfo.getUser_id())) {
+                return Result.getResultJson(0, "订单错误", null);
+            }
+
+            // 获取OK之后判断用户余额是否足够
+            Integer payStatus = 0;
+            if (money >= orderInfo.getPrice()) {
+                money -= orderInfo.getPrice();
+                // 设置订单状态
+                orderInfo.setPaid(1);
+                // 更新用户财产
+                userInfo.setAssets(money);
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+                String orders = dateFormat.format(System.currentTimeMillis()) + System.currentTimeMillis() / 1000 + userInfo.getUid();
+                Integer orderStatus = orderService.update(orderInfo);
+                Integer userStatus = usersService.update(userInfo);
+                if (orderStatus > 0 && userStatus > 0) {
+                    // 写入购买信息
+                    Paylog payInfo = new Paylog();
+                    payInfo.setStatus(1);
+                    payInfo.setUid(userInfo.getUid());
+                    payInfo.setTotalAmount(String.valueOf(orderInfo.getPrice() * -1));
+                    payInfo.setSubject("购买" + orderInfo.getProduct_name());
+                    payInfo.setPaytype("product");
+                    payInfo.setOutTradeNo(orders + userInfo.getUid());
+                    payInfo.setCreated((int) (System.currentTimeMillis()));
+                    payStatus = paylogService.insert(payInfo);
+
+                    // 更新出售数量
+
+                    Integer sellNum = product.getSellNum() + 1;
+                    Integer productNum = product.getNum() - 1;
+                    product.setNum(productNum);
+                    product.setSellNum(sellNum);
+                    service.update(product);
+
+
+                    // 给卖家加米
+                    Users bossInfo = usersService.selectByKey(orderInfo.getBoss_id());
+                    Integer bossMoney = bossInfo.getAssets() + orderInfo.getPrice();
+                    bossInfo.setAssets(bossMoney);
+                    Integer bossStatus = usersService.update(bossInfo);
+
+                    if (bossStatus > 0) {
+                        // 给商家发送消息 然后添加记录
+                        Paylog bossLog = new Paylog();
+                        bossLog.setOutTradeNo(orders + bossInfo.getUid());
+                        bossLog.setUid(bossInfo.getUid());
+                        bossLog.setStatus(1);
+                        bossLog.setCreated((int) (System.currentTimeMillis() / 1000));
+                        bossLog.setSubject("出售" + orderInfo.getProduct_name());
+                        bossLog.setTotalAmount(String.valueOf(orderInfo.getPrice()));
+                        paylogService.insert(bossLog);
+                        // 站内通知
+                        Inbox inbox = new Inbox();
+                        inbox.setText("你的商品【" + orderInfo.getProduct_name() + "】有新订单");
+                        inbox.setUid(userInfo.getUid());
+                        inbox.setTouid(orderInfo.getBoss_id());
+                        inbox.setType("finance");
+
+                        // 通知栏消息
+                        if (apiconfig.getIsPush().equals(1)) {
+                            if (!bossInfo.getClientId().isEmpty()) {
+                                try {
+                                    pushService.sendPushMsg(bossInfo.getClientId(), "消息通知", "你有新的商品订单！", "payload", "finance");
+                                } catch (Exception e) {
+                                    System.err.println("通知发送失败：" + e);
+                                }
+                            }
+                        }
+                    }
+
+                }
+
             } else {
-                inbox.setText("你的商品【" + shopinfo.getTitle() + "】有新的订单。");
+                return Result.getResultJson(201, "余额不足", null);
             }
 
-            inbox.setValue(shopinfo.getId());
-            inbox.setCreated(Integer.parseInt(created));
-            inboxService.insert(inbox);
-            if (apiconfig.getIsPush().equals(1)) {
-                String webTitle = apiconfig.getWebinfoTitle();
-                if (minfo.getClientId() != null) {
-                    try {
-                        pushService.sendPushMsg(minfo.getClientId(), webTitle, "你有新的商品订单！", "payload", "finance");
-                    } catch (Exception e) {
-                        System.err.println("通知发送失败：" + e);
-                    }
-
-                }
-
+            if (payStatus < 1) {
+                return Result.getResultJson(0, "购买错误", null);
             }
 
-            JSONObject response = new JSONObject();
-            response.put("code", 1);
-            response.put("msg", "操作成功");
-            return response.toString();
+            return Result.getResultJson(1, "购买成功", null);
         } catch (Exception e) {
-            JSONObject response = new JSONObject();
-            response.put("code", 0);
-            response.put("msg", "操作失败");
-            return response.toString();
+            e.printStackTrace();
+
+            return Result.getResultJson(0, "操作失败", null);
         }
+    }
 
+    /***
+     * 商家修改订单号和地址
+     */
 
+    @RequestMapping(value = "/tracking")
+    @ResponseBody
+    public String tracking(@RequestParam(value = "id") Integer id,
+                           @RequestParam(value = "token") String token,
+                           @RequestParam(value = "price", required = false) Integer price,
+                           @RequestParam(value = "address", required = false) String address,
+                           @RequestParam(value = "tracking_number", required = false) String tracking_number,
+                           @RequestParam(value = "isTracking", required = false) Integer isTracking) {
+        try {
+            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+            if (uStatus == 0) {
+                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+            }
+            Map info = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+            // 判断订单boss_id是否为infoID
+            Order orderInfo = orderService.selectByKey(id);
+
+            if (!orderInfo.getBoss_id().equals(info.get("uid"))) {
+                return Result.getResultJson(0, "你没有权限修改该订单", null);
+            }
+            // 修改数值
+            if (price != null) {
+                orderInfo.setPrice(price);
+            }
+            if (!address.isEmpty()) {
+                orderInfo.setAddress(address);
+            }
+            if (!tracking_number.isEmpty()) {
+                orderInfo.setTracking_number(tracking_number);
+            }
+            if (isTracking != null) {
+                orderInfo.setIsTracking(isTracking);
+            }
+            // 状态返回信息
+            Integer orderStatus = orderService.update(orderInfo);
+            if (orderStatus < 1) {
+                return Result.getResultJson(0, "修改失败", null);
+            }
+            return Result.getResultJson(1, "修改成功", null);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(0, "接口错误", null);
+        }
     }
 
     /***
