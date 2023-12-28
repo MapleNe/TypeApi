@@ -7,6 +7,7 @@ import com.TypeApi.entity.*;
 import com.TypeApi.common.*;
 import com.TypeApi.service.*;
 import net.dreamlu.mica.xss.core.XssCleanIgnore;
+import netscape.javascript.JSObject;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -560,7 +562,8 @@ public class ShopController {
     @ResponseBody
     public String genOrder(@RequestParam(value = "token", required = true) String token,
                            @RequestParam(value = "product", required = true) Integer product,
-                           @RequestParam(value = "specs", required = true) Integer specs) {
+                           @RequestParam(value = "specs", required = true) Integer specs,
+                           @RequestParam(value = "address") String address) {
         try {
             // 验证用户登录状态
             Boolean isLogin = false;
@@ -577,6 +580,7 @@ public class ShopController {
             Shop userOrder = service.selectByKey(product);
             JSONObject spcesInfo = null;
             // 将 specs 的 JSON 字符串转换为对象列表
+            System.out.println(userOrder);
             JSONArray spcesList = JSONArray.parseArray(userOrder.getSpecs());
             for (int i = 0; i < spcesList.size(); i++) {
                 JSONObject obj = spcesList.getJSONObject(i);
@@ -633,6 +637,7 @@ public class ShopController {
             newData.setProduct_name(userOrder.getTitle());
             newData.setSpecs(spcesInfo.toString());
             newData.setCreated((int) (timeStamp));
+            newData.setAddress(address);
 
             Integer status = orderService.insert(newData);
             if (status > 0) {
@@ -645,6 +650,74 @@ public class ShopController {
 
         } catch (Exception err) {
             err.printStackTrace();
+            return Result.getResultJson(0, "接口异常", null);
+        }
+    }
+
+    /***
+     * 查询订单
+     */
+    @RequestMapping(value = "/order")
+    @ResponseBody
+    public String order(@RequestParam(value = "id") Integer id,
+                        @RequestParam(value = "token") String token) {
+        try {
+            Map userInfo = new HashMap<>();
+            Apiconfig apiconfig = new Apiconfig();
+            if (UStatus.getStatus(token, this.dataprefix, redisTemplate) > 0) {
+                userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+                apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+            } else {
+                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+            }
+            // 验证订单所属
+            Order orderInfo = orderService.selectByKey(id);
+            if (orderInfo.toString().isEmpty()) {
+                return Result.getResultJson(0, "订单不存在", null);
+            }
+            if (!userInfo.get("uid").equals(orderInfo.getUser_id())) {
+                return Result.getResultJson(0, "你没有权限查看该订单", null);
+            }
+
+            Map<String, Object> data = new HashMap<>();
+            Class<?> orderClass = orderInfo.getClass();
+            Field[] fields = orderClass.getDeclaredFields();
+
+            for (Field field : fields) {
+                try {
+                    field.setAccessible(true);
+                    String fieldName = field.getName();
+                    Object value = field.get(orderInfo);
+                    data.put(fieldName, value);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+            // 查找该订单商品的主图片
+            Shop product = service.selectByKey(orderInfo.getProduct());
+            // 格式化Array
+
+            JSONArray product_image = JSONArray.parseArray(product.getImgurl());
+
+            // 格式化Object
+            JSONObject specs = JSONObject.parseObject(orderInfo.getSpecs());
+            JSONObject address = JSONObject.parseObject(orderInfo.getAddress());
+            // 加入店主信息
+            Users bossUser = usersService.selectByKey(orderInfo.getBoss_id());
+            Map bossInfo = new HashMap<>();
+            bossInfo.put("nickname",bossUser.getScreenName());
+            bossInfo.put("username",bossUser.getName());
+            bossInfo.put("uid",bossUser.getUid());
+            bossInfo.put("avatar",bossUser.getAvatar());
+            // 返回信息
+            data.put("bossInfo",bossInfo);
+            data.put("product_image", product_image);
+            data.put("address",address);
+            data.put("specs", specs);
+            return Result.getResultJson(1, "获取成功", data);
+
+        } catch (Exception e) {
+            e.printStackTrace();
             return Result.getResultJson(0, "接口异常", null);
         }
     }

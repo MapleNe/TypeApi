@@ -11,6 +11,7 @@
         <result column="boss_id" property="boss_id" />
         <result column="product" property="product" />
         <result column="product_name" property="product_name" />
+        <result column="address" property="address" />
         <result column="specs" property="specs" />
         <result column="tracking_number" property="tracking_number" />
         <result column="created" property="created" />
@@ -25,6 +26,7 @@
         `product`,
         `product_name`,
         `specs`,
+        `address`,
         `tracking_name`,
         `isTracking`,
         `created`
