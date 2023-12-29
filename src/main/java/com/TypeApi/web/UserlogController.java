@@ -29,7 +29,7 @@ import java.util.*;
  * @date 2022/01/06
  */
 @Controller
-@RequestMapping(value = "/typechoUserlog")
+@RequestMapping(value = "/userlog")
 public class UserlogController {
 
     @Autowired

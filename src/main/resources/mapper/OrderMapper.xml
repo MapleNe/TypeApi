@@ -8,8 +8,10 @@
         <result column="price" property="price" />
         <result column="paid" property="paid" />
         <result column="user_id" property="user_id" />
+        <result column="boss_id" property="boss_id" />
         <result column="product" property="product" />
         <result column="product_name" property="product_name" />
+        <result column="address" property="address" />
         <result column="specs" property="specs" />
         <result column="tracking_number" property="tracking_number" />
         <result column="created" property="created" />
@@ -19,11 +21,15 @@
         `orders`,
         `price`,
         `paid`,
+        `boss_id`,
         `user_id`,
         `product`,
         `product_name`,
         `specs`,
-        `tracking_name`,
+        `address`,
+        `freight`,
+        `tracking_number`,
+        `isTracking`,
         `created`
     </sql>
     <!-- 插入-->
@@ -45,6 +51,9 @@
             <if test ='null != user_id'>
                 `user_id`,
             </if>
+            <if test ='null != boss_id'>
+                `boss_id`,
+            </if>
             <if test ='null != product'>
                 `product`,
             </if>
@@ -56,6 +65,15 @@
             </if>
             <if test ='null != tracking_number'>
                 `tracking_number`,
+            </if>
+            <if test ='null != isTracking'>
+                `isTracking`,
+            </if>
+            <if test ='null != address'>
+                `address`,
+            </if>
+            <if test ='null != freight'>
+                `freight`,
             </if>
             <if test ='null != created'>
                 `created`
@@ -77,6 +95,9 @@
             <if test ='null != user_id'>
                 #{user_id},
             </if>
+            <if test ='null != boss_id'>
+                #{boss_id},
+            </if>
             <if test ='null != product'>
                 #{product},
             </if>
@@ -88,6 +109,15 @@
             </if>
             <if test ='null != tracking_number'>
                 #{tracking_number},
+            </if>
+            <if test ='null != isTracking'>
+                #{isTracking},
+            </if>
+            <if test ='null != address'>
+                #{address},
+            </if>
+            <if test ='null != freight'>
+                #{freight},
             </if>
             <if test ='null != created'>
                 #{created}
@@ -103,10 +133,14 @@
             #{curr.id},
             #{curr.orders},
             #{curr.price},
+             #{curr.user_id},
             #{curr.product},
             #{curr.product_name},
             #{curr.specs},
+            #{curr.address},
+             #{curr.freight},
             #{curr.tracking_number},
+             #{curr.isTracking},
             #{curr.created}
             )
         </foreach>
@@ -116,12 +150,16 @@
     <update id="update" parameterType="com.TypeApi.entity.Order">
         UPDATE ${prefix}_order
         <set>
-            <if test ='null != price'>`price` = #{price},</if>
-            <if test ='null != product'>`product` = #{product},</if>
-            <if test ='null != product_name'>`product_name` = #{product_name},</if>
-            <if test ='null != specs'>`specs` = #{specs},</if>
-            <if test ='null != tracking_number'>`tracking_number` = #{tracking_number},</if>
-            <if test ='null != created'>`created` = #{created}</if>
+            <if test='null != price'>`price` = #{price},</if>
+            <if test='null != product'>`product` = #{product},</if>
+            <if test='null != product_name'>`product_name` = #{product_name},</if>
+            <if test='null != paid'>`paid` = #{paid},</if>
+            <if test='null != specs'>`specs` = #{specs},</if>
+            <if test='null != tracking_number'>`tracking_number` = #{tracking_number},</if>
+            <if test='null != isTracking'>`isTracking` = #{isTracking},</if>
+            <if test='null != address'>`address` = #{address},</if>
+            <if test='null != freight'>`freight` = #{freight},</if>
+            <if test='null != created'>`created` = #{created}</if>
         </set>
         WHERE `id` = #{id}
     </update>
@@ -176,11 +214,20 @@
             <if test ='null != price'>
                 and `price` = #{price}
             </if>
+            <if test ='null != boss_id'>
+                and `boss_id` = #{boss_id}
+            </if>
+            <if test ='null != user_id'>
+                and `user_id` = #{user_id}
+            </if>
             <if test ='null != orderKey'>
                 and `order` = #{orderKey}
             </if>
             <if test ='null != tracking_number'>
                 and `tracking_number` = #{tracking_number}
+            </if>
+            <if test ='null != isTracking'>
+                and `isTracking` = #{isTracking}
             </if>
         </where>
     </select>
@@ -189,38 +236,44 @@
         SELECT <include refid="Base_Column_List" />
         FROM ${prefix}_order
         <where>
-            <if test ='null != typechoOrder.id'>
-                and `id` = #{typechoOrder.id}
+            <if test ='order.id !=null'>
+                and `id` = #{order.id}
             </if>
-            <if test ='null != typechoOrder.orders'>
-                and `orders` = #{typechoOrder.orders}
+            <if test ='order.orders !=null'>
+                and `orders` = #{order.orders}
             </if>
-            <if test ='null != typechoOrder.price'>
-                and `price` = #{typechoOrder.price}
+            <if test ='order.price !=null'>
+                and `price` = #{order.price}
             </if>
-            <if test ='null != typechoOrder.paid'>
-                and `paid` = #{typechoOrder.paid}
+            <if test ='order.paid !=null'>
+                and `paid` = #{order.paid}
             </if>
-            <if test ='null != typechoOrder.product'>
-                and `product` = #{typechoOrder.product}
+            <if test ='order.product !=null'>
+                and `product` = #{order.product}
             </if>
-            <if test ='null != typechoOrder.product_name'>
-                and `product_name` = #{typechoOrder.product_name}
+            <if test ='order.user_id !=null'>
+                and `user_id` = #{order.user_id}
             </if>
-            <if test ='null != typechoOrder.orderKey'>
-                and `order` = #{typechoOrder.orderKey}
+            <if test ='order.boss_id !=null'>
+                and `boss_id` = #{order.boss_id}
             </if>
-            <if test ='null != typechoOrder.tracking_number'>
-                and `tracking_number` = #{typechoOrder.tracking_number}
+            <if test ='order.product_name !=null'>
+                and `product_name` = #{order.product_name}
             </if>
 
-           
-            <if test ='null != searchKey'>
+            <if test ='order.tracking_number !=null'>
+                and `tracking_number` = #{order.tracking_number}
+            </if>
+            <if test ='order.isTracking !=null'>
+                and `isTracking` = #{order.isTracking}
+            </if>
+
+            <if test ='searchKey !=null'>
                 and CONCAT(IFNULL(`tracking_number`, ''), IFNULL(`product_name`, '')) LIKE CONCAT('%', #{searchKey}, '%')
             </if>
         </where>
-        <if test="order != null and order != ''">
-            order by CONCAT('`', #{order}, '`')
+        <if test ='orderKey !=null'>
+            order by ${orderKey}
         </if>
         limit ${page}, ${pageSize}
     </select>

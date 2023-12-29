@@ -22,7 +22,7 @@ import java.util.*;
  * @date 2023/01/10
  */
 @Controller
-@RequestMapping(value = "/typechoChat")
+@RequestMapping(value = "/chat")
 public class ChatController {
 
     @Autowired

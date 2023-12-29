@@ -208,7 +208,7 @@
             <if test ='null != iswaterfall'>
                 and `iswaterfall` = #{iswaterfall}
             </if>
-            <if test ='null != parent'>
+            <if test ='null != isrecommend'>
                 and `isrecommend` = #{isrecommend}
             </if>
         </where>

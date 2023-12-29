@@ -65,7 +65,7 @@ public class InstallController {
             Integer i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_users';", Integer.class);
             if (i.equals(0)) {
                 code = 101;
-                msg = "Typecho未安装或者数据表前缀不正确。";
+                msg = "数据库未安装";
             }
         } catch (Exception e) {
             code = 102;
@@ -80,13 +80,13 @@ public class InstallController {
     /***
      * 安装Typecho数据库
      */
-    @RequestMapping(value = "/typechoInstall")
+    @RequestMapping(value = "/databaseInstall")
     @ResponseBody
-    public String typechoInstall(@RequestParam(value = "webkey", required = false, defaultValue = "") String webkey, @RequestParam(value = "name", required = false) String name, @RequestParam(value = "password", required = false) String password) {
+    public String databaseInstall(@RequestParam(value = "webkey", required = false, defaultValue = "") String webkey, @RequestParam(value = "username", required = false) String username, @RequestParam(value = "password", required = false) String password,@RequestParam(value = "email", required = false) String email) {
         if (!webkey.equals(this.key)) {
             return Result.getResultJson(0, "请输入正确的访问KEY。如果忘记，可在服务器/opt/application.properties中查看", null);
         }
-        if (name == null || password == null) {
+        if (username == null || password == null) {
             return Result.getResultJson(0, "请求参数错误！", null);
         }
         String isRepeated = redisHelp.getRedis("isTypechoInstall", redisTemplate);
@@ -133,12 +133,13 @@ public class InstallController {
             Long date = System.currentTimeMillis();
             String userTime = String.valueOf(date).substring(0, 10);
             Users user = new Users();
-            user.setName(name);
+            user.setName(username);
             user.setPassword(passwd);
             user.setCreated(Integer.parseInt(userTime));
             user.setGroupKey("administrator");
+            user.setMail(email);
             usersService.insert(user);
-            text += "管理员" + name + "添加完成。";
+            text += "管理员" + username + "添加完成。";
             //安装内容表
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_contents` (" +
                     "  `mid` int(10) unsigned NOT NULL," +
@@ -638,6 +639,74 @@ public class InstallController {
             text += "积分商城模块创建完成。";
         } else {
             text += "积分商城模块已经存在，无需添加。";
+        }
+
+        //订单表
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_order';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("CREATE TABLE `" + prefix + "_order` (" +
+                    "  `id` int NOT NULL AUTO_INCREMENT," +
+                    "  `orders` text DEFAULT NULL COMMENT '商品订单'," +
+                    "  `price` int DEFAULT 0 COMMENT '商品价格'," +
+                    "  `paid` int DEFAULT 0 COMMENT '支付状态'," +
+                    "  `user_id` int NOT NULL COMMENT '购买用户'," +
+                    "  `boss_id` int NOT NULL COMMENT '老板ID'," +
+                    "  `product` int NOT NULL COMMENT '商品ID'," +
+                    "  `product_name` text COMMENT '商品标题'," +
+                    "  `specs` text  COMMENT '商品规格'," +
+                    "  `tracking_number` text NULL COMMENT '快递单'," +
+                    "  `address` text NOT NUll COMMENT '地址'," +
+                    "  `freight` int DEFAULT 0 COMMENT '运费'," +
+                    "  `created` bigint DEFAULT NULL COMMENT '创建时间'," +
+                    "  PRIMARY KEY (`id`)" +
+                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='订单号表';");
+            text += "订单模块创建完成。";
+        } else {
+            text += "订单已经存在，无需添加。";
+        }
+        // 检测订单表 是否存在 boss_id
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_order' and column_name = 'boss_id';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_order ADD boss_id int NOT NULL  COMMENT '老板ID';");
+            text += "订单模块，字段boss_id添加完成。";
+        } else {
+            text += "订单模块，字段boss_id已经存在，无需添加。";
+        }
+
+        // 检测订单表 是否存在 freight
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_order' and column_name = 'freight';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_order ADD freight int DEFAULT 0 COMMENT '运费';");
+            text += "订单模块，字段freight添加完成。";
+        } else {
+            text += "订单模块，字段freight已经存在，无需添加。";
+        }
+
+        // 检测商店 是否存在 freight
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_shop' and column_name = 'freight';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_shop ADD freight int DEFAULT 0 COMMENT '运费';");
+            text += "商店模块，字段freight添加完成。";
+        } else {
+            text += "商店模块，字段freight已经存在，无需添加。";
+        }
+
+        // 检测订单表 是否存在 address
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_order' and column_name = 'address';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_order ADD address text NOT NULL  COMMENT '地址';");
+            text += "订单模块，字段address添加完成。";
+        } else {
+            text += "订单模块，字段address已经存在，无需添加。";
+        }
+
+        // 检测订单表 是否存在 isTracking
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_order' and column_name = 'isTracking';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_order ADD isTracking int DEFAULT 0 COMMENT '地址';");
+            text += "订单模块，字段isTracking添加完成。";
+        } else {
+            text += "订单模块，字段isTracking已经存在，无需添加。";
         }
 
         //查询商品表是否存在 specs 字段
@@ -1562,7 +1631,7 @@ public class InstallController {
         text += " ------ 执行结束，安装执行完成";
 
         redisHelp.setRedis(this.dataprefix + "_" + "isInstall", "1", 60, redisTemplate);
-        return text;
+        return Result.getResultJson(1,text,null);
     }
 
     /***

@@ -26,7 +26,7 @@ import java.util.*;
  * @date 2023/02/05
  */
 @Controller
-@RequestMapping(value = "/typechoSpace")
+@RequestMapping(value = "/space")
 public class SpaceController {
 
     @Autowired

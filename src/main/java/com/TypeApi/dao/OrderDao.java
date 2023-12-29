@@ -18,7 +18,7 @@ public interface OrderDao {
     /**
      * [新增]
      **/
-    int insert(Order Order);
+    int insert(Order order);
 
     /**
      * [批量新增]
@@ -28,7 +28,7 @@ public interface OrderDao {
     /**
      * [更新]
      **/
-    int update(Order Order);
+    int update(Order order);
 
     /**
      * [删除]
@@ -53,15 +53,15 @@ public interface OrderDao {
     /**
      * [条件查询]
      **/
-    List<Order> selectList(Order Order);
+    List<Order> selectList(Order order);
 
     /**
      * [分页条件查询]
      **/
-    List<Order> selectPage(@Param("Order") Order Order, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey, @Param("order") String order);
+    List<Order> selectPage(@Param("order") Order order, @Param("page") Integer page, @Param("pageSize") Integer pageSize, @Param("searchKey") String searchKey, @Param("orderKey") String orderKey);
 
     /**
      * [总量查询]
      **/
-    int total(Order Order);
+    int total(Order order);
 }

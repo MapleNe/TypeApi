@@ -1,19 +1,25 @@
 package com.TypeApi.entity;
 import java.io.Serializable;
 import java.math.BigInteger;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
+@Data
 public class Order implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /***
      * 订单ID
      */
+    @Getter
+    @Setter
     private Integer id;
 
     /***
      * 订单号
      */
-    private BigInteger orders;
+    private String orders;
 
     /***
      * 价格
@@ -29,6 +35,11 @@ public class Order implements Serializable {
      * 用户id
      */
     private Integer user_id;
+
+    /***
+     * 老板id
+     */
+    private Integer boss_id;
 
     /***
      * 商品id
@@ -48,7 +59,27 @@ public class Order implements Serializable {
     /***
      * 运单号
      */
-    private Long tracking_number;
+    private String tracking_number;
+
+    /***
+     * 是否发货
+     */
+    private Integer isTracking;
+
+    /***
+     * 地址
+     */
+    private String address;
+
+    /***
+     * freight
+     */
+    private  Integer freight;
+
+    /**
+     * order
+     */
+    private String orderKey;
 
     /***
      * 创建时间

@@ -33,7 +33,7 @@ import java.util.Map;
  */
 @Component
 @Controller
-@RequestMapping(value = "/typechoMetas")
+@RequestMapping(value = "/category")
 public class CategoryController {
 
     @Autowired
@@ -347,13 +347,13 @@ public class CategoryController {
      * @param page         页码
      * @param limit        每页显示数量
      */
-    @RequestMapping(value = "/metasList")
+    @RequestMapping(value = "/list")
     @ResponseBody
-    public String metasList(@RequestParam(value = "searchParams", required = false) String searchParams,
-                            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                            @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
-                            @RequestParam(value = "searchKey", required = false, defaultValue = "") String searchKey,
-                            @RequestParam(value = "order", required = false, defaultValue = "") String order) {
+    public String categoryList(@RequestParam(value = "searchParams", required = false) String searchParams,
+                               @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                               @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
+                               @RequestParam(value = "searchKey", required = false, defaultValue = "") String searchKey,
+                               @RequestParam(value = "order", required = false, defaultValue = "") String order) {
         Category query = new Category();
         String sqlParams = "null";
         if (limit > 50) {
@@ -392,12 +392,19 @@ public class CategoryController {
                         Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
                         Object optObject = json.get("opt");
 
-                        if (optObject != null && !optObject.toString().isEmpty() &&optObject.toString()!="") {
+                        if (optObject != null && !optObject.toString().isEmpty() && optObject.toString() != "") {
                             JSONObject opt = JSONObject.parseObject(optObject.toString());
                             json.put("opt", opt);
                         }
+                        // 获取二级分类
+                        Category subCategorySearch = new Category();
+                        subCategorySearch.setParent(Integer.parseInt(json.get("mid").toString()));
+                        List<Category> subCategory  = service.selectList(subCategorySearch);
+                        System.out.println("打印子分类查询"+subCategorySearch+subCategory);
+                        json.put("subCategory", subCategory);
+
                         // 根据具体需求决定是否将 json 添加到 jsonList
-                         jsonList.add(json);
+                        jsonList.add(json);
                     }
                 }
                 redisHelp.delete(this.dataprefix + "_" + "metasList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams, redisTemplate);
@@ -421,7 +428,7 @@ public class CategoryController {
     /***
      * 查询分类详情
      */
-    @RequestMapping(value = "/metaInfo")
+    @RequestMapping(value = "/info")
     @ResponseBody
     public String metaInfo(
             @RequestParam(value = "key", required = false) String key,
@@ -460,7 +467,7 @@ public class CategoryController {
     /***
      * 修改分类和标签
      */
-    @RequestMapping(value = "/editMeta")
+    @RequestMapping(value = "/update")
     @ResponseBody
     public String editMeta(@RequestParam(value = "params", required = false) String params, @RequestParam(value = "token", required = false) String token) {
         try {
@@ -501,10 +508,11 @@ public class CategoryController {
     /***
      * 修改分类和标签
      */
-    @RequestMapping(value = "/addMeta")
+    @RequestMapping(value = "/add")
     @ResponseBody
     public String addMeta(@RequestParam(value = "params", required = false) String params, @RequestParam(value = "token", required = false) String token) {
         try {
+            System.out.println(params);
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
@@ -534,7 +542,6 @@ public class CategoryController {
             if (isHave > 0) {
                 return Result.getResultJson(0, "已存在同名数据", null);
             }
-
             int rows = service.insert(insert);
             editFile.setLog("管理员" + logUid + "请求添加分类");
             JSONObject response = new JSONObject();
@@ -553,7 +560,7 @@ public class CategoryController {
     /***
      * 删除分类和标签
      */
-    @RequestMapping(value = "/deleteMeta")
+    @RequestMapping(value = "/delete")
     @ResponseBody
     public String deleteMeta(@RequestParam(value = "id", required = false) String id,
                              @RequestParam(value = "token", required = false) String token) {

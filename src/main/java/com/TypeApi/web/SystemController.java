@@ -662,7 +662,7 @@ public class SystemController {
     @ResponseBody
     public String apiConfigUpdate(@RequestParam(value = "params", required = false) String  params,@RequestParam(value = "webkey", required = false) String  webkey) {
         Apiconfig update = null;
-        if(webkey.length()<1){
+        if(webkey.isEmpty()){
             return Result.getResultJson(0,"请输入正确的访问key",null);
         }
         if(!webkey.equals(this.key)){
@@ -693,7 +693,7 @@ public class SystemController {
         String apiNewVersion = redisHelp.getRedis(this.dataprefix+"_"+"apiNewVersion",redisTemplate);
         HashMap data = new HashMap();
         if(apiNewVersion==null) {
-            String requestUrl = "https://www.ruletree.club/ruleApiInfo.php?ver=1";
+            String requestUrl = "";
             String res = HttpClient.doGet(requestUrl);
             if (res == null) {
                 return Result.getResultJson(0, "获取服务端信息失败", null);

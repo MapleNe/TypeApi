@@ -21,8 +21,8 @@
         <result column="sort" property="sort" />
         <result column="subtype" property="subtype" />
         <result column="specs" property="specs" />
+        <result column="freight" property="freight" />
         <result column="isView" property="isView" />
-
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -44,6 +44,7 @@
         `sort`,
         `subtype`,
         `specs`,
+        `freight`,
         `isView`
     </sql>
 
@@ -102,6 +103,9 @@
             <if test ='null != specs'>
                 `specs`,
             </if>
+            <if test ='null != freight'>
+                `freight`,
+            </if>
             <if test ='null != isView'>
                 `isView`
             </if>
@@ -158,6 +162,9 @@
             <if test ='null != specs'>
                 #{specs},
             </if>
+            <if test ='null != freight'>
+                #{freight},
+            </if>
             <if test ='null != isView'>
                 #{isView}
             </if>
@@ -186,6 +193,7 @@
             <if test ='null != sort'>`sort` = #{sort},</if>
             <if test ='null != subtype'>`subtype` = #{subtype},</if>
             <if test ='null != specs'>`specs` = #{specs},</if>
+            <if test ='null != freight'>`freight` = #{freight},</if>
             <if test ='null != isView'>`isView` = #{isView}</if>
         </set>
         WHERE `id` = #{id}
@@ -324,7 +332,7 @@
             </if>
         </where>
         <if test ='"" != order'>
-            order by ${order} desc
+            order by ${order}
         </if>
         limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
     </select>
