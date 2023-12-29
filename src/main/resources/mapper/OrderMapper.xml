@@ -27,6 +27,7 @@
         `product_name`,
         `specs`,
         `address`,
+        `freight`,
         `tracking_name`,
         `isTracking`,
         `created`
@@ -71,6 +72,9 @@
             <if test ='null != address'>
                 `address`,
             </if>
+            <if test ='null != freight'>
+                `freight`,
+            </if>
             <if test ='null != created'>
                 `created`
             </if>
@@ -112,6 +116,9 @@
             <if test ='null != address'>
                 #{address},
             </if>
+            <if test ='null != freight'>
+                #{freight},
+            </if>
             <if test ='null != created'>
                 #{created}
             </if>
@@ -131,6 +138,7 @@
             #{curr.product_name},
             #{curr.specs},
             #{curr.address},
+             #{curr.freight},
             #{curr.tracking_number},
              #{curr.isTracking},
             #{curr.created}
@@ -150,6 +158,7 @@
             <if test ='null != tracking_number'>`tracking_number` = #{tracking_number},</if>
             <if test ='null != isTracking'>`isTracking` = #{isTracking},</if>
             <if test ='null != address'>`address` = #{address},</if>
+            <if test ='null != freight'>`freight` = #{freight},</if>
             <if test ='null != created'>`created` = #{created}</if>
         </set>
         WHERE `id` = #{id}

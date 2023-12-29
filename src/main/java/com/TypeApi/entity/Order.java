@@ -67,6 +67,11 @@ public class Order implements Serializable {
     private String address;
 
     /***
+     * freight
+     */
+    private  Integer freight;
+
+    /***
      * 创建时间
      */
     private Integer created;

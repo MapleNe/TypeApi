@@ -656,6 +656,7 @@ public class InstallController {
                     "  `specs` text  COMMENT '商品规格'," +
                     "  `tracking_name` text NULL COMMENT '快递单'," +
                     "  `address` text NOT NUll COMMENT '地址'," +
+                    "  `freight` int DEFAULT 0 COMMENT '运费'," +
                     "  `created` bigint DEFAULT NULL COMMENT '创建时间'," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='订单号表';");
@@ -670,6 +671,24 @@ public class InstallController {
             text += "订单模块，字段boss_id添加完成。";
         } else {
             text += "订单模块，字段boss_id已经存在，无需添加。";
+        }
+
+        // 检测订单表 是否存在 freight
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_order' and column_name = 'freight';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_order ADD freight int DEFAULT 0 COMMENT '运费';");
+            text += "订单模块，字段freight添加完成。";
+        } else {
+            text += "订单模块，字段freight已经存在，无需添加。";
+        }
+
+        // 检测商店 是否存在 freight
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_shop' and column_name = 'freight';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_shop ADD freight int DEFAULT 0 COMMENT '运费';");
+            text += "商店模块，字段freight添加完成。";
+        } else {
+            text += "商店模块，字段freight已经存在，无需添加。";
         }
 
         // 检测订单表 是否存在 address

@@ -567,7 +567,7 @@ public class ShopController {
         try {
             // 验证用户登录状态
             Boolean isLogin = false;
-            Map userInfo = null;
+            Map userInfo = new HashMap<>();
             Apiconfig apiconfig = new Apiconfig();
             if (UStatus.getStatus(token, this.dataprefix, redisTemplate) > 0) {
                 isLogin = true;
@@ -578,9 +578,9 @@ public class ShopController {
             }
             // 获取到商品信息
             Shop userOrder = service.selectByKey(product);
-            JSONObject spcesInfo = null;
+            JSONObject spcesInfo = new JSONObject();
             // 将 specs 的 JSON 字符串转换为对象列表
-            System.out.println(userOrder);
+            
             JSONArray spcesList = JSONArray.parseArray(userOrder.getSpecs());
             for (int i = 0; i < spcesList.size(); i++) {
                 JSONObject obj = spcesList.getJSONObject(i);
@@ -603,23 +603,23 @@ public class ShopController {
                 if (Float.parseFloat(userOrder.getVipDiscount()) < 1) {
                     // 先判断specs中有没有设置价格
                     if (spcesInfo.getInteger("price") > 0) {
-                        price = (int) (spcesInfo.getInteger("price") * Float.parseFloat(userOrder.getVipDiscount()));
+                        price = (int) (spcesInfo.getInteger("price") * Float.parseFloat(userOrder.getVipDiscount())+userOrder.getFreight());
                     } else {
-                        price = (int) (userOrder.getPrice() * Float.parseFloat(userOrder.getVipDiscount()));
+                        price = (int) (userOrder.getPrice() * Float.parseFloat(userOrder.getVipDiscount())+userOrder.getFreight());
                     }
                 } else {
                     if (spcesInfo.getInteger("price") > 0) {
-                        price = (int) (spcesInfo.getInteger("price") * Float.parseFloat(apiconfig.getVipDiscount()));
+                        price = (int) (spcesInfo.getInteger("price") * Float.parseFloat(apiconfig.getVipDiscount())+userOrder.getFreight());
                     } else {
-                        price = (int) (userOrder.getPrice() * Float.parseFloat(apiconfig.getVipDiscount()));
+                        price = (int) (userOrder.getPrice() * Float.parseFloat(apiconfig.getVipDiscount())+userOrder.getFreight());
                     }
                 }
             } else {
                 if (spcesInfo.getInteger("price") > 0) {
-                    price = spcesInfo.getInteger("price");
+                    price = spcesInfo.getInteger("price")+userOrder.getFreight();
 
                 } else {
-                    price = userOrder.getPrice();
+                    price = userOrder.getPrice()+userOrder.getFreight();
                 }
             }
 
@@ -634,9 +634,10 @@ public class ShopController {
             newData.setUser_id(Integer.parseInt(userInfo.get("uid").toString()));
             newData.setBoss_id(userOrder.getUid());
             newData.setProduct(product);
+            newData.setFreight(userOrder.getFreight());
             newData.setProduct_name(userOrder.getTitle());
             newData.setSpecs(spcesInfo.toString());
-            newData.setCreated((int) (timeStamp));
+            newData.setCreated((int) (currentTime));
             newData.setAddress(address);
 
             Integer status = orderService.insert(newData);
@@ -832,6 +833,10 @@ public class ShopController {
             // 检测订单属于权限
             if (!info.get("uid").equals(orderInfo.getUser_id())) {
                 return Result.getResultJson(0, "订单错误", null);
+            }
+
+            if(orderInfo.getPaid().equals(1)){
+                return  Result.getResultJson(0,"该订单已支付",null);
             }
 
             // 获取OK之后判断用户余额是否足够

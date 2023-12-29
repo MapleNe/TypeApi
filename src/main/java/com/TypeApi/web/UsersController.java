@@ -386,6 +386,17 @@ public class UsersController {
                 } else {
                     opt = null;
                 }
+                // 格式化address
+                if (!info.getAddress().isEmpty()) {
+                    JSONObject address = JSONObject.parseObject(info.getAddress());
+                    if (address instanceof Object) {
+                        address = JSONObject.parseObject(info.getAddress());
+                        json.put("address",address);
+                    } else {
+                        address = null;
+                    }
+                }
+
                 json.put("opt", opt);
                 //获取用户评论等级
                 Integer uid = Integer.parseInt(key);
@@ -399,7 +410,7 @@ public class UsersController {
                 Integer level = levelAndExp.get(0);
                 Integer nextExp = levelAndExp.get(1);
                 json.put("level", level);
-                json.put("nextExp",nextExp);
+                json.put("nextExp", nextExp);
                 //判断是否为VIP
                 json.put("isvip", 0);
                 Long date = System.currentTimeMillis();
@@ -409,19 +420,17 @@ public class UsersController {
                     json.put("isvip", 1);
                 }
                 json.remove("password");
-                json.remove("address");
+
                 json.remove("clientId");
                 json.remove("pay");
                 Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
                 if (map.size() > 0) {
                     String group = map.get("group").toString();
-                    if (!group.equals("administrator")) {
-                        json.remove("assets");
-                    }
+                    if (!group.equals("administrator")) json.remove("assets");
+                    if (!map.get("uid").equals(info.getUid())) json.remove("address");
                 } else {
                     json.remove("assets");
                 }
-
 
                 Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
                 if (json.get("avatar") == null) {
@@ -620,7 +629,6 @@ public class UsersController {
     @RequestMapping(value = "/apiLogin")
     @ResponseBody
     public String apiLogin(@RequestParam(value = "params", required = false) String params, HttpServletRequest request) {
-
 
         Map jsonToMap = null;
         String oldpw = null;
@@ -1498,7 +1506,7 @@ public class UsersController {
                 }
 
                 if (jsonToMap.get("name") == null) {
-                    return Result.getResultJson(0, "用户不存在", null);
+                    jsonToMap.put("name", map.get("name"));
                 }
                 Map keyName = new HashMap<String, String>();
                 keyName.put("name", jsonToMap.get("name").toString());
@@ -1532,7 +1540,7 @@ public class UsersController {
                 //jsonToMap.remove("introduce");
                 jsonToMap.remove("assets");
                 jsonToMap.remove("experience");
-                if(!map.get("group").toString().equals("administrator")){
+                if (!map.get("group").toString().equals("administrator")) {
                     jsonToMap.remove("vip");
 
                 }
@@ -2240,7 +2248,7 @@ public class UsersController {
      */
     @RequestMapping(value = "/invitationExcel")
     @ResponseBody
-    public void invitationExcel(@RequestParam(value = "limit",required = false) Integer limit, @RequestParam(value = "token", required = false) String token, HttpServletResponse response) throws IOException {
+    public void invitationExcel(@RequestParam(value = "limit", required = false) Integer limit, @RequestParam(value = "token", required = false) String token, HttpServletResponse response) throws IOException {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet("邀请码列表");
 

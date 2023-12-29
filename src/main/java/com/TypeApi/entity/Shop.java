@@ -103,6 +103,11 @@ public class Shop implements Serializable {
 
     private String specs;
 
+    /***
+     * freight
+     */
+    private  Integer freight;
+
     /**
      * isView  是否可见
      */
