@@ -15,8 +15,8 @@ public class OrderServiceImpl implements OrderService {
     OrderDao dao;
 
     @Override
-    public int insert(Order Order) {
-        return dao.insert(Order);
+    public int insert(Order order) {
+        return dao.insert(order);
     }
 
     @Override
@@ -25,8 +25,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public int update(Order Order) {
-        return dao.update(Order);
+    public int update(Order order) {
+        return dao.update(order);
     }
 
     @Override
@@ -50,15 +50,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<Order> selectList(Order Order) {
-        return dao.selectList(Order);
+    public List<Order> selectList(Order order) {
+        return dao.selectList(order);
     }
 
     @Override
-    public PageList<Order> selectPage(Order Order, Integer offset, Integer pageSize, String searchKey, String order) {
+    public PageList<Order> selectPage(Order order, Integer offset, Integer pageSize, String searchKey, String orderKey) {
         PageList<Order> pageList = new PageList<>();
 
-        int total = this.total(Order);
+        int total = this.total(order);
 
         Integer totalPage;
         if (total % pageSize != 0) {
@@ -69,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
 
         int page = (offset - 1) * pageSize;
 
-        List<Order> list = dao.selectPage(Order, page, pageSize,searchKey,order);
+        List<Order> list = dao.selectPage(order, page, pageSize,searchKey,orderKey);
 
         pageList.setList(list);
         pageList.setStartPageNo(offset);
@@ -80,7 +80,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public int total(Order Order) {
-        return dao.total(Order);
+    public int total(Order order) {
+        return dao.total(order);
     }
 }

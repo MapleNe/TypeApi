@@ -577,10 +577,16 @@ public class ShopController {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
             // 获取到商品信息
+
             Shop userOrder = service.selectByKey(product);
             JSONObject spcesInfo = new JSONObject();
+            // 不允许店主本人购买
+            if (userOrder.getUid().equals(userInfo.get("uid"))) {
+                return Result.getResultJson(0, "不允许购买自己的商品", null);
+            }
+
             // 将 specs 的 JSON 字符串转换为对象列表
-            
+
             JSONArray spcesList = JSONArray.parseArray(userOrder.getSpecs());
             for (int i = 0; i < spcesList.size(); i++) {
                 JSONObject obj = spcesList.getJSONObject(i);
@@ -603,23 +609,23 @@ public class ShopController {
                 if (Float.parseFloat(userOrder.getVipDiscount()) < 1) {
                     // 先判断specs中有没有设置价格
                     if (spcesInfo.getInteger("price") > 0) {
-                        price = (int) (spcesInfo.getInteger("price") * Float.parseFloat(userOrder.getVipDiscount())+userOrder.getFreight());
+                        price = (int) (spcesInfo.getInteger("price") * Float.parseFloat(userOrder.getVipDiscount()) + userOrder.getFreight());
                     } else {
-                        price = (int) (userOrder.getPrice() * Float.parseFloat(userOrder.getVipDiscount())+userOrder.getFreight());
+                        price = (int) (userOrder.getPrice() * Float.parseFloat(userOrder.getVipDiscount()) + userOrder.getFreight());
                     }
                 } else {
                     if (spcesInfo.getInteger("price") > 0) {
-                        price = (int) (spcesInfo.getInteger("price") * Float.parseFloat(apiconfig.getVipDiscount())+userOrder.getFreight());
+                        price = (int) (spcesInfo.getInteger("price") * Float.parseFloat(apiconfig.getVipDiscount()) + userOrder.getFreight());
                     } else {
-                        price = (int) (userOrder.getPrice() * Float.parseFloat(apiconfig.getVipDiscount())+userOrder.getFreight());
+                        price = (int) (userOrder.getPrice() * Float.parseFloat(apiconfig.getVipDiscount()) + userOrder.getFreight());
                     }
                 }
             } else {
                 if (spcesInfo.getInteger("price") > 0) {
-                    price = spcesInfo.getInteger("price")+userOrder.getFreight();
+                    price = spcesInfo.getInteger("price") + userOrder.getFreight();
 
                 } else {
-                    price = userOrder.getPrice()+userOrder.getFreight();
+                    price = userOrder.getPrice() + userOrder.getFreight();
                 }
             }
 
@@ -706,14 +712,14 @@ public class ShopController {
             // 加入店主信息
             Users bossUser = usersService.selectByKey(orderInfo.getBoss_id());
             Map bossInfo = new HashMap<>();
-            bossInfo.put("nickname",bossUser.getScreenName());
-            bossInfo.put("username",bossUser.getName());
-            bossInfo.put("uid",bossUser.getUid());
-            bossInfo.put("avatar",bossUser.getAvatar());
+            bossInfo.put("nickname", bossUser.getScreenName());
+            bossInfo.put("username", bossUser.getName());
+            bossInfo.put("uid", bossUser.getUid());
+            bossInfo.put("avatar", bossUser.getAvatar());
             // 返回信息
-            data.put("bossInfo",bossInfo);
+            data.put("bossInfo", bossInfo);
             data.put("product_image", product_image);
-            data.put("address",address);
+            data.put("address", address);
             data.put("specs", specs);
             return Result.getResultJson(1, "获取成功", data);
 
@@ -721,6 +727,74 @@ public class ShopController {
             e.printStackTrace();
             return Result.getResultJson(0, "接口异常", null);
         }
+    }
+
+    /***
+     * 订单列表
+     * @param type 0是购买订单 1是商家订单
+     */
+    @RequestMapping(value = "/orderList")
+    @ResponseBody
+    public String orderList(@RequestParam(value = "token") String token,
+                            @RequestParam(value = "page", defaultValue = "1") Integer page,
+                            @RequestParam(value = "limit", defaultValue = "15") Integer limit,
+                            @RequestParam(value = "type", defaultValue = "0") Integer type,
+                            @RequestParam(value = "searchParams", required = false) String searchParams,
+                            @RequestParam(value = "order", defaultValue = "created desc") String order) {
+        try {
+            Map userInfo = new HashMap<>();
+            Apiconfig apiconfig = new Apiconfig();
+            if (UStatus.getStatus(token, this.dataprefix, redisTemplate) > 0) {
+                userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+                apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
+            } else {
+                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+            }
+            // 开始查询
+            // 先将searchParams 格式化
+            Order query = new Order();
+            if (StringUtils.isNotBlank(searchParams)) {
+                query = JSONObject.parseObject(searchParams).toJavaObject(Order.class);
+                // query设置bossid和userid无效 只能在token获取
+            }
+            if (type.equals(1)) query.setBoss_id(Integer.parseInt(userInfo.get("uid").toString()));
+            else query.setUser_id(Integer.parseInt(userInfo.get("uid").toString()));
+            PageList<Order> orderList = orderService.selectPage(query, page, limit, "", order);
+            List<Order> list = orderList.getList();
+            JSONArray arrayList = new JSONArray();
+            for (Order _order : list) {
+                Map info = JSONObject.parseObject(JSONObject.toJSONString(_order),Map.class);
+                // 格式化Obecjt
+                JSONObject address = JSONObject.parseObject(info.get("address").toString());
+                JSONObject specs = JSONObject.parseObject(info.get("specs").toString());
+                JSONArray product_image = JSONArray.parseArray(service.selectByKey(info.get("product").toString()).getImgurl());
+                Users bossUser = usersService.selectByKey(Integer.parseInt(info.get("boss_id").toString()));
+                JSONObject bossInfo = new JSONObject();
+                bossInfo.put("uid",bossUser.getUid());
+                bossInfo.put("name",bossUser.getName());
+                bossInfo.put("nickname",bossUser.getScreenName());
+                bossInfo.put("avatar",bossUser.getAvatar());
+
+                info.put("bossInfo",bossInfo);
+                info.put("address",address);
+                info.put("specs",specs);
+                info.put("product_image",product_image);
+
+
+                arrayList.add(info);
+            }
+
+            Map reslutData = new HashMap();
+            reslutData.put("data", arrayList);
+            reslutData.put("count", list.size());
+            reslutData.put("total", orderService.total(query));
+            return Result.getResultJson(1, "获取成功", reslutData);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(0, "接口异常", null);
+        }
+
     }
 
     /***
@@ -835,8 +909,8 @@ public class ShopController {
                 return Result.getResultJson(0, "订单错误", null);
             }
 
-            if(orderInfo.getPaid().equals(1)){
-                return  Result.getResultJson(0,"该订单已支付",null);
+            if (orderInfo.getPaid().equals(1)) {
+                return Result.getResultJson(0, "该订单已支付", null);
             }
 
             // 获取OK之后判断用户余额是否足够
@@ -945,23 +1019,33 @@ public class ShopController {
             Map info = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
             // 判断订单boss_id是否为infoID
             Order orderInfo = orderService.selectByKey(id);
-
-            if (!orderInfo.getBoss_id().equals(info.get("uid"))) {
+            System.out.println(info.get("uid")+"草");
+            System.out.println(orderInfo.getBoss_id() + orderInfo.getUser_id());
+            System.out.println(orderInfo.getBoss_id().equals(info.get("uid"))+"草");
+            System.out.println(orderInfo.getUser_id().equals(info.get("uid"))+"草");
+            if (!orderInfo.getBoss_id().equals(info.get("uid")) && !orderInfo.getUser_id().equals(info.get("uid"))) {
                 return Result.getResultJson(0, "你没有权限修改该订单", null);
             }
+            Boolean isUser = false;
+            if(orderInfo.getUser_id().equals(info.get("uid"))) isUser = true;
             // 修改数值
-            if (price != null) {
+            if (price != null &&!isUser) {
                 orderInfo.setPrice(price);
             }
-            if (!address.isEmpty()) {
+            if (address!=null && !address.isEmpty()) {
+                //判断用户 如果已支付则不可修改地址
+                if(isUser&&orderInfo.getPaid().equals(1)){
+                    return  Result.getResultJson(0,"已支付订单，不可修改地址，请联系卖家",null);
+                }
                 orderInfo.setAddress(address);
             }
-            if (!tracking_number.isEmpty()) {
+            if (tracking_number != null && !tracking_number.isEmpty()) {
                 orderInfo.setTracking_number(tracking_number);
             }
-            if (isTracking != null) {
+            if (isTracking != null&&!isUser) {
                 orderInfo.setIsTracking(isTracking);
             }
+
             // 状态返回信息
             Integer orderStatus = orderService.update(orderInfo);
             if (orderStatus < 1) {

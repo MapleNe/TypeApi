@@ -654,7 +654,7 @@ public class InstallController {
                     "  `product` int NOT NULL COMMENT '商品ID'," +
                     "  `product_name` text COMMENT '商品标题'," +
                     "  `specs` text  COMMENT '商品规格'," +
-                    "  `tracking_name` text NULL COMMENT '快递单'," +
+                    "  `tracking_number` text NULL COMMENT '快递单'," +
                     "  `address` text NOT NUll COMMENT '地址'," +
                     "  `freight` int DEFAULT 0 COMMENT '运费'," +
                     "  `created` bigint DEFAULT NULL COMMENT '创建时间'," +

@@ -2,6 +2,9 @@ package com.TypeApi.entity;
 import java.io.Serializable;
 import java.math.BigInteger;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
 @Data
 public class Order implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -9,6 +12,8 @@ public class Order implements Serializable {
     /***
      * 订单ID
      */
+    @Getter
+    @Setter
     private Integer id;
 
     /***
@@ -70,6 +75,11 @@ public class Order implements Serializable {
      * freight
      */
     private  Integer freight;
+
+    /**
+     * order
+     */
+    private String orderKey;
 
     /***
      * 创建时间

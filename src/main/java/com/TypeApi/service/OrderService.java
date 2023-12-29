@@ -6,7 +6,7 @@ public interface OrderService {
     /**
      * [新增]
      **/
-    int insert(Order Order);
+    int insert(Order order);
 
     /**
      * [批量新增]
@@ -16,7 +16,7 @@ public interface OrderService {
     /**
      * [更新]
      **/
-    int update(Order Order);
+    int update(Order order);
 
     /**
      * [删除]
@@ -41,15 +41,15 @@ public interface OrderService {
     /**
      * [条件查询]
      **/
-    List<Order> selectList (Order Order);
+    List<Order> selectList (Order order);
 
     /**
      * [分页条件查询]
      **/
-    PageList<Order> selectPage (Order Order, Integer page, Integer pageSize, String searchKey, String order);
+    PageList<Order> selectPage (Order order, Integer page, Integer pageSize, String searchKey, String orderKey);
 
     /**
      * [总量查询]
      **/
-    int total(Order Order);
+    int total(Order order);
 }
