@@ -7,7 +7,6 @@ import com.TypeApi.entity.*;
 import com.TypeApi.common.*;
 import com.TypeApi.service.*;
 import net.dreamlu.mica.xss.core.XssCleanIgnore;
-import netscape.javascript.JSObject;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.lang.reflect.Field;
-import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
