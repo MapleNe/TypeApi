@@ -359,7 +359,7 @@ public class UsersController {
      */
     @RequestMapping(value = "/userInfo")
     @ResponseBody
-    public String userInfo(@RequestParam(value = "key", required = false) String key, @RequestParam(value = "token", required = false, defaultValue = "") String token) {
+    public String userInfo(@RequestParam(value = "key", required = false) Integer key, @RequestParam(value = "token", required = false, defaultValue = "") String token) {
         try {
             Map json = new HashMap();
             Map cacheInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo_" + key, redisTemplate);
@@ -371,7 +371,6 @@ public class UsersController {
                     return Result.getResultJson(0, "请传入正确的参数", null);
                 }
                 json = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
-
                 // 格式化 head_picture medal opt 为对象
                 JSONObject opt = JSONObject.parseObject(info.getOpt());
                 if (opt instanceof Object) {
@@ -398,17 +397,15 @@ public class UsersController {
                 }
 
                 json.put("opt", opt);
-                //获取用户评论等级
-                Integer uid = Integer.parseInt(key);
+                //获取用户等级
+                Integer uid = key;
                 Comments comments = new Comments();
                 comments.setAuthorId(uid);
                 Integer lv = commentsService.total(comments, null);
-                json.put("commentLv", baseFull.getLv(lv));
-                // 获取用户等级
-
                 List<Integer> levelAndExp = baseFull.getLevel(info.getExperience());
                 Integer level = levelAndExp.get(0);
                 Integer nextExp = levelAndExp.get(1);
+                json.put("commentLv", baseFull.getLv(lv));
                 json.put("level", level);
                 json.put("nextExp", nextExp);
                 //判断是否为VIP
@@ -419,19 +416,27 @@ public class UsersController {
                 if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
                     json.put("isvip", 1);
                 }
-                json.remove("password");
 
-                json.remove("clientId");
-                json.remove("pay");
                 Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+                Integer isFollow = 0;
                 if (map.size() > 0) {
                     String group = map.get("group").toString();
                     if (!group.equals("administrator")) json.remove("assets");
                     if (!map.get("uid").equals(info.getUid())) json.remove("address");
+                    // 是否关注过该用户 只有不是自己才查询
+                    if(!map.get("uid").equals(key)){
+                        Userlog fanLog = new Userlog();
+                        fanLog.setUid(Integer.parseInt(map.get("uid").toString()));
+                        fanLog.setToid(key);
+                        List<Userlog> userList =  userlogService.selectList(fanLog);
+                        if(userList.size()>0){
+                            isFollow = 1;
+                        }
+                    }
                 } else {
                     json.remove("assets");
                 }
-
+                json.put("isFollow",isFollow);
                 Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
                 if (json.get("avatar") == null) {
                     if (json.get("mail") != null) {
@@ -453,6 +458,10 @@ public class UsersController {
                 redisHelp.setKey(this.dataprefix + "_" + "userInfo_" + key, json, this.userCache, redisTemplate);
 
             }
+            json.remove("password");
+            json.remove("clientId");
+            json.remove("pay");
+
             JSONObject response = new JSONObject();
             response.put("code", 1);
             response.put("msg", "");

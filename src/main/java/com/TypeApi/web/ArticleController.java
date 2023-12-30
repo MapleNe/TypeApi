@@ -1084,7 +1084,7 @@ public class ArticleController {
                                  @RequestParam(value = "isDraft", required = false, defaultValue = "0") Integer isDraft,
                                  @RequestParam(value = "mid", required = false, defaultValue = "1") Integer mid,
                                  @RequestParam(value = "price", required = false, defaultValue = "0") Integer price,
-                                 @RequestParam(value = "discount", required = false, defaultValue = "1.0") String discount) {
+                                 @RequestParam(value = "discount", required = false, defaultValue = "1.0") Float discount) {
 
         try {
             Article update = null;
@@ -1102,7 +1102,6 @@ public class ArticleController {
             if (StringUtils.isNotBlank(params)) {
                 Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
                 jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
-
                 if (jsonToMap.containsKey("text")) {
                     if (jsonToMap.get("text").toString().isEmpty()) {
                         return Result.getResultJson(0, "文章内容不能为空", null);

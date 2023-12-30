@@ -66,7 +66,7 @@ public class PayController {
     @Value("${mybatis.configuration.variables.prefix}")
     private String prefix;
 
-    RedisHelp redisHelp =new RedisHelp();
+    RedisHelp redisHelp = new RedisHelp();
     ResultAll Result = new ResultAll();
     HttpClient HttpClient = new HttpClient();
     UserStatus UStatus = new UserStatus();
@@ -74,49 +74,50 @@ public class PayController {
 
     /**
      * 支付宝扫码支付
+     *
      * @return 支付宝生成的订单信息
      */
     @RequestMapping(value = "/scancodePay")
     @ResponseBody
-    public String scancodepay(@RequestParam(value = "num", required = false) String num, @RequestParam(value = "token", required = false) String  token) throws AlipayApiException {
+    public String scancodepay(@RequestParam(value = "num", required = false) String num, @RequestParam(value = "token", required = false) String token) throws AlipayApiException {
 
-        Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-        if(uStatus==0){
-            return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+        if (uStatus == 0) {
+            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
 
         Pattern pattern = Pattern.compile("[0-9]*");
-        if(!pattern.matcher(num).matches()){
-            return Result.getResultJson(0,"充值金额必须为正整数",null);
+        if (!pattern.matcher(num).matches()) {
+            return Result.getResultJson(0, "充值金额必须为正整数", null);
         }
-        if(Integer.parseInt(num) <= 0){
-            return Result.getResultJson(0,"充值金额不正确",null);
+        if (Integer.parseInt(num) <= 0) {
+            return Result.getResultJson(0, "充值金额不正确", null);
         }
 
-        Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
+        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+        Integer uid = Integer.parseInt(map.get("uid").toString());
         //登录情况下，恶意充值攻击拦截
-        String isSilence = redisHelp.getRedis(this.dataprefix+"_"+uid+"_silence",redisTemplate);
-        if(isSilence!=null){
-            return Result.getResultJson(0,"你的操作太频繁了，请稍后再试",null);
+        String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
+        if (isSilence != null) {
+            return Result.getResultJson(0, "你的操作太频繁了，请稍后再试", null);
         }
-        String isRepeated = redisHelp.getRedis(this.dataprefix+"_"+uid+"_isRepeated",redisTemplate);
-        if(isRepeated==null){
-            redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated","1",2,redisTemplate);
-        }else{
+        String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + uid + "_isRepeated", redisTemplate);
+        if (isRepeated == null) {
+            redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", "1", 2, redisTemplate);
+        } else {
             Integer frequency = Integer.parseInt(isRepeated) + 1;
-            if(frequency==3){
-                securityService.safetyMessage("用户ID："+uid+"，在微信充值接口疑似存在攻击行为，请及时确认处理。","system");
-                redisHelp.setRedis(this.dataprefix+"_"+uid+"_silence","1",900,redisTemplate);
-                return Result.getResultJson(0,"你的请求存在恶意行为，15分钟内禁止操作！",null);
-            }else{
-                redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated",frequency.toString(),3,redisTemplate);
+            if (frequency == 3) {
+                securityService.safetyMessage("用户ID：" + uid + "，在微信充值接口疑似存在攻击行为，请及时确认处理。", "system");
+                redisHelp.setRedis(this.dataprefix + "_" + uid + "_silence", "1", 900, redisTemplate);
+                return Result.getResultJson(0, "你的请求存在恶意行为，15分钟内禁止操作！", null);
+            } else {
+                redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", frequency.toString(), 3, redisTemplate);
             }
-            return Result.getResultJson(0,"你的操作太频繁了",null);
+            return Result.getResultJson(0, "你的操作太频繁了", null);
         }
         //攻击拦截结束
 
-        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
 
         final String APPID = apiconfig.getAlipayAppId();
         String RSA2_PRIVATE = apiconfig.getAlipayPrivateKey();
@@ -125,11 +126,11 @@ public class PayController {
         Date now = new Date();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");//可以方便地修改日期格式
         String timeID = dateFormat.format(now);
-        String order_no=timeID+"scancodealipay";
+        String order_no = timeID + "scancodealipay";
         String body = "";
 
 
-        String total_fee=num;  //真实金钱
+        String total_fee = num;  //真实金钱
 
         AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do", APPID, RSA2_PRIVATE, "json",
                 "UTF-8", ALIPAY_PUBLIC_KEY, "RSA2"); //获得初始化的AlipayClient
@@ -148,7 +149,7 @@ public class PayController {
         if (response.getMsg().equals("Success")) {
             //先生成订单
             Long date = System.currentTimeMillis();
-            String created = String.valueOf(date).substring(0,10);
+            String created = String.valueOf(date).substring(0, 10);
             Paylog paylog = new Paylog();
             Integer TotalAmount = Integer.parseInt(total_fee) * apiconfig.getScale();
             paylog.setStatus(0);
@@ -162,15 +163,15 @@ public class PayController {
             //再返回二维码
             String qrcode = response.getQrCode();
             JSONObject toResponse = new JSONObject();
-            toResponse.put("code" ,1);
-            toResponse.put("data" , qrcode);
-            toResponse.put("msg"  , "获取成功");
+            toResponse.put("code", 1);
+            toResponse.put("data", qrcode);
+            toResponse.put("msg", "获取成功");
             return toResponse.toString();
-        } else{
+        } else {
             JSONObject toResponse = new JSONObject();
-            toResponse.put("code" ,0);
-            toResponse.put("data" , "");
-            toResponse.put("msg"  , "请求失败");
+            toResponse.put("code", 0);
+            toResponse.put("data", "");
+            toResponse.put("msg", "请求失败");
             return toResponse.toString();
         }
 
@@ -192,7 +193,7 @@ public class PayController {
             params.put(name, valueStr);
         }
         System.err.println(params);
-        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
         String CHARSET = "UTF-8";
         //支付宝公钥
         String ALIPAY_PUBLIC_KEY = apiconfig.getAlipayPublicKey();
@@ -211,13 +212,13 @@ public class PayController {
                 Integer integral = Double.valueOf(total_amount).intValue() * scale;
 
                 Long date = System.currentTimeMillis();
-                String created = String.valueOf(date).substring(0,10);
+                String created = String.valueOf(date).substring(0, 10);
                 Paylog paylog = new Paylog();
                 //根据订单和发起人，是否有数据库对应，来是否充值成功
                 paylog.setOutTradeNo(out_trade_no);
                 paylog.setStatus(0);
-                List<Paylog> logList= paylogService.selectList(paylog);
-                if(logList.size() > 0){
+                List<Paylog> logList = paylogService.selectList(paylog);
+                if (logList.size() > 0) {
                     Integer pid = logList.get(0).getPid();
                     Integer uid = logList.get(0).getUid();
                     paylog.setStatus(1);
@@ -231,7 +232,7 @@ public class PayController {
                     Integer assets = oldAssets + integral;
                     users.setAssets(assets);
                     usersService.update(users);
-                }else{
+                } else {
                     System.err.println("数据库不存在订单");
                     return "fail";
                 }
@@ -241,14 +242,15 @@ public class PayController {
             return "fail";
         }
     }
+
     /**
      * 二维码生成
-     * */
+     */
     @RequestMapping(value = "/qrCode")
     @ResponseBody
-    public void getQRCode(String codeContent,@RequestParam(value = "token", required = false) String  token, HttpServletResponse response) {
-        Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-        if(uStatus==0){
+    public void getQRCode(String codeContent, @RequestParam(value = "token", required = false) String token, HttpServletResponse response) {
+        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+        if (uStatus == 0) {
             System.err.println("用户未的登陆");
         }
         System.out.println("codeContent=" + codeContent);
@@ -262,58 +264,59 @@ public class PayController {
             System.out.println("发生错误");
         }
     }
+
     /**
      * 充值记录
-     * */
+     */
     @RequestMapping(value = "/payLogList")
     @ResponseBody
-    public String payLogList (@RequestParam(value = "token", required = false) String  token) {
-
-        String page = "1";
-        String limit = "30";
-        Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-        if(uStatus==0){
-            return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+    public String payLogList(@RequestParam(value = "token", required = false) String token,
+                             @RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
+                             @RequestParam(value = "limit", defaultValue = "15", required = false) Integer limit) {
+        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+        if (uStatus == 0) {
+            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
-        Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
+        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+        Integer uid = Integer.parseInt(map.get("uid").toString());
         Integer total = 0;
         Paylog query = new Paylog();
         query.setUid(uid);
         total = paylogService.total(query);
         List<Paylog> list = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix+"_"+"payLogList_"+page+"_"+limit+"_"+uid,redisTemplate);
-        try{
-            if(cacheList.size()>0){
+        List cacheList = redisHelp.getList(this.dataprefix + "_" + "payLogList_" + page + "_" + limit + "_" + uid, redisTemplate);
+        try {
+            if (cacheList.size() > 0) {
                 list = cacheList;
-            }else {
-                PageList<Paylog> pageList = paylogService.selectPage(query, Integer.parseInt(page), Integer.parseInt(limit));
+            } else {
+                PageList<Paylog> pageList = paylogService.selectPage(query, page, limit);
                 list = pageList.getList();
-                redisHelp.delete(this.dataprefix+"_"+"payLogList_"+page+"_"+limit+"_"+uid, redisTemplate);
-                redisHelp.setList(this.dataprefix+"_"+"payLogList_"+page+"_"+limit+"_"+uid, list, 5, redisTemplate);
+                redisHelp.delete(this.dataprefix + "_" + "payLogList_" + page + "_" + limit + "_" + uid, redisTemplate);
+                redisHelp.setList(this.dataprefix + "_" + "payLogList_" + page + "_" + limit + "_" + uid, list, 5, redisTemplate);
             }
-        }catch (Exception e){
-            if(cacheList.size()>0){
+        } catch (Exception e) {
+            if (cacheList.size() > 0) {
                 list = cacheList;
             }
         }
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , null != list ? list : new JSONArray());
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", null != list ? list : new JSONArray());
         response.put("count", list.size());
         response.put("total", total);
         return response.toString();
     }
+
     /**
      * 财务记录(管理员)
-     * */
+     */
     @RequestMapping(value = "/financeList")
     @ResponseBody
-    public String financeList (@RequestParam(value = "searchParams", required = false) String  searchParams,
-                               @RequestParam(value = "token", required = false) String  token,
-                               @RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                               @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit) {
+    public String financeList(@RequestParam(value = "searchParams", required = false) String searchParams,
+                              @RequestParam(value = "token", required = false) String token,
+                              @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                              @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit) {
 
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
         if (uStatus == 0) {
@@ -334,19 +337,20 @@ public class PayController {
         PageList<Paylog> pageList = paylogService.selectPage(query, page, limit);
         List<Paylog> list = pageList.getList();
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , null != list ? list : new JSONArray());
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", null != list ? list : new JSONArray());
         response.put("count", list.size());
         response.put("total", total);
         return response.toString();
     }
+
     /**
      * 财务统计(管理员)
-     * */
+     */
     @RequestMapping(value = "/financeTotal")
     @ResponseBody
-    public String financeTotal (@RequestParam(value = "token", required = false) String  token){
+    public String financeTotal(@RequestParam(value = "token", required = false) String token) {
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
         if (uStatus == 0) {
             return Result.getResultJson(0, "用户未登录或Token验证失败", null);
@@ -357,71 +361,71 @@ public class PayController {
             return Result.getResultJson(0, "你没有操作权限", null);
         }
         Map financeData = new HashMap<String, Integer>();
-        Integer recharge = jdbcTemplate.queryForObject("SELECT SUM(total_amount) FROM `"+prefix+"_paylog` where `status` = 1 and (`subject` = '扫码支付' or `subject` = '微信APP支付' or `subject` = '卡密充值' or `subject` = '系统充值');", Integer.class);
-        Integer trade = jdbcTemplate.queryForObject("SELECT SUM(total_amount) FROM `"+prefix+"_paylog` where `status` = 1 and (`paytype` = 'buyshop' or `paytype` = 'buyvip' or `paytype` = 'toReward' or `paytype` = 'buyAds');", Integer.class);
-        Integer withdraw = jdbcTemplate.queryForObject("SELECT SUM(total_amount) FROM `"+prefix+"_paylog` where `status` = 1 and (`paytype` = 'withdraw' or `subject` = '系统扣款');", Integer.class);
-        Integer income = jdbcTemplate.queryForObject("SELECT SUM(total_amount) FROM `"+prefix+"_paylog` where `status` = 1 and (`paytype` = 'clock' or `paytype` = 'sellshop' or `paytype` = 'reward' or `paytype` = 'adsGift');", Integer.class);
-        if(trade!=null){
+        Integer recharge = jdbcTemplate.queryForObject("SELECT SUM(total_amount) FROM `" + prefix + "_paylog` where `status` = 1 and (`subject` = '扫码支付' or `subject` = '微信APP支付' or `subject` = '卡密充值' or `subject` = '系统充值');", Integer.class);
+        Integer trade = jdbcTemplate.queryForObject("SELECT SUM(total_amount) FROM `" + prefix + "_paylog` where `status` = 1 and (`paytype` = 'buyshop' or `paytype` = 'buyvip' or `paytype` = 'toReward' or `paytype` = 'buyAds');", Integer.class);
+        Integer withdraw = jdbcTemplate.queryForObject("SELECT SUM(total_amount) FROM `" + prefix + "_paylog` where `status` = 1 and (`paytype` = 'withdraw' or `subject` = '系统扣款');", Integer.class);
+        Integer income = jdbcTemplate.queryForObject("SELECT SUM(total_amount) FROM `" + prefix + "_paylog` where `status` = 1 and (`paytype` = 'clock' or `paytype` = 'sellshop' or `paytype` = 'reward' or `paytype` = 'adsGift');", Integer.class);
+        if (trade != null) {
             trade = trade * -1;
         }
-        if(withdraw!=null){
+        if (withdraw != null) {
             withdraw = withdraw * -1;
         }
-        financeData.put("recharge",recharge);
-        financeData.put("trade",trade);
-        financeData.put("withdraw",withdraw);
-        financeData.put("income",income);
+        financeData.put("recharge", recharge);
+        financeData.put("trade", trade);
+        financeData.put("withdraw", withdraw);
+        financeData.put("income", income);
         JSONObject response = new JSONObject();
-        response.put("code" ,1 );
-        response.put("data" , financeData);
-        response.put("msg"  , "");
+        response.put("code", 1);
+        response.put("data", financeData);
+        response.put("msg", "");
         return response.toString();
     }
 
     /**
      * 微信支付
-     * */
+     */
     @RequestMapping(value = "/WxPay")
     @ResponseBody
-    public String wxAdd(HttpServletRequest request,@RequestParam(value = "price", required = false) Integer price,@RequestParam(value = "token", required = false) String  token) throws Exception {
+    public String wxAdd(HttpServletRequest request, @RequestParam(value = "price", required = false) Integer price, @RequestParam(value = "token", required = false) String token) throws Exception {
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
         if (uStatus == 0) {
             return Result.getResultJson(0, "用户未登录或Token验证失败", null);
         }
-        Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-        Integer uid =Integer.parseInt(map.get("uid").toString());
+        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+        Integer uid = Integer.parseInt(map.get("uid").toString());
         //登录情况下，恶意充值攻击拦截
-        String isSilence = redisHelp.getRedis(this.dataprefix+"_"+uid+"_silence",redisTemplate);
-        if(isSilence!=null){
-            return Result.getResultJson(0,"你的操作太频繁了，请稍后再试",null);
+        String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
+        if (isSilence != null) {
+            return Result.getResultJson(0, "你的操作太频繁了，请稍后再试", null);
         }
-        String isRepeated = redisHelp.getRedis(this.dataprefix+"_"+uid+"_isRepeated",redisTemplate);
-        if(isRepeated==null){
-            redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated","1",2,redisTemplate);
-        }else{
+        String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + uid + "_isRepeated", redisTemplate);
+        if (isRepeated == null) {
+            redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", "1", 2, redisTemplate);
+        } else {
             Integer frequency = Integer.parseInt(isRepeated) + 1;
-            if(frequency==3){
-                securityService.safetyMessage("用户ID："+uid+"，在微信充值接口疑似存在攻击行为，请及时确认处理。","system");
-                redisHelp.setRedis(this.dataprefix+"_"+uid+"_silence","1",900,redisTemplate);
-                return Result.getResultJson(0,"你的请求存在恶意行为，15分钟内禁止操作！",null);
-            }else{
-                redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated",frequency.toString(),3,redisTemplate);
+            if (frequency == 3) {
+                securityService.safetyMessage("用户ID：" + uid + "，在微信充值接口疑似存在攻击行为，请及时确认处理。", "system");
+                redisHelp.setRedis(this.dataprefix + "_" + uid + "_silence", "1", 900, redisTemplate);
+                return Result.getResultJson(0, "你的请求存在恶意行为，15分钟内禁止操作！", null);
+            } else {
+                redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", frequency.toString(), 3, redisTemplate);
             }
-            return Result.getResultJson(0,"你的操作太频繁了",null);
+            return Result.getResultJson(0, "你的操作太频繁了", null);
         }
         //攻击拦截结束
-        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
         Integer scale = apiconfig.getScale();
         //商户订单号
         Date now = new Date();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");//可以方便地修改日期格式
         String timeID = dateFormat.format(now);
-        String outTradeNo = timeID+"WxPay";
-        Map<String, String> data = WeChatPayUtils.native_payment_order(price.toString(), "微信商品下单", outTradeNo,apiconfig);
-        if("200".equals(data.get("code"))){
+        String outTradeNo = timeID + "WxPay";
+        Map<String, String> data = WeChatPayUtils.native_payment_order(price.toString(), "微信商品下单", outTradeNo, apiconfig);
+        if ("200".equals(data.get("code"))) {
             //先生成订单
             Long date = System.currentTimeMillis();
-            String created = String.valueOf(date).substring(0,10);
+            String created = String.valueOf(date).substring(0, 10);
             Paylog paylog = new Paylog();
 
             Integer TotalAmount = price * scale;
@@ -438,9 +442,9 @@ public class PayController {
             data.put("totalAmount", price.toString());
 
             JSONObject toResponse = new JSONObject();
-            toResponse.put("code" ,1);
-            toResponse.put("data" , data);
-            toResponse.put("msg"  , "获取成功");
+            toResponse.put("code", 1);
+            toResponse.put("data", data);
+            toResponse.put("msg", "获取成功");
             return toResponse.toString();
         } else {
             JSONObject toResponse = new JSONObject();
@@ -451,32 +455,33 @@ public class PayController {
         }
 
     }
+
     /**
      * 微信回调
-     * */
+     */
     @RequestMapping(value = "/wxPayNotify")
     @ResponseBody
     public String wxPayNotify(
             HttpServletRequest request,
             HttpServletResponse response) throws Exception {
-        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+        Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
         Map<String, Object> map = new ObjectMapper().readValue(request.getInputStream(), Map.class);
-        Map<String, Object> dataMap = WeChatPayUtils.paramDecodeForAPIV3(map,apiconfig);
+        Map<String, Object> dataMap = WeChatPayUtils.paramDecodeForAPIV3(map, apiconfig);
         //判断是否⽀付成功
-        if("SUCCESS".equals(dataMap.get("trade_state"))){
+        if ("SUCCESS".equals(dataMap.get("trade_state"))) {
             //支付完成后，写入充值日志
             String trade_no = dataMap.get("transaction_id").toString();
             String out_trade_no = dataMap.get("out_trade_no").toString();
 
 
             Long date = System.currentTimeMillis();
-            String created = String.valueOf(date).substring(0,10);
+            String created = String.valueOf(date).substring(0, 10);
             Paylog paylog = new Paylog();
             //根据订单和发起人，是否有数据库对应，来是否充值成功
             paylog.setOutTradeNo(out_trade_no);
             paylog.setStatus(0);
-            List<Paylog> logList= paylogService.selectList(paylog);
-            if(logList.size() > 0){
+            List<Paylog> logList = paylogService.selectList(paylog);
+            if (logList.size() > 0) {
                 Integer pid = logList.get(0).getPid();
                 Integer uid = logList.get(0).getUid();
                 paylog.setStatus(1);
@@ -493,7 +498,7 @@ public class PayController {
                 Integer assets = oldAssets + integral;
                 users.setAssets(assets);
                 usersService.update(users);
-            }else{
+            } else {
                 System.err.println("数据库不存在订单");
                 Map<String, String> returnMap = new HashMap<>();
                 returnMap.put("code", "FALL");
@@ -530,11 +535,11 @@ public class PayController {
 
     /**
      * 创建卡密
-     * **/
+     **/
     @RequestMapping(value = "/madetoken")
     @ResponseBody
-    public String madetoken(@RequestParam(value = "price", required = false) Integer  price,@RequestParam(value = "num", required = false) Integer  num,@RequestParam(value = "token", required = false) String  token) {
-        try{
+    public String madetoken(@RequestParam(value = "price", required = false) Integer price, @RequestParam(value = "num", required = false) Integer num, @RequestParam(value = "token", required = false) String token) {
+        try {
             Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
             if (uStatus == 0) {
                 return Result.getResultJson(0, "用户未登录或Token验证失败", null);
@@ -544,10 +549,10 @@ public class PayController {
             if (!group.equals("administrator")) {
                 return Result.getResultJson(0, "你没有操作权限", null);
             }
-            if(num>100){
+            if (num > 100) {
                 num = 100;
             }
-            if(price<1){
+            if (price < 1) {
                 return Result.getResultJson(0, "充值码价格不能小于1", null);
             }
             Long date = System.currentTimeMillis();
@@ -555,7 +560,7 @@ public class PayController {
             //循环生成卡密
             for (int i = 0; i < num; i++) {
                 Paykey paykey = new Paykey();
-                String value = UUID.randomUUID()+"";
+                String value = UUID.randomUUID() + "";
                 paykey.setValue(value);
                 paykey.setStatus(0);
                 paykey.setPrice(price);
@@ -564,27 +569,28 @@ public class PayController {
                 paykeyService.insert(paykey);
             }
             JSONObject response = new JSONObject();
-            response.put("code" , 1);
-            response.put("msg"  , "生成卡密成功");
+            response.put("code", 1);
+            response.put("msg", "生成卡密成功");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             JSONObject response = new JSONObject();
-            response.put("code" , 1);
-            response.put("msg"  , "生成卡密失败");
+            response.put("code", 1);
+            response.put("msg", "生成卡密失败");
             return response.toString();
         }
     }
+
     /***
      * 卡密列表
      *
      */
     @RequestMapping(value = "/tokenPayList")
     @ResponseBody
-    public String tokenPayList (@RequestParam(value = "searchParams", required = false) String  searchParams,
-                            @RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                            @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit,
-                                @RequestParam(value = "searchKey"        , required = false, defaultValue = "") String searchKey,
-                            @RequestParam(value = "token", required = false) String  token) {
+    public String tokenPayList(@RequestParam(value = "searchParams", required = false) String searchParams,
+                               @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                               @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
+                               @RequestParam(value = "searchKey", required = false, defaultValue = "") String searchKey,
+                               @RequestParam(value = "token", required = false) String token) {
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
         if (uStatus == 0) {
             return Result.getResultJson(0, "用户未登录或Token验证失败", null);
@@ -602,11 +608,11 @@ public class PayController {
             total = paykeyService.total(query);
         }
 
-        PageList<Paykey> pageList = paykeyService.selectPage(query, page, limit,searchKey);
+        PageList<Paykey> pageList = paykeyService.selectPage(query, page, limit, searchKey);
         JSONObject response = new JSONObject();
-        response.put("code" , 1);
-        response.put("msg"  , "");
-        response.put("data" , null != pageList.getList() ? pageList.getList() : new JSONArray());
+        response.put("code", 1);
+        response.put("msg", "");
+        response.put("data", null != pageList.getList() ? pageList.getList() : new JSONArray());
         response.put("count", pageList.getTotalCount());
         response.put("total", total);
         return response.toString();
@@ -614,7 +620,7 @@ public class PayController {
 
     @RequestMapping(value = "/tokenPayExcel")
     @ResponseBody
-    public void tokenPayExcel(@RequestParam(value = "limit" , required = false, defaultValue = "15") Integer limit,@RequestParam(value = "token", required = false) String  token,HttpServletResponse response) throws IOException {
+    public void tokenPayExcel(@RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit, @RequestParam(value = "token", required = false) String token, HttpServletResponse response) throws IOException {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet("充值码列表");
 
@@ -634,24 +640,22 @@ public class PayController {
             workbook.write(response.getOutputStream());
         }
         Paykey query = new Paykey();
-        PageList<Paykey> pageList = paykeyService.selectPage(query, 1, limit,"");
+        PageList<Paykey> pageList = paykeyService.selectPage(query, 1, limit, "");
         List<Paykey> list = pageList.getList();
 
 
-
-
-        String fileName = "tokenPayExcel"  + ".xls";//设置要导出的文件的名字
+        String fileName = "tokenPayExcel" + ".xls";//设置要导出的文件的名字
         //新增数据行，并且设置单元格数据
 
         int rowNum = 1;
 
-        String[] headers = { "ID", "充值码", "等同积分"};
+        String[] headers = {"ID", "充值码", "等同积分"};
         //headers表示excel表中第一行的表头
 
         HSSFRow row = sheet.createRow(0);
         //在excel表中添加表头
 
-        for(int i=0;i<headers.length;i++){
+        for (int i = 0; i < headers.length; i++) {
             HSSFCell cell = row.createCell(i);
             HSSFRichTextString text = new HSSFRichTextString(headers[i]);
             cell.setCellValue(text);
@@ -669,51 +673,52 @@ public class PayController {
         response.flushBuffer();
         workbook.write(response.getOutputStream());
     }
+
     /**
      * 卡密充值
-     * **/
+     **/
     @RequestMapping(value = "/tokenPay")
     @ResponseBody
-    public String tokenPay(@RequestParam(value = "key", required = false) String key,@RequestParam(value = "token", required = false) String  token) {
+    public String tokenPay(@RequestParam(value = "key", required = false) String key, @RequestParam(value = "token", required = false) String token) {
         try {
-            Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-            if(uStatus==0){
-                return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+            if (uStatus == 0) {
+                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
-            Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-            Integer uid =Integer.parseInt(map.get("uid").toString());
+            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+            Integer uid = Integer.parseInt(map.get("uid").toString());
             //登录情况下，恶意充值攻击拦截
-            String isSilence = redisHelp.getRedis(this.dataprefix+"_"+uid+"_silence",redisTemplate);
-            if(isSilence!=null){
-                return Result.getResultJson(0,"你的操作太频繁了，请稍后再试",null);
+            String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
+            if (isSilence != null) {
+                return Result.getResultJson(0, "你的操作太频繁了，请稍后再试", null);
             }
-            String isRepeated = redisHelp.getRedis(this.dataprefix+"_"+uid+"_isRepeated",redisTemplate);
-            if(isRepeated==null){
-                redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated","1",2,redisTemplate);
-            }else{
+            String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + uid + "_isRepeated", redisTemplate);
+            if (isRepeated == null) {
+                redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", "1", 2, redisTemplate);
+            } else {
                 Integer frequency = Integer.parseInt(isRepeated) + 1;
-                if(frequency==3){
-                    securityService.safetyMessage("用户ID："+uid+"，在卡密充值接口疑似存在攻击行为，请及时确认处理。","system");
-                    redisHelp.setRedis(this.dataprefix+"_"+uid+"_silence","1",900,redisTemplate);
-                    return Result.getResultJson(0,"你的请求存在恶意行为，15分钟内禁止操作！",null);
-                }else{
-                    redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated",frequency.toString(),3,redisTemplate);
+                if (frequency == 3) {
+                    securityService.safetyMessage("用户ID：" + uid + "，在卡密充值接口疑似存在攻击行为，请及时确认处理。", "system");
+                    redisHelp.setRedis(this.dataprefix + "_" + uid + "_silence", "1", 900, redisTemplate);
+                    return Result.getResultJson(0, "你的请求存在恶意行为，15分钟内禁止操作！", null);
+                } else {
+                    redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", frequency.toString(), 3, redisTemplate);
                 }
-                return Result.getResultJson(0,"你的操作太频繁了",null);
+                return Result.getResultJson(0, "你的操作太频繁了", null);
             }
             //攻击拦截结束
 
             Paykey paykey = paykeyService.selectByKey(key);
-            if(paykey==null){
-                return Result.getResultJson(0,"卡密已失效",null);
+            if (paykey == null) {
+                return Result.getResultJson(0, "卡密已失效", null);
             }
             Integer pirce = paykey.getPrice();
 
             Users users = usersService.selectByKey(uid);
             Integer assets = users.getAssets();
 
-            if(!paykey.getStatus().equals(0)){
-                return Result.getResultJson(0,"卡密已失效",null);
+            if (!paykey.getStatus().equals(0)) {
+                return Result.getResultJson(0, "卡密已失效", null);
             }
 
             //修改卡密状态
@@ -723,12 +728,12 @@ public class PayController {
 
             //生成资产日志
             Long date = System.currentTimeMillis();
-            String curTime = String.valueOf(date).substring(0,10);
+            String curTime = String.valueOf(date).substring(0, 10);
             Paylog paylog = new Paylog();
             paylog.setStatus(1);
             paylog.setCreated(Integer.parseInt(curTime));
             paylog.setUid(uid);
-            paylog.setOutTradeNo(curTime+"tokenPay");
+            paylog.setOutTradeNo(curTime + "tokenPay");
             paylog.setTotalAmount(pirce.toString());
             paylog.setPaytype("tokenPay");
             paylog.setSubject("卡密充值");
@@ -742,16 +747,15 @@ public class PayController {
             usersService.update(newUser);
 
 
-
             JSONObject response = new JSONObject();
-            response.put("code" , 1);
-            response.put("msg"  , "卡密充值成功");
+            response.put("code", 1);
+            response.put("msg", "卡密充值成功");
             return response.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             JSONObject response = new JSONObject();
-            response.put("code" , 0);
-            response.put("msg"  , "卡密充值失败");
+            response.put("code", 0);
+            response.put("msg", "卡密充值失败");
             return response.toString();
         }
 
@@ -759,82 +763,82 @@ public class PayController {
 
     /**
      * 彩虹易支付相关
-     * **/
+     **/
     @RequestMapping(value = "/EPay")
     @ResponseBody
-    public String EPay(@RequestParam(value = "type", required = false) String type,@RequestParam(value = "money", required = false) Integer money,@RequestParam(value = "device", required = false) String device,@RequestParam(value = "token", required = false) String  token,HttpServletRequest request) {
-        if(type==null&&money==null&&money==null&&device==null){
-            return Result.getResultJson(0,"参数不正确",null);
+    public String EPay(@RequestParam(value = "type", required = false) String type, @RequestParam(value = "money", required = false) Integer money, @RequestParam(value = "device", required = false) String device, @RequestParam(value = "token", required = false) String token, HttpServletRequest request) {
+        if (type == null && money == null && money == null && device == null) {
+            return Result.getResultJson(0, "参数不正确", null);
         }
-        try{
-            Integer uStatus = UStatus.getStatus(token,this.dataprefix,redisTemplate);
-            if(uStatus==0){
-                return Result.getResultJson(0,"用户未登录或Token验证失败",null);
+        try {
+            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+            if (uStatus == 0) {
+                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
             }
 
-            Map map =redisHelp.getMapValue(this.dataprefix+"_"+"userInfo"+token,redisTemplate);
-            Integer uid =Integer.parseInt(map.get("uid").toString());
+            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
+            Integer uid = Integer.parseInt(map.get("uid").toString());
             //登录情况下，恶意充值攻击拦截
-            String isSilence = redisHelp.getRedis(this.dataprefix+"_"+uid+"_silence",redisTemplate);
-            if(isSilence!=null){
-                return Result.getResultJson(0,"你的操作太频繁了，请稍后再试",null);
+            String isSilence = redisHelp.getRedis(this.dataprefix + "_" + uid + "_silence", redisTemplate);
+            if (isSilence != null) {
+                return Result.getResultJson(0, "你的操作太频繁了，请稍后再试", null);
             }
-            String isRepeated = redisHelp.getRedis(this.dataprefix+"_"+uid+"_isRepeated",redisTemplate);
-            if(isRepeated==null){
-                redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated","1",2,redisTemplate);
-            }else{
+            String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + uid + "_isRepeated", redisTemplate);
+            if (isRepeated == null) {
+                redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", "1", 2, redisTemplate);
+            } else {
                 Integer frequency = Integer.parseInt(isRepeated) + 1;
-                if(frequency==3){
-                    securityService.safetyMessage("用户ID："+uid+"，在微信充值接口疑似存在攻击行为，请及时确认处理。","system");
-                    redisHelp.setRedis(this.dataprefix+"_"+uid+"_silence","1",900,redisTemplate);
-                    return Result.getResultJson(0,"你的请求存在恶意行为，15分钟内禁止操作！",null);
-                }else{
-                    redisHelp.setRedis(this.dataprefix+"_"+uid+"_isRepeated",frequency.toString(),3,redisTemplate);
+                if (frequency == 3) {
+                    securityService.safetyMessage("用户ID：" + uid + "，在微信充值接口疑似存在攻击行为，请及时确认处理。", "system");
+                    redisHelp.setRedis(this.dataprefix + "_" + uid + "_silence", "1", 900, redisTemplate);
+                    return Result.getResultJson(0, "你的请求存在恶意行为，15分钟内禁止操作！", null);
+                } else {
+                    redisHelp.setRedis(this.dataprefix + "_" + uid + "_isRepeated", frequency.toString(), 3, redisTemplate);
                 }
-                return Result.getResultJson(0,"你的操作太频繁了",null);
+                return Result.getResultJson(0, "你的操作太频繁了", null);
             }
             //攻击拦截结束
 
-            Apiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+            Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
             String url = apiconfig.getEpayUrl();
             Date now = new Date();
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");//可以方便地修改日期格式
             String timeID = dateFormat.format(now);
-            String outTradeNo=timeID+"Epay_"+type;
-            String  clientip = baseFull.getIpAddr(request);
-            Map<String,String> sign = new HashMap<>();
-            sign.put("pid",apiconfig.getEpayPid().toString());
-            sign.put("type",type.toString());
-            sign.put("out_trade_no",outTradeNo);
-            sign.put("notify_url",apiconfig.getEpayNotifyUrl());
-            sign.put("clientip",clientip);
-            sign.put("name","在线充值金额");
-            sign.put("money",money.toString());
+            String outTradeNo = timeID + "Epay_" + type;
+            String clientip = baseFull.getIpAddr(request);
+            Map<String, String> sign = new HashMap<>();
+            sign.put("pid", apiconfig.getEpayPid().toString());
+            sign.put("type", type.toString());
+            sign.put("out_trade_no", outTradeNo);
+            sign.put("notify_url", apiconfig.getEpayNotifyUrl());
+            sign.put("clientip", clientip);
+            sign.put("name", "在线充值金额");
+            sign.put("money", money.toString());
             sign = sortByKey(sign);
             String signStr = "";
-            for(Map.Entry<String,String> m :sign.entrySet()){
-                signStr += m.getKey() + "=" +m.getValue()+"&";
+            for (Map.Entry<String, String> m : sign.entrySet()) {
+                signStr += m.getKey() + "=" + m.getValue() + "&";
             }
-            signStr = signStr.substring(0,signStr.length()-1);
+            signStr = signStr.substring(0, signStr.length() - 1);
             signStr += apiconfig.getEpayKey();
             signStr = DigestUtils.md5DigestAsHex(signStr.getBytes());
-            sign.put("sign_type","MD5");
-            sign.put("sign",signStr);
+            sign.put("sign_type", "MD5");
+            sign.put("sign", signStr);
 
             String param = "";
-            for(Map.Entry<String,String> m :sign.entrySet()){
-                param += m.getKey() + "=" +m.getValue()+"&";
+            for (Map.Entry<String, String> m : sign.entrySet()) {
+                param += m.getKey() + "=" + m.getValue() + "&";
             }
-            param = param.substring(0,param.length()-1);
-            String data = HttpClient.doPost(url+"mapi.php",param);
-            if(data==null){
-                return Result.getResultJson(0,"易支付接口请求失败，请检查配置",null);
+            param = param.substring(0, param.length() - 1);
+            String data = HttpClient.doPost(url + "mapi.php", param);
+            if (data == null) {
+                return Result.getResultJson(0, "易支付接口请求失败，请检查配置", null);
             }
-            HashMap  jsonMap = JSON.parseObject(data, HashMap.class);
-            if(jsonMap.get("code").toString().equals("1")){
+            HashMap jsonMap = JSON.parseObject(data, HashMap.class);
+            if (jsonMap.get("code").toString().equals("1")) {
                 //先生成订单
                 Long date = System.currentTimeMillis();
-                String created = String.valueOf(date).substring(0,10);
+                String created = String.valueOf(date).substring(0, 10);
                 Paylog paylog = new Paylog();
                 Integer TotalAmount = money * apiconfig.getScale();
                 paylog.setStatus(0);
@@ -842,27 +846,28 @@ public class PayController {
                 paylog.setUid(uid);
                 paylog.setOutTradeNo(outTradeNo);
                 paylog.setTotalAmount(TotalAmount.toString());
-                paylog.setPaytype("ePay_"+type);
+                paylog.setPaytype("ePay_" + type);
                 paylog.setSubject("扫码支付");
                 paylogService.insert(paylog);
                 //再返回数据
                 JSONObject toResponse = new JSONObject();
-                toResponse.put("code" ,1);
-                toResponse.put("payapi" ,apiconfig.getEpayUrl());
-                toResponse.put("data" , jsonMap);
-                toResponse.put("msg"  , "获取成功");
+                toResponse.put("code", 1);
+                toResponse.put("payapi", apiconfig.getEpayUrl());
+                toResponse.put("data", jsonMap);
+                toResponse.put("msg", "获取成功");
                 return toResponse.toString();
-            }else {
-                return Result.getResultJson(0,jsonMap.get("msg").toString(),null);
+            } else {
+                return Result.getResultJson(0, jsonMap.get("msg").toString(), null);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0,"接口请求异常，请联系管理员",null);
+            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
         }
 
 
     }
-    public static <K extends Comparable<? super K>, V > Map<K, V> sortByKey(Map<K, V> map) {
+
+    public static <K extends Comparable<? super K>, V> Map<K, V> sortByKey(Map<K, V> map) {
         Map<K, V> result = new LinkedHashMap<>();
         map.entrySet().stream()
                 .sorted(Map.Entry.<K, V>comparingByKey()).forEachOrdered(e -> result.put(e.getKey(), e.getValue()));
@@ -872,7 +877,7 @@ public class PayController {
     @RequestMapping(value = "/EPayNotify")
     @ResponseBody
     public String EPayNotify(HttpServletRequest request,
-                         HttpServletResponse response) throws AlipayApiException {
+                             HttpServletResponse response) throws AlipayApiException {
         Map<String, String> params = new HashMap<String, String>();
         Map requestParams = request.getParameterMap();
         for (Iterator iter = requestParams.keySet().iterator(); iter.hasNext(); ) {
@@ -886,9 +891,9 @@ public class PayController {
         }
 
         System.err.println(params);
-        try{
-            if(params.get("trade_status").equals("TRADE_SUCCESS")){
-                Apiconfig apiconfig = UStatus.getConfig(this.dataprefix,apiconfigService,redisTemplate);
+        try {
+            if (params.get("trade_status").equals("TRADE_SUCCESS")) {
+                Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
                 //支付完成后，写入充值日志
                 String trade_no = params.get("trade_no");
                 String out_trade_no = params.get("out_trade_no");
@@ -897,13 +902,13 @@ public class PayController {
                 Integer integral = Double.valueOf(total_amount).intValue() * scale;
 
                 Long date = System.currentTimeMillis();
-                String created = String.valueOf(date).substring(0,10);
+                String created = String.valueOf(date).substring(0, 10);
                 Paylog paylog = new Paylog();
                 //根据订单和发起人，是否有数据库对应，来是否充值成功
                 paylog.setOutTradeNo(out_trade_no);
                 paylog.setStatus(0);
-                List<Paylog> logList= paylogService.selectList(paylog);
-                if(logList.size() > 0){
+                List<Paylog> logList = paylogService.selectList(paylog);
+                if (logList.size() > 0) {
                     Integer pid = logList.get(0).getPid();
                     Integer uid = logList.get(0).getUid();
                     paylog.setStatus(1);
@@ -918,14 +923,14 @@ public class PayController {
                     users.setAssets(assets);
                     usersService.update(users);
                     return "success";
-                }else{
+                } else {
                     System.err.println("数据库不存在订单");
                     return "fail";
                 }
-            }else{
+            } else {
                 return "fail";
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return "fail";
         }
