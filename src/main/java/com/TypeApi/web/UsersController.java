@@ -386,7 +386,7 @@ public class UsersController {
                     opt = null;
                 }
                 // 格式化address
-                if (!info.getAddress().isEmpty()) {
+                if (!info.getAddress().isEmpty() && info.getAddress()!=null) {
                     JSONObject address = JSONObject.parseObject(info.getAddress());
                     if (address instanceof Object) {
                         address = JSONObject.parseObject(info.getAddress());
