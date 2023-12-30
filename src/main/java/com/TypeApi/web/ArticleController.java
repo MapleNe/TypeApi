@@ -188,7 +188,6 @@ public class ArticleController {
                     text = renderer.render(document);
 
                 }
-                // 用正则表达式匹配并替换[hide type=pay]这是付费查看的内容[/hide]，并根据type值替换成相应的提示
                 Integer isReply = 0;
                 Integer isPaid = 0;
                 if (uid != null && uid != 0) {
@@ -210,7 +209,7 @@ public class ArticleController {
                         isPaid = 1;
                     }
                 }
-
+                // 用正则表达式匹配并替换[hide type=pay]这是付费查看的内容[/hide]，并根据type值替换成相应的提示
                 Pattern pattern = Pattern.compile("\\[hide type=(pay|reply)\\](.*?)\\[/hide\\]");
                 Matcher matcher = pattern.matcher(text);
                 StringBuffer replacedText = new StringBuffer();
@@ -361,12 +360,18 @@ public class ArticleController {
                 }
                 contensjson = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
                 // 格式化文章opt
-                JSONObject opt = JSONObject.parseObject(contensjson.get("opt").toString());
-                if (opt instanceof Object) {
-                    opt = JSONObject.parseObject(contensjson.get("opt").toString());
-                } else {
-                    opt = null;
+                if (contensjson.get("opt") != null) {
+                    JSONObject opt = JSONObject.parseObject(contensjson.get("opt").toString());
+                    if (opt instanceof Object) {
+                        opt = JSONObject.parseObject(contensjson.get("opt").toString());
+
+                    } else {
+                        opt = null;
+                    }
+                    contensjson.put("opt", opt);
+
                 }
+
                 Object imagesObject = contensjson.get("images");
                 // 判断值是否为 null
                 if (imagesObject != null) {
@@ -400,7 +405,6 @@ public class ArticleController {
                 contensjson.put("isMark", isMark);
                 contensjson.put("tag", tags);
                 contensjson.put("text", text);
-                contensjson.put("opt", opt);
                 boolean status = oldText.contains("<!--markdown-->");
                 if (status) {
                     contensjson.put("markdown", 1);
@@ -1762,8 +1766,6 @@ public class ArticleController {
         }
 
     }
-
-
 
 
     /***
