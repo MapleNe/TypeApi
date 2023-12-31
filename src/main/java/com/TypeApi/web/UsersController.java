@@ -372,26 +372,32 @@ public class UsersController {
                 }
                 json = JSONObject.parseObject(JSONObject.toJSONString(info), Map.class);
                 // 格式化 head_picture medal opt 为对象
-                JSONObject opt = JSONObject.parseObject(info.getOpt());
-                if (opt instanceof Object) {
-                    opt = JSONObject.parseObject(info.getOpt());
 
-                    Integer headId = Integer.parseInt(opt.get("head_picture").toString());
-                    // 查询opt中head_picture的数据 并替换
-                    Headpicture head_picture = headpictureService.selectByKey(headId);
-                    if (head_picture != null) {
-                        opt.put("head_picture", head_picture.getLink().toString());
+                try {
+                    if (info.getOpt() != null && !info.getOpt().isEmpty()) {
+                        JSONObject opt = JSONObject.parseObject(info.getOpt());
+                        Integer headId = Integer.parseInt(opt.get("head_picture").toString());
+                        // 查询opt中head_picture的数据 并替换
+                        Headpicture head_picture = headpictureService.selectByKey(headId);
+                        if (head_picture != null) {
+                            opt.put("head_picture", head_picture.getLink().toString());
+                        }
+                        json.put("opt", opt);
                     }
-                } else {
-                    opt = null;
-                }
-                // 格式化address
-                if (info.getAddress() != null && !info.getAddress().isEmpty()) {
-                    JSONObject address = JSONObject.parseObject(info.getAddress());
-                    json.put("address", address);
+
+                } catch (Exception e) {
+                    json.put("opt", null);
                 }
 
-                json.put("opt", opt);
+                // 格式化address
+                try {
+                    if (info.getAddress() != null && !info.getAddress().isEmpty()) {
+                        JSONObject address = JSONObject.parseObject(info.getAddress());
+                        json.put("address", address);
+                    }
+                } catch (Exception e) {
+                    json.put("address", null);
+                }
                 //获取用户等级
                 Integer uid = key;
                 Comments comments = new Comments();
@@ -419,19 +425,19 @@ public class UsersController {
                     if (!group.equals("administrator")) json.remove("assets");
                     if (!map.get("uid").equals(info.getUid())) json.remove("address");
                     // 是否关注过该用户 只有不是自己才查询
-                    if(!map.get("uid").equals(key)){
+                    if (!map.get("uid").equals(key)) {
                         Userlog fanLog = new Userlog();
                         fanLog.setUid(Integer.parseInt(map.get("uid").toString()));
                         fanLog.setToid(key);
-                        List<Userlog> userList =  userlogService.selectList(fanLog);
-                        if(userList.size()>0){
+                        List<Userlog> userList = userlogService.selectList(fanLog);
+                        if (userList.size() > 0) {
                             isFollow = 1;
                         }
                     }
                 } else {
                     json.remove("assets");
                 }
-                json.put("isFollow",isFollow);
+                json.put("isFollow", isFollow);
                 Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
                 if (json.get("avatar") == null) {
                     if (json.get("mail") != null) {

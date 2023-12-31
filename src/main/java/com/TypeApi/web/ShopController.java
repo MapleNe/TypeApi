@@ -139,6 +139,10 @@ public class ShopController {
                     if (json.get("imgurl") != null && !json.get("imgurl").toString().isEmpty() && !json.get("imgurl").toString().equals("")) {
                         json.put("imgurl", JSONArray.parse(json.get("imgurl").toString()));
                     }
+                    // 格式化specs
+                    if(shop.getSpecs()!=null && !shop.getSpecs().isEmpty()){
+                        json.put("specs",JSONArray.parseArray(shop.getSpecs().toString()));
+                    }
                     //获取用户信息
                     Map userJson = UserStatus.getUserInfo(userid, apiconfigService, usersService);
                     json.put("userJson", userJson);
