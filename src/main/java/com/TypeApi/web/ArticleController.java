@@ -190,6 +190,8 @@ public class ArticleController {
                 }
                 Integer isReply = 0;
                 Integer isPaid = 0;
+                Integer isHide = 0;
+                String hideType = null;
                 if (uid != null && uid != 0) {
                     // 获取评论状态
                     Comments replyStatus = new Comments();
@@ -219,16 +221,17 @@ public class ArticleController {
                     String replacement = "";
                     if ("pay".equals(type) && isPaid == 0 && uid != article.getAuthorId()) {
                         replacement = "【付费查看：这是付费内容，付费后可查看】";
+                        hideType = "pay";
                     } else if ("reply".equals(type) && isReply == 0 && uid != article.getAuthorId()) {
                         replacement = "【回复查看：这是回复内容，回复后可查看】";
+                        hideType = "reply";
                     } else {
                         replacement = content;  // 如果不需要替换，则保持原样
                     }
+                    isHide = 1;
                     matcher.appendReplacement(replacedText, replacement);
-
                 }
                 text = matcher.appendTail(replacedText).toString();
-
                 // 获取是否islike && isMark
                 Integer isLike = 0;
                 Integer isMark = 0;
@@ -248,8 +251,6 @@ public class ArticleController {
                         }
                     }
                 }
-
-
                 // 加入文章作者信息
                 Map authorInfo = new HashMap();
                 if (article.getAuthorId() != null) {
@@ -287,15 +288,20 @@ public class ArticleController {
                             authorInfo.put("isfollow", isfollow);
                         }
 
-                        JSONObject opt = JSONObject.parseObject(author.getOpt());
-                        if (opt instanceof Object) {
-                            opt = JSONObject.parseObject(author.getOpt());
-                            Integer headId = Integer.parseInt(opt.get("head_picture").toString());
-                            // 查询opt中head_picture的数据 并替换
-                            Headpicture head_picture = headpictureService.selectByKey(headId);
-                            if (head_picture != null) {
-                                opt.put("head_picture", head_picture.getLink().toString());
+                        try {
+                            if (author.getOpt() != null && !author.getOpt().isEmpty()) {
+                                JSONObject opt = JSONObject.parseObject(author.getOpt());
+                                Integer headId = Integer.parseInt(opt.get("head_picture").toString());
+                                // 查询opt中head_picture的数据 并替换
+                                Headpicture head_picture = headpictureService.selectByKey(headId);
+                                if (head_picture != null) {
+                                    opt.put("head_picture", head_picture.getLink().toString());
+                                }
+                                authorInfo.put("opt", opt);
                             }
+
+                        } catch (Exception e) {
+                            authorInfo.put("opt", null);
                         }
                         // 获取用户等级
                         List<Integer> levelAndExp = baseFull.getLevel(author.getExperience());
@@ -304,7 +310,6 @@ public class ArticleController {
                         authorInfo.put("name", name);
                         authorInfo.put("avatar", avatar);
                         authorInfo.put("customize", author.getCustomize());
-                        authorInfo.put("opt", opt);
                         authorInfo.put("level", level);
                         authorInfo.put("nextExp", nextExp);
                         authorInfo.put("experience", author.getExperience());
@@ -359,18 +364,19 @@ public class ArticleController {
 
                 }
                 contensjson = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
-                // 格式化文章opt
-                if (contensjson.get("opt") != null) {
-                    JSONObject opt = JSONObject.parseObject(contensjson.get("opt").toString());
-                    if (opt instanceof Object) {
-                        opt = JSONObject.parseObject(contensjson.get("opt").toString());
-
-                    } else {
-                        opt = null;
+                try {
+                    if (contensjson.get("opt") != null && !contensjson.get("opt").toString().isEmpty()) {
+                        JSONObject opt = JSONObject.parseObject(contensjson.get("opt").toString());
+                        if (contensjson.get("head_picture") != null && contensjson.get("head_picture").toString().isEmpty()) {
+                            opt.put("head_picture", headpictureService.selectByKey(contensjson.get("head_picture")).getLink());
+                        }
+                        contensjson.put("opt", opt);
                     }
-                    contensjson.put("opt", opt);
 
+                } catch (Exception e) {
+                    contensjson.put("opt", null);
                 }
+
 
                 Object imagesObject = contensjson.get("images");
                 // 判断值是否为 null
@@ -405,6 +411,8 @@ public class ArticleController {
                 contensjson.put("isMark", isMark);
                 contensjson.put("tag", tags);
                 contensjson.put("text", text);
+                contensjson.put("isHide", isHide);
+                contensjson.put("hideType", hideType);
                 boolean status = oldText.contains("<!--markdown-->");
                 if (status) {
                     contensjson.put("markdown", 1);
@@ -412,7 +420,7 @@ public class ArticleController {
                     contensjson.put("markdown", 0);
                 }
 
-                //文章阅读量增加
+                //文章阅读量增
                 String agent = request.getHeader("User-Agent");
                 String ip = baseFull.getIpAddr(request);
                 String isRead = redisHelp.getRedis(this.dataprefix + "_" + "isRead" + "_" + ip + "_" + agent + "_" + key, redisTemplate);
@@ -424,7 +432,6 @@ public class ArticleController {
                     toContents.setCid(Integer.parseInt(key));
                     toContents.setViews(views);
                     service.update(toContents);
-
                 }
                 redisHelp.setRedis(this.dataprefix + "_" + "isRead" + "_" + ip + "_" + agent + "_" + key, "yes", 900, redisTemplate);
                 redisHelp.delete(this.dataprefix + "_" + "contentsInfo_" + key + "_" + isMd, redisTemplate);
@@ -439,6 +446,7 @@ public class ArticleController {
         }
 
         JSONObject concentInfo = JSON.parseObject(JSON.toJSONString(contensjson), JSONObject.class);
+        System.out.println(contensjson + "草");
         return concentInfo.toJSONString();
         //return new ApiResult<>(ResultCode.success.getCode(), typechoContents, ResultCode.success.getDescr(), request.getRequestURI());
     }
@@ -604,17 +612,22 @@ public class ArticleController {
                             fan.setTouid(authorId);
                             Integer isfollow = fanService.total(fan);
 
-                            JSONObject opt = JSONObject.parseObject(author.getOpt());
-                            if (opt instanceof Object) {
-                                opt = JSONObject.parseObject(author.getOpt());
-                                Integer headId = Integer.parseInt(opt.get("head_picture").toString());
-                                // 查询opt中head_picture的数据 并替换
-                                Headpicture head_picture = headpictureService.selectByKey(headId);
-                                if (head_picture != null) {
-                                    opt.put("head_picture", head_picture.getLink().toString());
+                            try {
+                                if (author.getOpt() != null && !author.getOpt().isEmpty()) {
+                                    JSONObject opt = JSONObject.parseObject(author.getOpt());
+                                    Integer headId = Integer.parseInt(opt.get("head_picture").toString());
+                                    // 查询opt中head_picture的数据 并替换
+                                    Headpicture head_picture = headpictureService.selectByKey(headId);
+                                    if (head_picture != null) {
+                                        opt.put("head_picture", head_picture.getLink().toString());
+                                    }
+                                    authorInfo.put("opt", opt);
                                 }
 
+                            } catch (Exception e) {
+                                authorInfo.put("opt", null);
                             }
+
                             // 获取用户等级
                             List<Integer> levelAndExp = baseFull.getLevel(author.getExperience());
                             Integer level = levelAndExp.get(0);
@@ -623,7 +636,6 @@ public class ArticleController {
                             authorInfo.put("name", name);
                             authorInfo.put("avatar", avatar);
                             authorInfo.put("customize", author.getCustomize());
-                            authorInfo.put("opt", opt);
                             authorInfo.put("level", level);
                             authorInfo.put("nextExp", nextExp);
                             authorInfo.put("experience", author.getExperience());

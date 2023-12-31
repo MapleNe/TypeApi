@@ -201,6 +201,8 @@ public class ShopController {
                 Map bossInfo = JSONObject.parseObject(JSONObject.toJSONString(usersService.selectByKey(shopinfo.get("uid"))));
                 bossInfo.remove("password");
                 bossInfo.remove("assets");
+                bossInfo.remove("address");
+                bossInfo.remove("mail");
                 shopinfo.put("bossInfo", bossInfo);
                 // 格式化规格数据格式
                 JSONArray specs = JSONArray.parseArray(shopinfo.get("specs").toString());
@@ -251,7 +253,7 @@ public class ShopController {
                           @RequestParam(value = "token", required = false) String token,
                           @RequestParam(value = "text", required = false) String text,
                           @RequestParam(value = "isSpace", required = false, defaultValue = "0") Integer isSpace,
-                          @RequestParam(value = "isMd", required = false, defaultValue = "1") Integer isMd) {
+                          @RequestParam(value = "isMd", required = false, defaultValue = "0") Integer isMd) {
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
         if (uStatus == 0) {
             return Result.getResultJson(0, "用户未登录或Token验证失败", null);
@@ -286,7 +288,6 @@ public class ShopController {
         Shop insert = null;
 
         if (StringUtils.isNotBlank(params)) {
-
             jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
             //支持两种模式提交商品内容
             if (text == null) {
@@ -413,7 +414,7 @@ public class ShopController {
     public String editShop(@RequestParam(value = "params", required = false) String params,
                            @RequestParam(value = "token", required = false) String token,
                            @RequestParam(value = "text", required = false) String text,
-                           @RequestParam(value = "isMd", required = false, defaultValue = "1") Integer isMd) {
+                           @RequestParam(value = "isMd", required = false, defaultValue = "0") Integer isMd) {
         Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
         if (uStatus == 0) {
             return Result.getResultJson(0, "用户未登录或Token验证失败", null);
