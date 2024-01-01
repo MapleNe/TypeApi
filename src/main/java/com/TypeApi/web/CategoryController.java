@@ -397,11 +397,11 @@ public class CategoryController {
                             json.put("opt", opt);
                         }
                         // 获取二级分类
-                        Category subCategorySearch = new Category();
-                        subCategorySearch.setParent(Integer.parseInt(json.get("mid").toString()));
-                        List<Category> subCategory  = service.selectList(subCategorySearch);
-                        System.out.println("打印子分类查询"+subCategorySearch+subCategory);
-                        json.put("subCategory", subCategory);
+//                        Category subCategorySearch = new Category();
+//                        subCategorySearch.setParent(Integer.parseInt(json.get("mid").toString()));
+//                        List<Category> subCategory  = service.selectList(subCategorySearch);
+//                        System.out.println("打印子分类查询"+subCategorySearch+subCategory);
+//                        json.put("subCategory", subCategory);
 
                         // 根据具体需求决定是否将 json 添加到 jsonList
                         jsonList.add(json);
