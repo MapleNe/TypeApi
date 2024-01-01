@@ -4,6 +4,7 @@ import com.TypeApi.common.PHPass;
 import com.TypeApi.common.RedisHelp;
 import com.TypeApi.common.ResultAll;
 import com.TypeApi.entity.Users;
+import com.TypeApi.service.AppService;
 import com.TypeApi.service.UsersService;
 import com.alibaba.fastjson.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1556,9 +1557,7 @@ public class InstallController {
         if (i == 0) {
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_app` (" +
                     "  `id` int(11) NOT NULL AUTO_INCREMENT," +
-                    "  `key` varchar(255) DEFAULT NULL COMMENT '链接密钥'," +
                     "  `name` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT '应用名称'," +
-                    "  `type` varchar(255) CHARACTER SET utf8 DEFAULT 'app' COMMENT '应用类型（web或App）'," +
                     "  `logo` varchar(500) CHARACTER SET utf8 DEFAULT NULL COMMENT 'logo图标地址'," +
                     "  `keywords` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT 'web专属，SEO关键词'," +
                     "  `description` varchar(255) DEFAULT NULL COMMENT '应用简介'," +
@@ -1571,8 +1570,6 @@ public class InstallController {
                     "  `versionIntro` varchar(400) DEFAULT NULL COMMENT '版本简介'," +
                     "  `androidUrl` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '安卓下载地址'," +
                     "  `iosUrl` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT 'ios下载地址'," +
-                    "  `field1` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '预留字段1'," +
-                    "  `field2` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '预留字段2'," +
                     "  `silence` int  DEFAULT 0 COMMENT '静默更新'," +
                     "  `forceUpdate` int  DEFAULT 0 COMMENT '强制更新'," +
                     "  `issue` int  DEFAULT 1 COMMENT '发布/发行'," +

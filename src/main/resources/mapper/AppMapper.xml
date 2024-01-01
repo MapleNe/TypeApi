@@ -5,9 +5,7 @@
 
     <resultMap id="BaseResultMap" type="com.TypeApi.entity.App" >
         <result column="id" property="id" />
-        <result column="key" property="keyKey" />
         <result column="name" property="name" />
-        <result column="type" property="type" />
         <result column="logo" property="logo" />
         <result column="keywords" property="keywords" />
         <result column="description" property="description" />
@@ -21,8 +19,6 @@
         <result column="androidUrl" property="androidUrl" />
         <result column="iosUrl" property="iosUrl" />
         <result column="adpid" property="adpid" />
-        <result column="field1" property="field1" />
-        <result column="field2" property="field2" />
         <result column="silence" property="silence" />
         <result column="forceUpdate" property="forceUpdate" />
         <result column="issue" property="issue" />
@@ -31,9 +27,7 @@
 
     <sql id="Base_Column_List">
         `id`,
-        `key`,
         `name`,
-        `type`,
         `logo`,
         `keywords`,
         `description`,
@@ -47,8 +41,6 @@
         `androidUrl`,
         `iosUrl`,
         `adpid`,
-        `field1`,
-        `field2`,
         `silence`,
         `forceUpdate`,
         `issue`,
@@ -62,14 +54,8 @@
             <if test ='null != id'>
                 `id`,
             </if>
-            <if test ='null != keyKey'>
-                `key`,
-            </if>
             <if test ='null != name'>
                 `name`,
-            </if>
-            <if test ='null != type'>
-                `type`,
             </if>
             <if test ='null != logo'>
                 `logo`,
@@ -110,12 +96,6 @@
             <if test ='null != adpid'>
                 `adpid`,
             </if>
-            <if test ='null != field1'>
-                `field1`,
-            </if>
-            <if test ='null != field2'>
-                `field2`,
-            </if>
             <if test ='null != silence'>
                 `silence`,
             </if>
@@ -133,14 +113,8 @@
             <if test ='null != id'>
                 #{id},
             </if>
-            <if test ='null != keyKey'>
-                #{keyKey},
-            </if>
             <if test ='null != name'>
                 #{name},
-            </if>
-            <if test ='null != type'>
-                #{type},
             </if>
             <if test ='null != logo'>
                 #{logo},
@@ -181,12 +155,6 @@
             <if test ='null != adpid'>
                 #{adpid},
             </if>
-            <if test ='null != field1'>
-                #{field1},
-            </if>
-            <if test ='null != field2'>
-                #{field2},
-            </if>
             <if test ='null != silence'>
                 #{silence},
             </if>
@@ -208,9 +176,7 @@
         <foreach collection="list" item="curr" index="index" separator=",">
             (
             #{curr.id},
-            #{curr.keyKey},
             #{curr.name},
-            #{curr.type},
             #{curr.logo},
             #{curr.keywords},
             #{curr.description},
@@ -224,8 +190,6 @@
             #{curr.androidUrl},
             #{curr.iosUrl},
             #{curr.adpid},
-            #{curr.field1},
-            #{curr.field2},
             #{curr.silence},
             #{curr.forceUpdate},
             #{curr.issue},
@@ -238,9 +202,7 @@
     <update id="update" parameterType="com.TypeApi.entity.App">
         UPDATE ${prefix}_app
         <set>
-            <if test ='null != keyKey'>`key` = #{keyKey},</if>
             <if test ='null != name'>`name` = #{name},</if>
-            <if test ='null != type'>`type` = #{type},</if>
             <if test ='null != logo'>`logo` = #{logo},</if>
             <if test ='null != keywords'>`keywords` = #{keywords},</if>
             <if test ='null != description'>`description` = #{description},</if>
@@ -254,8 +216,6 @@
             <if test ='null != androidUrl'>`androidUrl` = #{androidUrl},</if>
             <if test ='null != iosUrl'>`iosUrl` = #{iosUrl},</if>
             <if test ='null != adpid'>`adpid` = #{adpid},</if>
-            <if test ='null != field1'>`field1` = #{field1},</if>
-            <if test ='null != field2'>`field2` = #{field2},</if>
             <if test ='null != silence'>`silence` = #{silence},</if>
             <if test ='null != forceUpdate'>`forceUpdate` = #{forceUpdate},</if>
             <if test ='null != issue'>`issue` = #{issue},</if>
@@ -282,7 +242,7 @@
     <select id="selectByKey" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List" />
         FROM ${prefix}_app
-        WHERE `key` = #{key}
+        WHERE `id` = #{key}
     </select>
 
     <!-- 条件查询 -->
@@ -293,14 +253,8 @@
             <if test ='null != id'>
                 and `id` = #{id}
             </if>
-            <if test ='null != keyKey'>
-                and `key` = #{keyKey}
-            </if>
             <if test ='null != name'>
                 and `name` = #{name}
-            </if>
-            <if test ='null != type'>
-                and `type` = #{type}
             </if>
             <if test ='null != logo'>
                 and `logo` = #{logo}
@@ -338,12 +292,6 @@
             <if test ='null != iosUrl'>
                 and `iosUrl` = #{iosUrl}
             </if>
-            <if test ='null != field1'>
-                and `field1` = #{field1}
-            </if>
-            <if test ='null != field2'>
-                and `field2` = #{field2}
-            </if>
             <if test ='null != silence'>
                 and `silence` = #{silence}
             </if>
@@ -367,14 +315,8 @@
             <if test ='null != app.id'>
                 and `id` = #{app.id}
             </if>
-            <if test ='null != app.keyKey'>
-                and `key` = #{app.keyKey}
-            </if>
             <if test ='null != app.name'>
                 and `name` = #{app.name}
-            </if>
-            <if test ='null != app.type'>
-                and `type` = #{app.type}
             </if>
             <if test ='null != app.logo'>
                 and `logo` = #{app.logo}
@@ -412,12 +354,6 @@
             <if test ='null != app.iosUrl'>
                 and `iosUrl` = #{app.iosUrl}
             </if>
-            <if test ='null != app.field1'>
-                and `field1` = #{app.field1}
-            </if>
-            <if test ='null != app.field2'>
-                and `field2` = #{app.field2}
-            </if>
             <if test ='null != app.silence'>
                 and `silence` = #{app.silence}
             </if>
@@ -441,14 +377,8 @@
             <if test ='null != id'>
                 and `id` = #{id}
             </if>
-            <if test ='null != keyKey'>
-                and `key` = #{keyKey}
-            </if>
             <if test ='null != name'>
                 and `name` = #{name}
-            </if>
-            <if test ='null != type'>
-                and `type` = #{type}
             </if>
             <if test ='null != logo'>
                 and `logo` = #{logo}
@@ -485,12 +415,6 @@
             </if>
             <if test ='null != iosUrl'>
                 and `iosUrl` = #{iosUrl}
-            </if>
-            <if test ='null != field1'>
-                and `field1` = #{field1}
-            </if>
-            <if test ='null != field2'>
-                and `field2` = #{field2}
             </if>
             <if test ='null != silence'>
                 and `silence` = #{silence}
