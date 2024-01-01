@@ -497,6 +497,7 @@ public class CategoryController {
             response.put("msg", rows > 0 ? "操作成功" : "操作失败");
             return response.toString();
         } catch (Exception e) {
+            e.printStackTrace();
             JSONObject response = new JSONObject();
             response.put("code", 0);
             response.put("msg", "操作失败");
