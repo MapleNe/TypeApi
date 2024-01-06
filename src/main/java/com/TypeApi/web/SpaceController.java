@@ -437,7 +437,7 @@ public class SpaceController {
                 Map userJson = UserStatus.getUserInfo(userid,apiconfigService,usersService);
                 //获取用户等级
                 Comments comments = new Comments();
-                comments.setAuthorId(userid);
+                comments.setUid(userid);
                 Integer lv = commentsService.total(comments,null);
                 userJson.put("lv", baseFull.getLv(lv));
                 spaceInfoJson.put("userJson",userJson);
@@ -661,7 +661,7 @@ public class SpaceController {
                     Map userJson = UserStatus.getUserInfo(userid,apiconfigService,usersService);
                     //获取用户等级
                     Comments comments = new Comments();
-                    comments.setAuthorId(userid);
+                    comments.setUid(userid);
                     Integer lv = commentsService.total(comments,searchKey);
                     if(json.get("pic") != null && !json.get("pic").toString().isEmpty()) {
                         String[] urls = json.get("pic").toString().split(",");
@@ -784,7 +784,7 @@ public class SpaceController {
                             shopJson.put("username",name);
                             //获取用户等级
                             Comments shopUserComments = new Comments();
-                            comments.setAuthorId(shopUser.getUid());
+                            comments.setUid(shopUser.getUid());
                             Integer userlv = commentsService.total(shopUserComments,null);
                             shopJson.put("lv", baseFull.getLv(userlv));
 
@@ -1085,7 +1085,7 @@ public class SpaceController {
                     Map userJson = UserStatus.getUserInfo(userid,apiconfigService,usersService);
                     //获取用户等级
                     Comments comments = new Comments();
-                    comments.setAuthorId(userid);
+                    comments.setUid(userid);
                     Integer lv = commentsService.total(comments,null);
                     userJson.put("lv", baseFull.getLv(lv));
                     json.put("userJson",userJson);
@@ -1202,7 +1202,7 @@ public class SpaceController {
                             shopJson.put("username",name);
                             //获取用户等级
                             Comments shopUserComments = new Comments();
-                            comments.setAuthorId(shopUser.getUid());
+                            comments.setUid(shopUser.getUid());
                             Integer userlv = commentsService.total(shopUserComments,null);
                             shopJson.put("lv", baseFull.getLv(userlv));
 

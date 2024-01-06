@@ -4,87 +4,57 @@
 <mapper namespace="com.TypeApi.dao.CommentsDao">
 
     <resultMap id="BaseResultMap" type="com.TypeApi.entity.Comments" >
-        <result column="coid" property="coid" />
+        <result column="id" property="id" />
         <result column="cid" property="cid" />
-        <result column="created" property="created" />
-        <result column="author" property="author" />
-        <result column="authorId" property="authorId" />
-        <result column="ownerId" property="ownerId" />
-        <result column="mail" property="mail" />
-        <result column="url" property="url" />
-        <result column="ip" property="ip" />
-        <result column="agent" property="agent" />
+        <result column="uid" property="uid" />
         <result column="text" property="text" />
-        <result column="type" property="type" />
-        <result column="status" property="status" />
+        <result column="images" property="images" />
+        <result column="ip" property="ip" />
         <result column="parent" property="parent" />
         <result column="likes" property="likes" />
-        <result column="allparent" property="allparent" />
-        <result column="images" property="images" />
+        <result column="all" property="all" />
+        <result column="type" property="type" />
+        <result column="created" property="created" />
+        <result column="modified" property="modified" />
     </resultMap>
 
     <sql id="Base_Column_List">
-        `coid`,
+        `id`
+        ,
         `cid`,
-        `created`,
-        `author`,
-        `authorId`,
-        `ownerId`,
-        `mail`,
-        `url`,
-        `ip`,
-        `agent`,
+        `uid`,
         `text`,
-        `type`,
-        `status`,
+        `images`,
+        `ip`,
         `parent`,
         `likes`,
-        `images`,
-        `allparent`
+        `all`,
+        `type`,
+        `created`,
+        `modified`
     </sql>
 
     <!-- 插入数据 -->
     <insert id="insert" parameterType="com.TypeApi.entity.Comments">
         INSERT INTO ${prefix}_comments
         <trim prefix="(" suffix=")" suffixOverrides=",">
-            <if test ='null != coid'>
-                `coid`,
+            <if test ='null != id'>
+                `id`,
             </if>
             <if test ='null != cid'>
                 `cid`,
             </if>
-            <if test ='null != created'>
-                `created`,
-            </if>
-            <if test ='null != author'>
-                `author`,
-            </if>
-            <if test ='null != authorId'>
-                `authorId`,
-            </if>
-            <if test ='null != ownerId'>
-                `ownerId`,
-            </if>
-            <if test ='null != mail'>
-                `mail`,
-            </if>
-            <if test ='null != url'>
-                `url`,
-            </if>
-            <if test ='null != ip'>
-                `ip`,
-            </if>
-            <if test ='null != agent'>
-                `agent`,
+            <if test ='null != uid'>
+                `uid`,
             </if>
             <if test ='null != text'>
                 `text`,
             </if>
-            <if test ='null != type'>
-                `type`,
+            <if test ='null != images'>
+                `images`,
             </if>
-            <if test ='null != status'>
-                `status`,
+            <if test ='null != ip'>
+                `ip`,
             </if>
             <if test ='null != parent'>
                 `parent`,
@@ -92,55 +62,37 @@
             <if test ='null != likes'>
                 `likes`,
             </if>
-            <if test ='null != opt'>
-                `opt`,
+            <if test ='null != all'>
+                `all`,
             </if>
-            <if test ='null != images'>
-                `images`,
+            <if test ='null != type'>
+                `type`,
             </if>
-            <if test ='null != allparent'>
-                `allparent`,
+            <if test ='null != created'>
+                `created`,
+            </if>
+            <if test ='null != modified'>
+                `modified`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
-            <if test ='null != coid'>
-                #{coid},
+            <if test ='null != id'>
+                #{id},
             </if>
             <if test ='null != cid'>
                 #{cid},
             </if>
-            <if test ='null != created'>
-                #{created},
-            </if>
-            <if test ='null != author'>
-                #{author},
-            </if>
-            <if test ='null != authorId'>
-                #{authorId},
-            </if>
-            <if test ='null != ownerId'>
-                #{ownerId},
-            </if>
-            <if test ='null != mail'>
-                #{mail},
-            </if>
-            <if test ='null != url'>
-                #{url},
-            </if>
-            <if test ='null != ip'>
-                #{ip},
-            </if>
-            <if test ='null != agent'>
-                #{agent},
+            <if test ='null != uid'>
+                #{uid},
             </if>
             <if test ='null != text'>
                 #{text},
             </if>
-            <if test ='null != type'>
-                #{type},
+            <if test ='null != images'>
+                #{images},
             </if>
-            <if test ='null != status'>
-                #{status},
+            <if test ='null != ip'>
+                #{ip},
             </if>
             <if test ='null != parent'>
                 #{parent},
@@ -148,14 +100,17 @@
             <if test ='null != likes'>
                 #{likes},
             </if>
-            <if test ='null != images'>
-                #{images},
+            <if test ='null != all'>
+                #{all},
             </if>
-            <if test ='null != opt'>
-                #{opt},
+            <if test ='null != type'>
+                #{type},
             </if>
-            <if test ='null != allparent'>
-                #{allparent},
+            <if test ='null != created'>
+                #{created}
+            </if>
+            <if test ='null != modified'>
+                #{modified}
             </if>
         </trim>
     </insert>
@@ -165,20 +120,18 @@
         INSERT INTO ${prefix}_comments ( <include refid="Base_Column_List" /> ) VALUES
         <foreach collection="list" item="curr" index="index" separator=",">
             (
-            #{curr.coid},
+            #{curr.id},
             #{curr.cid},
-            #{curr.created},
-            #{curr.author},
-            #{curr.authorId},
-            #{curr.ownerId},
-            #{curr.mail},
-            #{curr.url},
-            #{curr.ip},
-            #{curr.agent},
+            #{curr.uid},
             #{curr.text},
+            #{curr.images},
+            #{curr.ip},
+            #{curr.parent},
+            #{curr.likes},
+            #{curr.all},
             #{curr.type},
-            #{curr.status},
-            #{curr.parent}
+            #{curr.created},
+            #{curr.modified}
             )
         </foreach>
     </insert>
@@ -187,33 +140,31 @@
     <update id="update" parameterType="com.TypeApi.entity.Comments">
         UPDATE ${prefix}_comments
         <set>
+            <if test ='null != id'>`id` = #{id},</if>
             <if test ='null != cid'>`cid` = #{cid},</if>
-            <if test ='null != created'>`created` = #{created},</if>
-            <if test ='null != author'>`author` = #{author},</if>
-            <if test ='null != authorId'>`authorId` = #{authorId},</if>
-            <if test ='null != ownerId'>`ownerId` = #{ownerId},</if>
-            <if test ='null != mail'>`mail` = #{mail},</if>
-            <if test ='null != url'>`url` = #{url},</if>
-            <if test ='null != ip'>`ip` = #{ip},</if>
-            <if test ='null != agent'>`agent` = #{agent},</if>
+            <if test ='null != uid'>`uid` = #{uid},</if>
             <if test ='null != text'>`text` = #{text},</if>
-            <if test ='null != type'>`type` = #{type},</if>
-            <if test ='null != status'>`status` = #{status},</if>
+            <if test ='null != images'>`images` = #{images},</if>
+            <if test ='null != ip'>`ip` = #{ip},</if>
             <if test ='null != parent'>`parent` = #{parent},</if>
-            <if test ='null != likes'>`likes` = #{likes}</if>
+            <if test ='null != likes'>`likes` = #{likes},</if>
+            <if test ='null != all'>`all` = #{all},</if>
+            <if test ='null != type'>`type` = #{type},</if>
+            <if test ='null != created'>`created` = #{created},</if>
+            <if test ='null != modified'>`modified` = #{modified}</if>
         </set>
-        WHERE `coid` = #{coid}
+        WHERE `id` = #{id}
     </update>
 
     <!-- 删除 -->
     <delete id="delete">
         DELETE FROM ${prefix}_comments
-        WHERE `coid` = #{key}
+        WHERE `id` = #{key}
     </delete>
 
     <!-- 批量删除 -->
     <delete id="batchDelete" parameterType = "java.util.List">
-        DELETE FROM ${prefix}_comments WHERE coid IN
+        DELETE FROM ${prefix}_comments WHERE id IN
         <foreach collection="list"  item="item" open="(" separator="," close=")"  >
             #{item}
         </foreach>
@@ -223,7 +174,7 @@
     <select id="selectByKey" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List" />
         FROM ${prefix}_comments
-        WHERE `coid` = #{key}
+        WHERE `id` = #{key}
     </select>
 
     <!-- 条件查询 -->
@@ -231,50 +182,41 @@
         SELECT <include refid="Base_Column_List" />
         FROM ${prefix}_comments
         <where>
-            <if test ='null != coid'>
-                and `coid` = #{coid}
+            <if test ='null != id'>
+                and `id` = #{id}
             </if>
             <if test ='null != cid'>
                 and `cid` = #{cid}
             </if>
-            <if test ='null != created'>
-                and `created` = #{created}
-            </if>
-            <if test ='null != author'>
-                and `author` = #{author}
-            </if>
-            <if test ='null != authorId'>
-                and `authorId` = #{authorId}
-            </if>
-            <if test ='null != ownerId'>
-                and `ownerId` = #{ownerId}
-            </if>
-            <if test ='null != mail'>
-                and `mail` = #{mail}
-            </if>
-            <if test ='null != url'>
-                and `url` = #{url}
-            </if>
-            <if test ='null != ip'>
-                and `ip` = #{ip}
-            </if>
-            <if test ='null != agent'>
-                and `agent` = #{agent}
+            <if test ='null != uid'>
+                and `uid` = #{uid}
             </if>
             <if test ='null != text'>
                 and `text` = #{text}
             </if>
-            <if test ='null != type'>
-                and `type` = #{type}
+            <if test ='null != images'>
+                and `images` = #{images}
             </if>
-            <if test ='null != status'>
-                and `status` = #{status}
+            <if test ='null != ip'>
+                and `ip` = #{ip}
             </if>
             <if test ='null != parent'>
                 and `parent` = #{parent}
             </if>
-            <if test ='null != allparent'>
-                and `allparent` = #{allparent}
+            <if test ='null != likes'>
+                and `likes` = #{likes}
+            </if>
+            <if test ='null != all'>
+                and `all` = #{all}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != created'>
+                and `created` = #{created}
+            </if>
+            <if test ='null != modified'>
+                and `modified` = #{modified}
             </if>
         </where>
     </select>
@@ -284,50 +226,41 @@
         SELECT <include refid="Base_Column_List" />
         FROM ${prefix}_comments
         <where>
-            <if test ='null != comments.coid'>
-                and `coid` = #{comments.coid}
+            <if test ='null != comments.id'>
+                and `id` = #{comments.id}
             </if>
             <if test ='null != comments.cid'>
                 and `cid` = #{comments.cid}
             </if>
-            <if test ='null != comments.created'>
-                and `created` = #{comments.created}
-            </if>
-            <if test ='null != comments.author'>
-                and `author` = #{comments.author}
-            </if>
-            <if test ='null != comments.authorId'>
-                and `authorId` = #{comments.authorId}
-            </if>
-            <if test ='null != comments.ownerId'>
-                and authorId != #{comments.ownerId} and `ownerId` = #{comments.ownerId}
-            </if>
-            <if test ='null != comments.mail'>
-                and `mail` = #{comments.mail}
-            </if>
-            <if test ='null != comments.url'>
-                and `url` = #{comments.url}
-            </if>
-            <if test ='null != comments.ip'>
-                and `ip` = #{comments.ip}
-            </if>
-            <if test ='null != comments.agent'>
-                and `agent` = #{comments.agent}
+            <if test ='null != comments.uid'>
+                and `uid` = #{comments.uid}
             </if>
             <if test ='null != comments.text'>
                 and `text` = #{comments.text}
             </if>
-            <if test ='null != comments.type'>
-                and `type` = #{comments.type}
+            <if test ='null != comments.images'>
+                and `images` = #{comments.images}
             </if>
-            <if test ='null != comments.status'>
-                and `status` = #{comments.status}
+            <if test ='null != comments.ip'>
+                and ip != #{comments.images}
             </if>
             <if test ='null != comments.parent'>
                 and `parent` = #{comments.parent}
             </if>
-            <if test ='null != comments.allparent'>
-                and `allparent` = #{comments.allparent}
+            <if test ='null != comments.likes'>
+                and `likes` = #{comments.likes}
+            </if>
+            <if test ='null != comments.all'>
+                and `all` = #{comments.all}
+            </if>
+            <if test ='null != comments.type'>
+                and `type` = #{comments.type}
+            </if>
+            <if test ='null != comments.created'>
+                and `created` = #{comments.created}
+            </if>
+            <if test ='null != comments.modified'>
+                and `modified` = #{comments.modified}
             </if>
             <if test ='null != searchKey'>
                 and CONCAT(IFNULL(`text`, '')) LIKE CONCAT('%', #{searchKey}, '%')
@@ -344,52 +277,43 @@
     <select id="total" resultType="java.lang.Integer">
         SELECT count(*) FROM ${prefix}_comments
         <where>
-            <if test ='null != comments.coid'>
-                and `coid` = #{comments.coid}
+            <if test='null != comments.id'>
+                and `id` = #{comments.id}
             </if>
-            <if test ='null != comments.cid'>
+            <if test='null != comments.cid'>
                 and `cid` = #{comments.cid}
             </if>
-            <if test ='null != comments.created'>
-                and `created` = #{comments.created}
+            <if test='null != comments.uid'>
+                and `uid` = #{comments.uid}
             </if>
-            <if test ='null != comments.author'>
-                and `author` = #{comments.author}
-            </if>
-            <if test ='null != comments.authorId'>
-                and `authorId` = #{comments.authorId}
-            </if>
-            <if test ='null != comments.ownerId'>
-                and `ownerId` = #{comments.ownerId}
-            </if>
-            <if test ='null != comments.mail'>
-                and `mail` = #{comments.mail}
-            </if>
-            <if test ='null != comments.url'>
-                and `url` = #{comments.url}
-            </if>
-            <if test ='null != comments.ip'>
-                and `ip` = #{comments.ip}
-            </if>
-            <if test ='null != comments.agent'>
-                and `agent` = #{comments.agent}
-            </if>
-            <if test ='null != comments.text'>
+            <if test='null != comments.text'>
                 and `text` = #{comments.text}
             </if>
-            <if test ='null != comments.type'>
-                and `type` = #{comments.type}
+            <if test='null != comments.images'>
+                and `images` = #{comments.images}
             </if>
-            <if test ='null != comments.status'>
-                and `status` = #{comments.status}
+            <if test='null != comments.ip'>
+                and `ip` = #{comments.ip}
             </if>
-            <if test ='null != comments.parent'>
+            <if test='null != comments.parent'>
                 and `parent` = #{comments.parent}
             </if>
-            <if test ='null != comments.allparent'>
-                and `allparent` = #{comments.allparent}
+            <if test='null != comments.likes'>
+                and `likes` = #{comments.likes}
             </if>
-            <if test ='null != searchKey'>
+            <if test='null != comments.all'>
+                and `all` = #{comments.all}
+            </if>
+            <if test='null != comments.type'>
+                and `type` = #{comments.type}
+            </if>
+            <if test='null != comments.created'>
+                and `created` = #{comments.created}
+            </if>
+            <if test='null != comments.modified'>
+                and `modified` = #{comments.modified}
+            </if>
+            <if test='null != searchKey'>
                 and CONCAT(IFNULL(`text`, '')) LIKE CONCAT('%', #{searchKey}, '%')
             </if>
         </where>

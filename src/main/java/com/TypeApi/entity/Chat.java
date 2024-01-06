@@ -1,10 +1,12 @@
 package com.TypeApi.entity;
 
 import java.io.Serializable;
+
 import lombok.Data;
 
 /**
  * TypechoChat
+ *
  * @author buxia97 2023-01-10
  */
 @Data
@@ -13,19 +15,19 @@ public class Chat implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * id  
+     * id
      */
     private Integer id;
 
     /**
-     * uid  创建者
+     * sender_id  发送者
      */
-    private Integer uid;
+    private Integer sender_id;
 
     /**
-     * toid  也是创建者（和上一个字段共同判断私聊）
+     * receiver_id  接收者（和上一个字段共同判断私聊）
      */
-    private Integer toid;
+    private Integer receiver_id;
 
     /**
      * created  创建时间
@@ -50,10 +52,5 @@ public class Chat implements Serializable {
     /**
      * 图片地址（群聊）
      */
-    private String pic;
-
-    /**
-     * 屏蔽和全体禁言，存操作人id
-     */
-    private Integer ban;
+    private String avatar;
 }

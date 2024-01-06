@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.TypeApi.entity.*;
 import com.TypeApi.service.*;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Comparator;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -72,357 +74,53 @@ public class CategoryController {
     UserStatus UStatus = new UserStatus();
     EditFile editFile = new EditFile();
 
-    /***
-     * 查询分类或标签下的文章
-     *
-     */
-    @RequestMapping(value = "/selectContents")
-    @ResponseBody
-    public String selectContents(@RequestParam(value = "searchParams", required = false) String searchParams,
-                                 @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                                 @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
-                                 @RequestParam(value = "order", required = false, defaultValue = "") String order,
-                                 @RequestParam(value = "token", required = false, defaultValue = "") String token) {
-
-        Relationships query = new Relationships();
-        if (limit > 50) {
-            limit = 50;
-        }
-
-        Integer uid = null;
-        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-        Apiconfig userStatus = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-        if (userStatus.getIsLogin().equals(1)) {
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-            } else {
-                if (token != null && !token.isEmpty()) {
-                    Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-                    uid = Integer.parseInt(map.get("uid").toString());
-                }
-            }
-        }
-        String sqlParams = "null";
-        if (StringUtils.isNotBlank(searchParams)) {
-            JSONObject object = JSON.parseObject(searchParams);
-            Integer mid = 0;
-            if (object.get("mid") != null) {
-                mid = Integer.parseInt(object.get("mid").toString());
-            }
-
-            query.setMid(mid);
-            Article contents = new Article();
-            contents.setStatus("publish");
-            query.setContents(contents);
-            Map paramsJson = JSONObject.parseObject(JSONObject.toJSONString(query), Map.class);
-            sqlParams = paramsJson.toString();
-        }
-        List jsonList = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix + "_" + "selectContents_" + page + "_" + limit + "_" + sqlParams, redisTemplate);
-
-        try {
-            if (cacheList.size() > 0) {
-                jsonList = cacheList;
-            } else {
-                Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-                //首先查询typechoRelationships获取映射关系
-                PageList<Relationships> pageList = relationshipsService.selectPage(query, page, limit);
-                List<Relationships> list = pageList.getList();
-                if (list.size() < 1) {
-                    JSONObject noData = new JSONObject();
-                    noData.put("code", 1);
-                    noData.put("msg", "");
-                    noData.put("data", new ArrayList());
-                    noData.put("count", 0);
-                    return noData.toString();
-                }
-                for (int i = 0; i < list.size(); i++) {
-                    Integer cid = list.get(i).getCid();
-                    Article article = list.get(i).getContents();
-                    Map contentsInfo = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
-                    //写入作者详细信息
-                    Integer authorId = article.getAuthorId();
-                    if (authorId > 0) {
-                        Users author = usersService.selectByKey(authorId);
-                        Map authorInfo = new HashMap();
-                        if (author != null) {
-                            String name = author.getName();
-                            if (author.getScreenName() != "" && author.getScreenName() != null) {
-                                name = author.getScreenName();
-                            }
-                            String avatar = apiconfig.getWebinfoAvatar() + "null";
-                            if (author.getAvatar() != "" && author.getAvatar() != null) {
-                                avatar = author.getAvatar();
-                            } else {
-                                if (author.getMail() != "" && author.getMail() != null) {
-                                    String mail = author.getMail();
-
-                                    if (mail.indexOf("@qq.com") != -1) {
-                                        String qq = mail.replace("@qq.com", "");
-                                        avatar = "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640";
-                                    } else {
-                                        avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), author.getMail());
-                                    }
-                                    //avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), author.getMail());
-                                }
-                            }
-                            // 格式化用户opt设置
-                            JSONObject opt = JSONObject.parseObject(author.getOpt());
-                            if (opt instanceof Object) {
-                                opt = JSONObject.parseObject(author.getOpt());
-                            } else {
-                                opt = null;
-                            }
-                            // 再查询是否关注了用户
-                            Integer isfollow = 0;
-                            if (uid != null && uid > 0) {
-                                Fan fan = new Fan();
-                                fan.setUid(uid);
-                                fan.setTouid(authorId);
-                                isfollow = fanService.total(fan);
-                            }
-
-                            authorInfo.put("name", name);
-                            authorInfo.put("avatar", avatar);
-                            authorInfo.put("customize", author.getCustomize());
-                            authorInfo.put("opt", opt);
-                            authorInfo.put("isfollow", isfollow);
-                            //判断是否为VIP
-                            authorInfo.put("isvip", 0);
-                            Long date = System.currentTimeMillis();
-                            String curTime = String.valueOf(date).substring(0, 10);
-                            Integer viptime = author.getVip();
-
-                            if (viptime > Integer.parseInt(curTime) || viptime.equals(1)) {
-                                authorInfo.put("isvip", 1);
-                            }
-                            if (viptime.equals(1)) {
-                                //永久VIP
-                                authorInfo.put("isvip", 2);
-                            }
-                        } else {
-                            authorInfo.put("name", "用户已注销");
-                            authorInfo.put("avatar", apiconfig.getWebinfoAvatar() + "null");
-                        }
-                        contentsInfo.put("authorInfo", authorInfo);
-                    }
-
-                    // 格式化文章opt
-                    JSONObject opt = null;
-                    Object optValue = contentsInfo.get("opt");
-
-                    if (optValue != null) {
-                        String optString = optValue.toString();
-
-                        if (!optString.isEmpty()) {
-                            opt = JSONObject.parseObject(optString);
-                        }
-                    }
-                    //处理文章内容为简介
-
-                    String text = contentsInfo.get("text").toString();
-                    boolean status = text.contains("<!--markdown-->");
-                    if (status) {
-                        contentsInfo.put("markdown", 1);
-                    } else {
-                        contentsInfo.put("markdown", 0);
-                    }
-                    List imgList = baseFull.getImageSrc(text);
-                    text = baseFull.toStrByChinese(text);
-                    contentsInfo.put("text", text.length() > 400 ? text.substring(0, 400) : text);
-
-                    contentsInfo.put("images", imgList);
-                    //加入自定义字段，分类和标签
-                    //加入自定义字段信息，这里取消注释即可开启，但是数据库查询会消耗性能
-                    Fields f = new Fields();
-                    f.setCid(cid);
-                    List<Fields> fields = fieldsService.selectList(f);
-                    contentsInfo.put("fields", fields);
-
-                    Relationships rs = new Relationships();
-                    rs.setCid(cid);
-                    List<Relationships> relationships = relationshipsService.selectList(rs);
-
-                    List metas = new ArrayList();
-                    List tags = new ArrayList();
-                    for (int j = 0; j < relationships.size(); j++) {
-                        Map info = JSONObject.parseObject(JSONObject.toJSONString(relationships.get(j)), Map.class);
-                        if (info != null) {
-                            String mid = info.get("mid").toString();
-
-                            Category metasList = service.selectByKey(mid);
-                            Map metasInfo = JSONObject.parseObject(JSONObject.toJSONString(metasList), Map.class);
-                            String type = metasInfo.get("type").toString();
-                            if (type.equals("category")) {
-                                metas.add(metasInfo);
-                            }
-                            if (type.equals("tag")) {
-                                tags.add(metasInfo);
-                            }
-                        }
-
-                    }
-
-                    contentsInfo.remove("password");
-                    contentsInfo.put("category", metas);
-                    contentsInfo.put("opt", opt);
-                    contentsInfo.put("tag", tags);
-
-                    jsonList.add(contentsInfo);
-
-
-                    //存入redis
-
-                }
-                redisHelp.delete(this.dataprefix + "_" + "selectContents_" + page + "_" + limit + "_" + sqlParams, redisTemplate);
-                redisHelp.setList(this.dataprefix + "_" + "selectContents_" + page + "_" + limit + "_" + sqlParams, jsonList, this.contentCache, redisTemplate);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (cacheList.size() > 0) {
-                jsonList = cacheList;
-            }
-        }
-        if (order != null && order != "") {
-            jsonList = sortJsonList(jsonList, order);
-        }
-
-        JSONObject response = new JSONObject();
-        response.put("code", 1);
-        response.put("msg", "");
-        response.put("data", null != jsonList ? jsonList : new JSONArray());
-        response.put("count", jsonList.size());
-        return response.toString();
-    }
-
-    private List<Map<Object, Integer>> sortJsonList(List<Map<Object, Integer>> jsonList, String order) {
-        switch (order) {
-            case "hot":
-                jsonList.sort(
-                        Comparator.comparingInt(o -> {
-                                    Map<Object, Integer> map = (Map<Object, Integer>) o;
-                                    return ((Number) map.getOrDefault("likes", 0)).intValue();
-                                })
-                                .thenComparing(o -> {
-                                    Map<Object, Long> map = (Map<Object, Long>) o;
-                                    return ((Number) map.getOrDefault("replyTime", 0L)).longValue();
-
-                                })
-                                .thenComparing(o -> {
-                                    Map<Object, String> map = (Map<Object, String>) o;
-                                    return ((String) map.getOrDefault("text", ""));
-                                })
-
-                                .thenComparing(o -> {
-                                    Map<Object, Long> map = (Map<Object, Long>) o;
-                                    return ((Number) map.getOrDefault("created", 0L)).longValue();
-
-                                }).thenComparingInt(o -> {
-                                    Map<Object, Integer> map = (Map<Object, Integer>) o;
-                                    return ((Number) map.getOrDefault("views", 0)).intValue();
-                                })
-                );
-                break;
-            case "new":
-                jsonList.sort((Comparator<? super Map<Object, Integer>>) Comparator
-                        .comparingInt((Map<Object, Integer> o) -> o.getOrDefault("created", 0))
-                        .reversed()
-                );
-                break;
-            // Add more cases for other order types if needed
-        }
-
-        // Convert List<Map<Object, Integer>> to List<Map<String, Object>> if needed
-        // Assuming your data structure allows this conversion
-        // List<Map<String, Object>> result = new ArrayList<>(jsonList);
-
-        // Return the sorted list
-        return jsonList;
-    }
-
 
     /***
      * 查询分类和标签
-     * @param searchParams Bean对象JSON字符串
+     * @param params Bean对象JSON字符串
      * @param page         页码
      * @param limit        每页显示数量
      */
     @RequestMapping(value = "/list")
     @ResponseBody
-    public String categoryList(@RequestParam(value = "searchParams", required = false) String searchParams,
+    public String categoryList(@RequestParam(value = "params", required = false) String params,
                                @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                               @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
-                               @RequestParam(value = "searchKey", required = false, defaultValue = "") String searchKey,
-                               @RequestParam(value = "order", required = false, defaultValue = "") String order) {
-        Category query = new Category();
-        String sqlParams = "null";
-        if (limit > 50) {
-            limit = 50;
-        }
-        Integer total = 0;
-        List jsonList = new ArrayList();
-
-        if (StringUtils.isNotBlank(searchParams)) {
-            JSONObject object = JSON.parseObject(searchParams);
-            query = object.toJavaObject(Category.class);
-            Map paramsJson = JSONObject.parseObject(JSONObject.toJSONString(query), Map.class);
-            sqlParams = paramsJson.toString();
-        }
-        List cacheList = redisHelp.getList(this.dataprefix + "_" + "metasList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams, redisTemplate);
-
-        total = service.total(query);
+                               @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
+                               @RequestParam(value = "searchKey", required = false) String searchKey,
+                               @RequestParam(value = "order", required = false) String order,
+                               HttpServletRequest request) {
         try {
-            if (cacheList.size() > 0) {
-                jsonList = cacheList;
-            } else {
-                PageList<Category> pageList = service.selectPage(query, page, limit, searchKey, order);
-                List<Category> list = pageList.getList();
-
-
-                if (list.size() < 1) {
-                    JSONObject noData = new JSONObject();
-                    noData.put("code", 1);
-                    noData.put("msg", "");
-                    noData.put("data", new ArrayList());
-                    noData.put("count", 0);
-                    return noData.toString();
-                } else {
-                    for (int i = 0; i < list.size(); i++) {
-
-                        Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
-                        Object optObject = json.get("opt");
-
-                        if (optObject != null && !optObject.toString().isEmpty() && optObject.toString() != "") {
-                            JSONObject opt = JSONObject.parseObject(optObject.toString());
-                            json.put("opt", opt);
-                        }
-                        // 获取二级分类
-//                        Category subCategorySearch = new Category();
-//                        subCategorySearch.setParent(Integer.parseInt(json.get("mid").toString()));
-//                        List<Category> subCategory  = service.selectList(subCategorySearch);
-//                        System.out.println("打印子分类查询"+subCategorySearch+subCategory);
-//                        json.put("subCategory", subCategory);
-
-                        // 根据具体需求决定是否将 json 添加到 jsonList
-                        jsonList.add(json);
-                    }
-                }
-                redisHelp.delete(this.dataprefix + "_" + "metasList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams, redisTemplate);
-                redisHelp.setList(this.dataprefix + "_" + "metasList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams, jsonList, 10, redisTemplate);
+            Category query = new Category();
+            if (params != null && !params.isEmpty()) {
+                query = JSON.parseObject(params, Category.class);
             }
+            // 查询列表
+            PageList<Category> categoryPageList = service.selectPage(query, page, limit, searchKey, order);
+            List<Category> categoryList = categoryPageList.getList();
+            JSONArray dataList = new JSONArray();
+            for (Category category : categoryList) {
+                Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(category), Map.class);
+                // 格式化信息
+                JSONObject opt = new JSONObject();
+                opt = category.getOpt() != null && !category.getOpt().toString().isEmpty() ? JSONObject.parseObject(category.getOpt()) : null;
+                // 查询文章数量
+                Article article = new Article();
+                article.setMid(category.getMid());
+                data.put("opt", opt);
+                data.put("articles", contentsService.total(article, null));
+                dataList.add(data);
+            }
+            Map<String, Object> data = new HashMap<>();
+            data.put("page", page);
+            data.put("limit", limit);
+            data.put("data", dataList);
+            data.put("count", dataList.size());
+            data.put("total", service.total(query));
+            return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
             e.printStackTrace();
-            if (cacheList.size() > 0) {
-                jsonList = cacheList;
-            }
+            return Result.getResultJson(400, "接口异常", null);
         }
-        JSONObject response = new JSONObject();
-        response.put("code", 1);
-        response.put("msg", "");
-        response.put("data", jsonList);
-        response.put("count", jsonList.size());
-        response.put("total", total);
-        return response.toString();
     }
 
     /***
@@ -430,37 +128,26 @@ public class CategoryController {
      */
     @RequestMapping(value = "/info")
     @ResponseBody
-    public String metaInfo(
-            @RequestParam(value = "key", required = false) String key,
-            @RequestParam(value = "slug", required = false) String slug) {
+    public String info(@RequestParam(value = "id") Integer id,
+                       HttpServletRequest request) {
         try {
-            Map metaInfoJson = new HashMap<String, String>();
-            Map cacheInfo = redisHelp.getMapValue(this.dataprefix + "_" + "metaInfo_" + key + "_" + slug, redisTemplate);
+            Category category = service.selectByKey(id);
+            if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
+            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(category), Map.class);
+            // 格式化opt
+            JSONObject opt = new JSONObject();
+            opt = category.getOpt() != null && !category.toString().isEmpty() ? JSONObject.parseObject(category.getOpt()) : null;
 
-            if (cacheInfo.isEmpty()) {
-                Category metas = (slug != null) ? service.selectBySlug(slug) : service.selectByKey(key);
-                Map<String, Object> opt = JSONObject.parseObject(metas.getOpt());
-                metaInfoJson = new HashMap<>(JSONObject.parseObject(JSONObject.toJSONString(metas), Map.class));
-                metaInfoJson.put("opt", opt);
-                redisHelp.delete(this.dataprefix + "_" + "metaInfo_" + key + "_" + slug, redisTemplate);
-                redisHelp.setKey(this.dataprefix + "_" + "metaInfo_" + key + "_" + slug, metaInfoJson, 20, redisTemplate);
-            } else {
-                metaInfoJson = cacheInfo;
-            }
+            // 查询文章数量
+            Article article = new Article();
+            article.setMid(category.getMid());
+            data.put("opt", opt);
+            data.put("articles", contentsService.total(article, null));
 
-            JSONObject response = new JSONObject();
-            response.put("code", 1);
-            response.put("msg", "");
-            response.put("data", metaInfoJson);
-
-            return response.toString();
+            return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
-            JSONObject response = new JSONObject();
-            response.put("code", 1);
-            response.put("msg", "An error occurred while processing metaInfo");
-            response.put("data", null);
-
-            return response.toString();
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
         }
     }
 
@@ -469,93 +156,92 @@ public class CategoryController {
      */
     @RequestMapping(value = "/update")
     @ResponseBody
-    public String editMeta(@RequestParam(value = "params", required = false) String params, @RequestParam(value = "token", required = false) String token) {
-        try {
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-            }
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            String group = map.get("group").toString();
-            if (!group.equals("administrator")) {
-                return Result.getResultJson(0, "你没有操作权限", null);
-            }
-            String logUid = map.get("uid").toString();
-            Category update = new Category();
-            Map jsonToMap = null;
-            if (StringUtils.isNotBlank(params)) {
-                jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
-                //为了数据稳定性考虑，禁止修改类型
-                jsonToMap.remove("type");
-                update = JSON.parseObject(JSON.toJSONString(jsonToMap), Category.class);
-            }
 
-            int rows = service.update(update);
-            editFile.setLog("管理员" + logUid + "请求修改分类" + jsonToMap.get("mid").toString());
-            JSONObject response = new JSONObject();
-            response.put("code", rows);
-            response.put("msg", rows > 0 ? "操作成功" : "操作失败");
-            return response.toString();
+    public String update(@RequestParam(value = "id") Integer id,
+                         @RequestParam(value = "name", required = false) String name,
+                         @RequestParam(value = "description", required = false) String description,
+                         @RequestParam(value = "avatar", required = false) String avatar,
+                         @RequestParam(value = "opt", required = false) String opt,
+                         HttpServletRequest request) {
+        try {
+            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            Category category = service.selectByKey(id);
+            if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
+
+            if (name != null && !name.isEmpty()) category.setName(name);
+            if (description != null && !description.isEmpty()) category.setDescription(description);
+            if (avatar != null && !avatar.isEmpty()) category.setImgurl(avatar);
+            if (opt != null && !opt.isEmpty()) category.setOpt(opt);
+            service.update(category);
+
+            return Result.getResultJson(200, "修改成功", null);
         } catch (Exception e) {
             e.printStackTrace();
-            JSONObject response = new JSONObject();
-            response.put("code", 0);
-            response.put("msg", "操作失败");
-            return response.toString();
+            return Result.getResultJson(400, "接口异常", null);
         }
+    }
 
+    private boolean permission(String token) {
+        if (token != null && !token.isEmpty()) {
+            DecodedJWT verify = JWT.verify(token);
+            Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+            if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 
     /***
-     * 修改分类和标签
+     * 添加分类 或 标签
      */
     @RequestMapping(value = "/add")
     @ResponseBody
-    public String addMeta(@RequestParam(value = "params", required = false) String params, @RequestParam(value = "token", required = false) String token) {
+    public String add(@RequestParam(value = "name") String name,
+                      @RequestParam(value = "description") String description,
+                      @RequestParam(value = "avatar") String avatar,
+                      @RequestParam(value = "opt") String opt,
+                      @RequestParam(value = "type") String type,
+                      HttpServletRequest request) {
         try {
-            System.out.println(params);
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-            }
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            String group = map.get("group").toString();
-            if (!group.equals("administrator")) {
-                return Result.getResultJson(0, "你没有操作权限", null);
-            }
-            String logUid = map.get("uid").toString();
-            Category insert = new Category();
-            Map jsonToMap = null;
-            if (StringUtils.isNotBlank(params)) {
-                jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
-                String type = jsonToMap.get("type").toString();
-                if (!type.equals("category") && !type.equals("tag")) {
-                    return Result.getResultJson(0, "类型参数不正确", null);
-                }
-                //为了数据稳定性考虑，禁止修改类型
-                insert = JSON.parseObject(JSON.toJSONString(jsonToMap), Category.class);
-            }
-            //判断是否存在相同的分类或标签名称
-            Category oldMeta = new Category();
-            oldMeta.setName(insert.getName());
-            oldMeta.setType(insert.getType());
-            Integer isHave = service.total(oldMeta);
-            if (isHave > 0) {
-                return Result.getResultJson(0, "已存在同名数据", null);
-            }
-            int rows = service.insert(insert);
-            editFile.setLog("管理员" + logUid + "请求添加分类");
-            JSONObject response = new JSONObject();
-            response.put("code", rows);
-            response.put("msg", rows > 0 ? "操作成功" : "操作失败");
-            return response.toString();
+            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            Category category = new Category();
+            category.setName(name);
+            category.setDescription(description);
+            category.setImgurl(avatar);
+            category.setType(type);
+            category.setOpt(opt);
+            service.insert(category);
+            return Result.getResultJson(200, "添加成功", null);
         } catch (Exception e) {
-            JSONObject response = new JSONObject();
-            response.put("code", 0);
-            response.put("msg", "操作失败");
-            return response.toString();
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
         }
+    }
 
+    /***
+     * 操作分类
+     */
+    @RequestMapping("/action")
+    @ResponseBody
+    public String action(@RequestParam(value = "id") Integer id,
+                         @RequestParam(value = "type") String type,
+                         HttpServletRequest request) {
+        try {
+            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            Category category = service.selectByKey(id);
+            if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
+            if (type.equals("recommend")) category.setIsrecommend(category.getIsrecommend() > 0 ? 0 : 1);
+            if (type.equals("waterfall")) category.setIswaterfall(category.getIswaterfall() > 0 ? 0 : 1);
+            return Result.getResultJson(200, "操作成功", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+
+        }
     }
 
     /***
@@ -563,37 +249,46 @@ public class CategoryController {
      */
     @RequestMapping(value = "/delete")
     @ResponseBody
-    public String deleteMeta(@RequestParam(value = "id", required = false) String id,
-                             @RequestParam(value = "token", required = false) String token) {
+    public String delete(@RequestParam(value = "id") Integer id,
+                         HttpServletRequest request) {
         try {
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-            }
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            String group = map.get("group").toString();
-            String logUid = map.get("uid").toString();
-            if (!group.equals("administrator")) {
-                return Result.getResultJson(0, "你没有操作权限", null);
-            }
-            Category meta = service.selectByKey(id);
-            if (meta == null) {
-                return Result.getResultJson(0, "数据不存在", null);
-            }
-            int rows = service.delete(id);
-            editFile.setLog("管理员" + logUid + "请求删除分类" + id);
-            JSONObject response = new JSONObject();
-            response.put("code", rows);
-            response.put("msg", rows > 0 ? "操作成功" : "操作失败");
-            return response.toString();
+            if (!permission(request.getHeader("Authorization"))) return Result.getResultJson(201, "无权限", null);
+            Category category = service.selectByKey(id);
+            if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
+
+            service.delete(id);
+
+            return Result.getResultJson(200, "删除成功", null);
         } catch (Exception e) {
             e.printStackTrace();
-            JSONObject response = new JSONObject();
-            response.put("code", 0);
-            response.put("msg", "操作失败");
-            return response.toString();
+            return Result.getResultJson(400, "接口异常", null);
         }
+    }
 
+    /***
+     * 关注分类
+     */
+    @RequestMapping(value = "/follow")
+    @ResponseBody
+    public String follow(@RequestParam(value = "id") Integer id,
+                         HttpServletRequest request) {
+        try {
+            String token = request.getHeader("'Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
+            Category category = service.selectByKey(id);
+            if (category == null || category.toString().isEmpty()) return Result.getResultJson(201, "分类不存在", null);
+
+            /*暂无对应存储表 搁置*/
+            return "接口未完成";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
     }
 
 }
