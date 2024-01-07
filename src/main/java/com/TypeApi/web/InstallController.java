@@ -791,11 +791,11 @@ public class InstallController {
         if (i == 0) {
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_commentLike` (" +
                     "  `id` INT NOT NULL AUTO_INCREMENT," +
-                    "  `cid` INT NOT NULL UNSIGNED COMMENT '评论id'," +
+                    "  `cid` INT UNSIGNED NOT NULL COMMENT '评论id'," +
                     "  `uid` INT NOT NULL COMMENT '用户id'," +
                     "  `created` INT  COMMENT '创建时间'," +
                     "  PRIMARY KEY (`id`)" +
-                    ") ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COMMENT='商品分类表';");
+                    ") ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COMMENT='点赞记录表';");
             text += "评论点赞表创建完成。";
         } else {
             text += "评论点赞表已存在，无需安装。";
