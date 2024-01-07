@@ -124,7 +124,7 @@ public class CommentsController {
             JSONArray dataList = new JSONArray();
             for (Comments _comments : commentsList) {
                 // 获取文章信息
-                Article article = contentsService.selectByKey(id!=null?id:_comments.getCid());
+                Article article = contentsService.selectByKey(id != null ? id : _comments.getCid());
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(_comments));
 
                 // 查询用户信息
@@ -144,6 +144,17 @@ public class CommentsController {
                     opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
                 }
 
+                // 是否点赞
+                CommentLike commentLike = new CommentLike();
+                Integer isLike = 0;
+                if (id != null && !id.equals(0) && user != null) {
+                    commentLike.setCid(_comments.getId());
+                    commentLike.setUid(user.getUid());
+                    List<CommentLike> commentLikeList = commentlikeService.selectList(commentLike);
+                    if (commentLikeList.size() > 0) isLike = 1;
+                }
+
+
                 // 格式化images 数组
                 List images = new JSONArray();
                 images = _comments.getImages() != null && !_comments.toString().isEmpty() ? JSONArray.parseArray(_comments.getImages()) : null;
@@ -159,23 +170,23 @@ public class CommentsController {
                 } else {
                     articleData = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
                     // 获取文章中的images 如果article的images存在 则优先使用images
-                    images = article.getImages()!=null?JSONArray.parseArray(article.getImages()): baseFull.getImageSrc(article.getText());
-                    articleData.put("images",images);
+                    images = article.getImages() != null ? JSONArray.parseArray(article.getImages()) : baseFull.getImageSrc(article.getText());
+                    articleData.put("images", images);
                 }
 
-
-                data.put("article", articleData);
                 // 加入信息
                 dataUser.put("opt", opt);
                 dataUser.put("head_picture", head_picture);
+                data.put("article", articleData);
                 data.put("images", images);
+                data.put("isLike", isLike);
                 data.put("userInfo", dataUser);
                 // 查询一次父评论的信息
                 if (_comments.getParent() != null && !_comments.getParent().equals(0) && !_comments.getParent().toString().isEmpty()) {
                     Comments parentComment = service.selectByKey(_comments.getParent());
                     Users parentUser = new Users();
-                    if(parentComment!=null && !parentComment.toString().isEmpty()){
-                       parentUser = usersService.selectByKey(parentComment.getUid());
+                    if (parentComment != null && !parentComment.toString().isEmpty()) {
+                        parentUser = usersService.selectByKey(parentComment.getUid());
                     }
 
                     Map<String, Object> dataParentUser = JSONObject.parseObject(JSONObject.toJSONString(parentUser));
@@ -195,7 +206,10 @@ public class CommentsController {
                     // 加入信息
                     dataParentUser.put("opt", opt);
                     dataParentUser.put("head_picture", head_picture);
-                    Map<String, Object> dataParentComment = JSONObject.parseObject(JSONObject.toJSONString(parentComment));
+                    Map<String, Object> dataParentComment = new HashMap<>();
+                    if (parentComment != null && !parentComment.toString().isEmpty()) {
+                        dataParentComment = JSONObject.parseObject(JSONObject.toJSONString(parentComment));
+                    }
                     dataParentComment.put("userInfo", dataParentUser);
                     data.put("parentComment", dataParentComment);
                 }
@@ -232,11 +246,11 @@ public class CommentsController {
                         subArticleData.put("title", "文章已删除");
                         subArticleData.put("id", 0);
                         subArticleData.put("authorId", 0);
-                    }else{
+                    } else {
                         subArticleData = JSONObject.parseObject(JSONObject.toJSONString(article));
                         // 获取文章中的images 如果article的images存在 则优先使用images
-                        images = article.getImages()!=null?JSONArray.parseArray(article.getImages()): baseFull.getImageSrc(article.getText());
-                        subArticleData.put("images",images);
+                        images = article.getImages() != null ? JSONArray.parseArray(article.getImages()) : baseFull.getImageSrc(article.getText());
+                        subArticleData.put("images", images);
                     }
 
 
@@ -429,6 +443,8 @@ public class CommentsController {
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
                 if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             }
+            Comments comments = service.selectByKey(id);
+            if (comments == null || comments.toString().isEmpty()) return Result.getResultJson(201, "评论不存在", null);
 
             // 查询是否已经关注过了
             CommentLike commentLike = new CommentLike();
@@ -437,14 +453,14 @@ public class CommentsController {
             List<CommentLike> commentLikeList = commentlikeService.selectList(commentLike);
             commentLike.setCreated((int) (System.currentTimeMillis() / 1000));
             // 获取评论
-            Comments comments = service.selectByKey(id);
-            Integer likes = comments.getLikes();
-            if (commentLikeList.size() > 0) {
+
+            Integer likes = comments.getLikes()==null?0:comments.getLikes();
+            if (commentLikeList != null && commentLikeList.size() > 0) {
                 // 存在就删除
                 commentlikeService.delete(commentLikeList.get(0).getId());
-                comments.setLikes(likes > 0 ? likes-- : 0);
+                comments.setLikes(likes > 0 ? likes - 1 : 0);
             } else {
-                comments.setLikes(likes++);
+                comments.setLikes(likes + 1);
                 commentlikeService.insert(commentLike);
             }
 

@@ -278,33 +278,33 @@ public class UsersController {
     @ResponseBody
     public String userInfo(@RequestParam(value = "id", required = false) Integer id, HttpServletRequest request) {
         try {
-            Map data = new HashMap<>();
-            Integer uid = id;
             String token = request.getHeader("Authorization");
-            Boolean self = false;
             Integer isFollow = 0;
             Integer fromFollow = 0;
             Integer related = 0;
+            Users user = new Users();
+            Users own = new Users();
+            if (id != null && !id.equals(0)) {
+                user = service.selectByKey(id);
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
-                uid = Integer.parseInt(verify.getClaim("aud").asString());
-                if (id.equals(uid)) self = true;
-
+                own = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (own == null || own.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
                 // 获取是否关注和互相关注
                 Fan fan = new Fan();
-                if (!self) {
-                    fan.setTouid(id);
-                    fan.setUid(uid);
+                if (!own.getUid().equals(user.getUid())) {
+                    fan.setTouid(user.getUid());
+                    fan.setUid(own.getUid());
                     isFollow = fanService.total(fan);
                     // 他是否关注我
-                    fan.setTouid(uid);
-                    fan.setTouid(id);
+                    fan.setTouid(own.getUid());
+                    fan.setUid(user.getUid());
                     fromFollow = fanService.total(fan);
                     if (isFollow.equals(fromFollow)) related = 1;
                 }
             }
-
-            Users user = service.selectByKey(uid);
             // 处理opt、地址以及头像框
             JSONObject opt = new JSONObject();
             JSONObject address = new JSONObject();
@@ -316,17 +316,17 @@ public class UsersController {
             if (head_picture != null && opt != null && head_picture.contains(opt.get("head_picture"))) {
                 opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink());
             }
-            data = JSONObject.parseObject(JSONObject.toJSONString(user), new TypeReference<Map<String, Object>>() {
-            });
+            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
             // 加入数据
             data.put("address", address);
             data.put("opt", opt);
             data.put("head_picture", head_picture);
-            data.put("isFollow", !self ? isFollow : 0);
+            data.put("isFollow", isFollow);
             data.put("related", related);
             // 移除敏感数据
             data.remove("password");
-            if (!self || !user.getGroup().equals("administrator") || !user.getGroup().equals("editor")) {
+            if (!own.getUid().equals(user.getUid()) &&
+                    !("administrator".equals(user.getGroup()) || "editor".equals(user.getGroup()))) {
                 data.remove("assets");
                 data.remove("address");
                 data.remove("mail");
@@ -913,11 +913,11 @@ public class UsersController {
             try {
                 MailService.send("你本次的验证码为" + verificationCode, "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title></title><meta charset=\"utf-8\" /><style>*{padding:0px;margin:0px;box-sizing:border-box;}html{box-sizing:border-box;}body{font-size:15px;background:#fff}.main{margin:20px auto;max-width:500px;border:solid 1px #2299dd;overflow:hidden;}.main h1{display:block;width:100%;background:#2299dd;font-size:18px;color:#fff;text-align:center;padding:15px;}.text{padding:30px;}.text p{margin:10px 0px;line-height:25px;}.text p span{color:#2299dd;font-weight:bold;font-size:22px;margin-left:5px;}</style></head><body><div class=\"main\"><h1>用户验证码</h1><div class=\"text\"><p>你本次的验证码为<span>" + verificationCode + "</span>。</p><p>出于安全原因，该验证码将于10分钟后失效。请勿将验证码透露给他人。</p></div></div></body></html>",
                         new String[]{user.getMail()}, new String[]{});
-                return Result.getResultJson(200, "验证码已发送，有效时长10分钟", null);
             } catch (Exception e) {
                 e.printStackTrace();
                 return Result.getResultJson(201, "邮件发送错误", null);
             }
+            return Result.getResultJson(200, "验证码已发送，有效时长10分钟", null);
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "不正确的邮箱发信配置", null);
@@ -1049,11 +1049,11 @@ public class UsersController {
                 try {
                     MailService.send("你本次的验证码为" + verificationCode, "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title></title><meta charset=\"utf-8\" /><style>*{padding:0px;margin:0px;box-sizing:border-box;}html{box-sizing:border-box;}body{font-size:15px;background:#fff}.main{margin:20px auto;max-width:500px;border:solid 1px #2299dd;overflow:hidden;}.main h1{display:block;width:100%;background:#2299dd;font-size:18px;color:#fff;text-align:center;padding:15px;}.text{padding:30px;}.text p{margin:10px 0px;line-height:25px;}.text p span{color:#2299dd;font-weight:bold;font-size:22px;margin-left:5px;}</style></head><body><div class=\"main\"><h1>用户验证码</h1><div class=\"text\"><p>你本次的验证码为<span>" + verificationCode + "</span>。</p><p>出于安全原因，该验证码将于10分钟后失效。请勿将验证码透露给他人。</p></div></div></body></html>",
                             new String[]{user.getMail()}, new String[]{});
-                    return Result.getResultJson(200, "验证码已发送，有效时长10分钟", null);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return Result.getResultJson(201, "邮件发送错误", null);
                 }
+                return Result.getResultJson(200, "验证码已发送，有效时长10分钟", null);
             } else {
                 String sendCode = redisHelp.getRedis(dataprefix + "_code" + user.getMail(), redisTemplate);
                 if (sendCode != null && !sendCode.isEmpty()) {

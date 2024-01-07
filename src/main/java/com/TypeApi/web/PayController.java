@@ -12,6 +12,7 @@ import com.alipay.api.DefaultAlipayClient;
 import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.api.request.AlipayTradePrecreateRequest;
 import com.alipay.api.response.AlipayTradePrecreateResponse;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.*;
@@ -268,44 +269,38 @@ public class PayController {
     /**
      * 充值记录
      */
-    @RequestMapping(value = "/payLogList")
+    @RequestMapping(value = "/list")
     @ResponseBody
-    public String payLogList(@RequestParam(value = "token", required = false) String token,
-                             @RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
-                             @RequestParam(value = "limit", defaultValue = "15", required = false) Integer limit) {
-        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-        if (uStatus == 0) {
-            return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-        }
-        Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-        Integer uid = Integer.parseInt(map.get("uid").toString());
-        Integer total = 0;
-        Paylog query = new Paylog();
-        query.setUid(uid);
-        total = paylogService.total(query);
-        List<Paylog> list = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix + "_" + "payLogList_" + page + "_" + limit + "_" + uid, redisTemplate);
+    public String list(@RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
+                       @RequestParam(value = "limit", defaultValue = "15", required = false) Integer limit,
+                       HttpServletRequest request) {
         try {
-            if (cacheList.size() > 0) {
-                list = cacheList;
-            } else {
-                PageList<Paylog> pageList = paylogService.selectPage(query, page, limit);
-                list = pageList.getList();
-                redisHelp.delete(this.dataprefix + "_" + "payLogList_" + page + "_" + limit + "_" + uid, redisTemplate);
-                redisHelp.setList(this.dataprefix + "_" + "payLogList_" + page + "_" + limit + "_" + uid, list, 5, redisTemplate);
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             }
+            // 查询列表
+            Paylog paylog = new Paylog();
+            paylog.setUid(user.getUid());
+            PageList<Paylog> paylogPageList = paylogService.selectPage(paylog, page, limit);
+            List<Paylog> paylogList = paylogPageList.getList();
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("page", page);
+            data.put("limit", limit);
+            data.put("data", paylogList);
+            data.put("count", paylogList.size());
+            data.put("total", paylogService.total(paylog));
+
+            return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
-            if (cacheList.size() > 0) {
-                list = cacheList;
-            }
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
         }
-        JSONObject response = new JSONObject();
-        response.put("code", 1);
-        response.put("msg", "");
-        response.put("data", null != list ? list : new JSONArray());
-        response.put("count", list.size());
-        response.put("total", total);
-        return response.toString();
+
     }
 
     /**

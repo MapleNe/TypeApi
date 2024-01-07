@@ -63,8 +63,6 @@ public class ShopController {
     @Autowired
     private InboxService inboxService;
 
-    @Autowired
-    private SpaceService spaceService;
 
     @Autowired
     private OrderService orderService;

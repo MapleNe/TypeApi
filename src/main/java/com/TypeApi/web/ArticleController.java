@@ -59,6 +59,9 @@ public class ArticleController {
     private UserlogService userlogService;
 
     @Autowired
+    private ArticleService articleService;
+
+    @Autowired
     private HeadpictureService headpictureService;
 
     @Autowired
@@ -85,8 +88,6 @@ public class ArticleController {
     @Autowired
     private InboxService inboxService;
 
-    @Autowired
-    private SpaceService spaceService;
 
     @Autowired
     private AdsService adsService;
@@ -972,8 +973,6 @@ public class ArticleController {
         Shop shop = new Shop();
         Integer allShop = shopService.total(shop, null);
 
-        Space space = new Space();
-        Integer allSpace = spaceService.total(space, null);
 
         Ads ads = new Ads();
         Integer allAds = adsService.total(ads);
@@ -988,10 +987,6 @@ public class ArticleController {
         shop.setStatus(0);
         Integer upcomingShop = shopService.total(shop, null);
 
-        space.setStatus(0);
-        Integer upcomingSpace = spaceService.total(space, null);
-
-
         ads.setStatus(0);
         Integer upcomingAds = adsService.total(ads);
 
@@ -1005,13 +1000,11 @@ public class ArticleController {
         data.put("allComments", allComments);
         data.put("allUsers", allUsers);
         data.put("allShop", allShop);
-        data.put("allSpace", allSpace);
         data.put("allAds", allAds);
 
         data.put("upcomingContents", upcomingContents);
         data.put("upcomingComments", upcomingComments);
         data.put("upcomingShop", upcomingShop);
-        data.put("upcomingSpace", upcomingSpace);
         data.put("upcomingAds", upcomingAds);
         data.put("upcomingWithdraw", upcomingWithdraw);
 
@@ -1132,7 +1125,7 @@ public class ArticleController {
                 // 获取头像框
                 JSONArray head_picture = new JSONArray();
                 head_picture = info.getHead_picture() != null && !info.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(info.getHead_picture()) : null;
-                if (head_picture != null && head_picture.contains(authorOpt.get("head_picture"))) {
+                if (head_picture != null && authorOpt!=null && head_picture.contains(authorOpt.get("head_picture"))) {
                     authorOpt.put("head_picture", headpictureService.selectByKey(authorOpt.get("head_picture")).getLink().toString());
                 }
                 // 是否VIP
@@ -1264,12 +1257,81 @@ public class ArticleController {
         }
     }
 
-    @RequestMapping(value = "/mark")
+    @RequestMapping(value = "/markList")
     @ResponseBody
-    public String mark(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                       @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
-                       @RequestParam(value = "order", required = false, defaultValue = "created desc") String order) {
-        return "order";
+    public String markList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                           @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
+                           @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
+                           HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
+            // 查询出收藏列表
+            Userlog userlog = new Userlog();
+            userlog.setType("articleMark");
+            userlog.setUid(user.getUid());
+            PageList<Userlog> userlogPageList = userlogService.selectPage(userlog, page, limit);
+            List<Userlog> userlogList = userlogPageList.getList();
+            JSONArray dataList = new JSONArray();
+            for (Userlog _userlog : userlogList) {
+                Article article = articleService.selectByKey(_userlog.getCid());
+                Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
+                if (article == null || article.toString().isEmpty()) {
+                    data.put("title", "文章已删除");
+                    data.put("authorId", 0);
+                    data.put("id", _userlog.getCid());
+                }
+                // 格式化文章信息
+                JSONObject opt = new JSONObject();
+                List images = new ArrayList<>();
+
+                opt = article.getOpt() != null && !article.getOpt().toString().isEmpty() ? JSONObject.parseObject(article.getOpt()) : null;
+                if (article.getImages() != null && !article.getImages().toString().isEmpty()) {
+                    images = JSONArray.parseArray(article.getImages());
+                } else {
+                    images = JSONArray.parseArray(baseFull.getImageSrc(article.getText()).toString());
+                }
+
+                // 查询作者
+                Users articleUser = usersService.selectByKey(article.getAuthorId());
+                Map<String, Object> dataArticleUser = JSONObject.parseObject(JSONObject.toJSONString(articleUser));
+
+                // 格式化作者json数据
+                JSONArray head_picture = new JSONArray();
+                opt = articleUser.getOpt() != null && !articleUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(articleUser.getOpt()) : null;
+                head_picture = articleUser.getHead_picture() != null && !articleUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(articleUser.getHead_picture()) : null;
+
+                // 处理头像框
+                if (head_picture != null && opt != null && !head_picture.toString().isEmpty() && head_picture.contains(opt.get("head_picture"))) {
+                    opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
+                }
+                dataArticleUser.put("opt", opt);
+                dataArticleUser.remove("head_picture");
+                dataArticleUser.remove("address");
+                dataArticleUser.remove("password");
+                data.put("authorInfo", dataArticleUser);
+                data.put("images", images);
+                data.remove("password");
+
+                dataList.add(data);
+            }
+            Map<String, Object> data = new HashMap<>();
+            data.put("page", page);
+            data.put("limit", limit);
+            data.put("data", dataList);
+            data.put("count", dataList.size());
+            data.put("total", userlogService.total(userlog));
+
+            return Result.getResultJson(200, "获取成功", data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
 
     }
 }

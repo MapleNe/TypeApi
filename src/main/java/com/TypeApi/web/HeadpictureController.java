@@ -105,7 +105,10 @@ public class HeadpictureController {
             head_picture.add(headpicture.getId());
             user.setHead_picture(head_picture.toString());
             usersService.update(user);
-            return Result.getResultJson(200, "添加完成", null);
+
+            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(headpicture), Map.class);
+
+            return Result.getResultJson(200, "添加完成", data);
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -104,7 +104,7 @@
             <if test ='null != id'>
                 and `id` = #{id}
             </if>
-            <if test ='null != created'>
+            <if test ='null != created'>0
                 and `created` = #{created}
             </if>
             <if test ='null != uid'>
@@ -122,16 +122,16 @@
         FROM ${prefix}_commentLike
         <where>
             <if test ='null != commentLike.id'>
-                and `id` = #{fan.id}
+                and `id` = #{commentLike.id}
             </if>
             <if test ='null != commentLike.created'>
-                and `created` = #{created}
+                and `created` = #{commentLike.created}
             </if>
             <if test ='null != commentLike.uid'>
-                and `uid` = #{uid}
+                and `uid` = #{commentLike.uid}
             </if>
             <if test ='null != commentLike.cid'>
-                and `cid` = #{cid}
+                and `cid` = #{commentLike.cid}
             </if>
         </where>
         order by created desc

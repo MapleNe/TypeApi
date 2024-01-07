@@ -147,8 +147,6 @@ public class InstallController {
                     "  `cid` int(10) unsigned NOT NULL AUTO_INCREMENT," +
                     "  `title` varchar(200) DEFAULT NULL," +
                     "  `slug` varchar(200) DEFAULT NULL," +
-                    "  `created` int(10) unsigned DEFAULT '0'," +
-                    "  `modified` int(10) unsigned DEFAULT '0'," +
                     "  `text` longtext," +
                     "  `order` int(10) unsigned DEFAULT '0'," +
                     "  `authorId` int(10) unsigned DEFAULT '0'," +
@@ -162,9 +160,12 @@ public class InstallController {
                     "  `discount` float(2) DEFAULT '1'," +
                     "  `allowPing` char(1) DEFAULT '0'," +
                     "  `images` longtext," +
+                    "  `videos` longtext," +
                     "  `opt` longtext," +
                     "  `allowFeed` char(1) DEFAULT '0'," +
                     "  `parent` int(10) unsigned DEFAULT '0'," +
+                    "  `created` int(10) unsigned DEFAULT '0'," +
+                    "  `modified` int(10) unsigned DEFAULT '0'," +
                     "  PRIMARY KEY (`cid`)," +
                     "  UNIQUE KEY `slug` (`slug`)," +
                     "  KEY `created` (`created`)" +
@@ -179,7 +180,7 @@ public class InstallController {
                     "  `images` TEXT COMMENT '图片列表'," +
                     "  `ip` TEXT COMMENT 'ip'," +
                     "  `parent` INT DEFAULT 0 COMMENT '父评论id'," +
-                    "  `likes` INT COMMENT '点赞数量'," +
+                    "  `likes` INT DEFAULT 0 COMMENT '点赞数量'," +
                     "  `all` INT DEFAULT 0 COMMENT '所有评论的父id'," +
                     "  `type` INT NOT NULL DEFAULT 0 COMMENT '评论的类型'," +
                     "  `created` INT COMMENT '创建时间'," +
@@ -265,6 +266,17 @@ public class InstallController {
         } else {
             text += "内容模块，字段views已经存在，无需添加。";
         }
+
+        //查询文章表是否存在videos字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'videos';", Integer.class);
+        if (i == 0) {
+            //新增字段
+            jdbcTemplate.execute("alter table " + prefix + "_contents ADD videos longtext;");
+            text += "内容模块，字段videos添加完成。";
+        } else {
+            text += "内容模块，字段videos已经存在，无需添加。";
+        }
+
         //查询文章表是否存在likes字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'likes';", Integer.class);
         if (i == 0) {
