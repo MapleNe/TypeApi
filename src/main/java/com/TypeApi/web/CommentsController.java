@@ -178,7 +178,6 @@ public class CommentsController {
                 dataUser.put("opt", opt);
                 dataUser.put("head_picture", head_picture);
                 data.put("article", articleData);
-                data.put("images", images);
                 data.put("isLike", isLike);
                 data.put("userInfo", dataUser);
                 // 查询一次父评论的信息
