@@ -158,7 +158,7 @@ public class CommentsController {
                 // 格式化images 数组
                 List images = new JSONArray();
                 images = _comments.getImages() != null && !_comments.toString().isEmpty() ? JSONArray.parseArray(_comments.getImages()) : null;
-
+                data.put("images", images);
                 // 获取等级
                 dataUser.put("level", baseFull.getLevel(commentUser.getExperience()).get(0));
                 // 加入文章信息
@@ -173,6 +173,7 @@ public class CommentsController {
                     images = article.getImages() != null ? JSONArray.parseArray(article.getImages()) : baseFull.getImageSrc(article.getText());
                     articleData.put("images", images);
                 }
+
 
                 // 加入信息
                 dataUser.put("opt", opt);
@@ -453,7 +454,7 @@ public class CommentsController {
             commentLike.setCreated((int) (System.currentTimeMillis() / 1000));
             // 获取评论
 
-            Integer likes = comments.getLikes()==null?0:comments.getLikes();
+            Integer likes = comments.getLikes() == null ? 0 : comments.getLikes();
             if (commentLikeList != null && commentLikeList.size() > 0) {
                 // 存在就删除
                 commentlikeService.delete(commentLikeList.get(0).getId());
