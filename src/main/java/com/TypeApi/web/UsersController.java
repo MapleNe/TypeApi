@@ -1123,7 +1123,7 @@ public class UsersController {
             }
             if (nickname != null && !nickname.isEmpty()) user.setScreenName(nickname);
             if (avatar != null && !avatar.isEmpty()) user.setAvatar(avatar);
-            if (background != null && background.isEmpty()) user.setUserBg(background);
+            if (background != null && !background.isEmpty()) user.setUserBg(background);
             if (sex != null && !sex.isEmpty()) user.setSex(sex);
             if (introduce != null && !introduce.isEmpty()) user.setIntroduce(introduce);
             if (password != null && !password.isEmpty()) {

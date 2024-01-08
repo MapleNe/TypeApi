@@ -102,6 +102,9 @@
             <if test ='null != avatar'>
                 `avatar`,
             </if>
+            <if test ='null != userBg'>
+                `userBg`,
+            </if>
             <if test ='null != clientId'>
                 `clientId`,
             </if>
@@ -147,6 +150,9 @@
             <if test ='null != avatar'>
                 #{avatar},
             </if>
+            <if test ='null != userBg'>
+                #{userBg},
+            </if>
             <if test ='null != clientId'>
                 #{clientId},
             </if>
@@ -172,6 +178,7 @@
                 #{curr.activated},
                 #{curr.logged},
                 #{curr.group},
+                #{curr.userBg},
                 #{curr.authCode},
                 #{curr.bantime}
             )
