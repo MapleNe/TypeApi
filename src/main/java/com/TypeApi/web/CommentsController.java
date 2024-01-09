@@ -321,9 +321,9 @@ public class CommentsController {
                     //查询父评论的用户
                     Users parentUser = usersService.selectByKey(parentComments.getUid());
                     inbox.setTouid(parentComments.getUid());
-                    inbox.setText("你的评论" + parentComments.getText() + "有人回复了");
+                    inbox.setText(parentComments.getText());
                     inbox.setValue(parentComments.getId());
-
+                    inbox.setTouid(parent != null && !parent.equals(0) ? parentUser.getUid() : article.getAuthorId());
                     // push发送
                     if (apiconfig.getIsPush().equals(1)) {
                         pushService.sendPushMsg(parentUser.getClientId(), "有新的评论", text, "payload", "system");
@@ -344,7 +344,7 @@ public class CommentsController {
             inbox.setCreated(Math.toIntExact(timeStamp));
             inbox.setValue(article.getCid());
             inbox.setType("comment");
-            inbox.setUid(0);
+            inbox.setUid(user.getUid());
             inbox.setIsread(0);
             inboxService.insert(inbox);
             // push发送

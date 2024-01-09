@@ -1597,7 +1597,7 @@ public class UsersController {
             }
             Inbox query = new Inbox();
             query.setType(type);
-            query.setUid(user.getUid());
+            query.setTouid(user.getUid());
             PageList<Inbox> inboxPage = inboxService.selectPage(query, page, limit);
             List<Inbox> inboxList = inboxPage.getList();
             JSONArray dataList = new JSONArray();
@@ -1610,9 +1610,46 @@ public class UsersController {
                     if (article != null && !article.toString().isEmpty()) {
                         articleData.put("title", article.getTitle());
                         articleData.put("authorId", article.getAuthorId());
+                        articleData.put("id", article.getCid());
                     } else {
                         articleData.put("title", "文章已被删除");
+                        articleData.put("id", 0);
                     }
+                    // 查询发送方信息
+                    Users sender = service.selectByKey(_inbox.getUid());
+                    Map<String, Object> dataSender = JSONObject.parseObject(JSONObject.toJSONString(sender));
+                    if (sender != null && !sender.toString().isEmpty()) {
+                        dataSender.remove("password");
+                        dataSender.remove("address");
+                        dataSender.remove("assets");
+                        dataSender.remove("opt");
+                        dataSender.remove("head_picture");
+                        dataSender.remove("mail");
+                    }
+
+                    // 查询回复的评论
+                    Comments reply = commentsService.selectByKey(_inbox.getValue());
+                    Map<String, Object> dataReply = JSONObject.parseObject(JSONObject.toJSONString(reply));
+                    if (reply != null && !reply.toString().isEmpty()) {
+                        JSONArray images = new JSONArray();
+                        images = reply.getImages() != null && !reply.getImages().toString().isEmpty() ? JSONArray.parseArray(reply.getImages()) : null;
+                        dataReply.put("images", images);
+                        // 查询评论的用户
+                        Users replyUser = service.selectByKey(reply.getUid());
+                        Map<String, Object> dataReplyUser = JSONObject.parseObject(JSONObject.toJSONString(sender));
+                        if (replyUser != null && !replyUser.toString().isEmpty()) {
+                            dataReplyUser.remove("password");
+                            dataReplyUser.remove("address");
+                            dataReplyUser.remove("assets");
+                            dataReplyUser.remove("opt");
+                            dataReplyUser.remove("head_picture");
+                            dataReplyUser.remove("mail");
+                        }
+                        dataReply.put("userInfo", dataReplyUser);
+                    }
+                    System.out.println(dataReply + "回复信息");
+                    data.put("reply", dataReply);
+                    data.put("userInfo", dataSender);
                     data.put("article", articleData);
                     dataList.add(data);
                 }
