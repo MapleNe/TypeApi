@@ -131,18 +131,24 @@ public class CommentsController {
                     // 查询用户信息
                     Users commentUser = usersService.selectByKey(_comments.getUid());
                     Map<String, Object> dataUser = JSONObject.parseObject(JSONObject.toJSONString(commentUser));
-                    //移除信息
-                    dataUser.remove("password");
-                    dataUser.remove("address");
-                    // 格式化信息
                     JSONObject opt = new JSONObject();
                     JSONArray head_picture = new JSONArray();
-                    opt = commentUser.getOpt() != null && !commentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(commentUser.getOpt()) : null;
-                    head_picture = commentUser.getHead_picture() != null && !commentUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(commentUser.getHead_picture()) : null;
+                    if(commentUser!=null && !commentUser.toString().isEmpty()){
+                        //移除信息
+                        dataUser.remove("password");
+                        dataUser.remove("address");
+                        // 格式化信息
 
-                    // 处理头像框
-                    if (head_picture != null && opt != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
-                        opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
+                        opt = commentUser.getOpt() != null && !commentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(commentUser.getOpt()) : null;
+                        head_picture = commentUser.getHead_picture() != null && !commentUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(commentUser.getHead_picture()) : null;
+
+                        // 处理头像框
+                        if (head_picture != null && opt != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
+                            opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
+                        }
+                        // 加入信息
+                        dataUser.put("opt", opt);
+                        dataUser.put("head_picture", head_picture);
                     }
 
                     // 是否点赞
@@ -177,8 +183,6 @@ public class CommentsController {
 
 
                     // 加入信息
-                    dataUser.put("opt", opt);
-                    dataUser.put("head_picture", head_picture);
                     data.put("article", articleData);
                     data.put("isLike", isLike);
                     data.put("userInfo", dataUser);
