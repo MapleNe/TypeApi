@@ -149,6 +149,8 @@ public class CommentsController {
                         // 加入信息
                         dataUser.put("opt", opt);
                         dataUser.put("head_picture", head_picture);
+                        // 获取等级
+                        dataUser.put("level", baseFull.getLevel(commentUser.getExperience()).get(0));
                     }
 
                     // 是否点赞
@@ -166,8 +168,6 @@ public class CommentsController {
                     List images = new JSONArray();
                     images = _comments.getImages() != null && !_comments.toString().isEmpty() ? JSONArray.parseArray(_comments.getImages()) : null;
                     data.put("images", images);
-                    // 获取等级
-                    dataUser.put("level", baseFull.getLevel(commentUser.getExperience()).get(0));
                     // 加入文章信息
                     Map<String, Object> articleData = new HashMap<>();
                     if (article == null || article.toString().isEmpty()) {
