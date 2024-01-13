@@ -123,148 +123,150 @@ public class CommentsController {
 
             JSONArray dataList = new JSONArray();
             for (Comments _comments : commentsList) {
-                // 获取文章信息
-                Article article = contentsService.selectByKey(id != null ? id : _comments.getCid());
-                Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(_comments));
+                if(_comments!=null && !_comments.toString().isEmpty()){
+                    // 获取文章信息
+                    Article article = contentsService.selectByKey(id != null ? id : _comments.getCid());
+                    Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(_comments));
 
-                // 查询用户信息
-                Users commentUser = usersService.selectByKey(_comments.getUid());
-                Map<String, Object> dataUser = JSONObject.parseObject(JSONObject.toJSONString(commentUser));
-                //移除信息
-                dataUser.remove("password");
-                dataUser.remove("address");
-                // 格式化信息
-                JSONObject opt = new JSONObject();
-                JSONArray head_picture = new JSONArray();
-                opt = commentUser.getOpt() != null && !commentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(commentUser.getOpt()) : null;
-                head_picture = commentUser.getHead_picture() != null && !commentUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(commentUser.getHead_picture()) : null;
-
-                // 处理头像框
-                if (head_picture != null && opt != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
-                    opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
-                }
-
-                // 是否点赞
-                CommentLike commentLike = new CommentLike();
-                Integer isLike = 0;
-                if (id != null && !id.equals(0) && user != null) {
-                    commentLike.setCid(_comments.getId());
-                    commentLike.setUid(user.getUid());
-                    List<CommentLike> commentLikeList = commentlikeService.selectList(commentLike);
-                    if (commentLikeList.size() > 0) isLike = 1;
-                }
-
-
-                // 格式化images 数组
-                List images = new JSONArray();
-                images = _comments.getImages() != null && !_comments.toString().isEmpty() ? JSONArray.parseArray(_comments.getImages()) : null;
-                data.put("images", images);
-                // 获取等级
-                dataUser.put("level", baseFull.getLevel(commentUser.getExperience()).get(0));
-                // 加入文章信息
-                Map<String, Object> articleData = new HashMap<>();
-                if (article == null || article.toString().isEmpty()) {
-                    articleData.put("title", "文章已删除");
-                    articleData.put("id", 0);
-                    articleData.put("authorId", 0);
-                } else {
-                    articleData = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
-                    // 获取文章中的images 如果article的images存在 则优先使用images
-                    images = article.getImages() != null ? JSONArray.parseArray(article.getImages()) : baseFull.getImageSrc(article.getText());
-                    articleData.put("images", images);
-                }
-
-
-                // 加入信息
-                dataUser.put("opt", opt);
-                dataUser.put("head_picture", head_picture);
-                data.put("article", articleData);
-                data.put("isLike", isLike);
-                data.put("userInfo", dataUser);
-                // 查询一次父评论的信息
-                if (_comments.getParent() != null && !_comments.getParent().equals(0) && !_comments.getParent().toString().isEmpty()) {
-                    Comments parentComment = service.selectByKey(_comments.getParent());
-                    Users parentUser = new Users();
-                    if (parentComment != null && !parentComment.toString().isEmpty()) {
-                        parentUser = usersService.selectByKey(parentComment.getUid());
-                    }
-
-                    Map<String, Object> dataParentUser = JSONObject.parseObject(JSONObject.toJSONString(parentUser));
-
-                    // 格式化数据
-                    opt = parentUser.getOpt() != null && !parentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(parentUser.getOpt()) : null;
-                    head_picture = parentUser.getHead_picture() != null && !parentUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(parentUser.getHead_picture()) : null;
+                    // 查询用户信息
+                    Users commentUser = usersService.selectByKey(_comments.getUid());
+                    Map<String, Object> dataUser = JSONObject.parseObject(JSONObject.toJSONString(commentUser));
+                    //移除信息
+                    dataUser.remove("password");
+                    dataUser.remove("address");
+                    // 格式化信息
+                    JSONObject opt = new JSONObject();
+                    JSONArray head_picture = new JSONArray();
+                    opt = commentUser.getOpt() != null && !commentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(commentUser.getOpt()) : null;
+                    head_picture = commentUser.getHead_picture() != null && !commentUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(commentUser.getHead_picture()) : null;
 
                     // 处理头像框
                     if (head_picture != null && opt != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
                         opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
                     }
 
-                    // 移除信息
-                    dataParentUser.remove("address");
-                    dataParentUser.remove("password");
-                    // 加入信息
-                    dataParentUser.put("opt", opt);
-                    dataParentUser.put("head_picture", head_picture);
-                    Map<String, Object> dataParentComment = new HashMap<>();
-                    if (parentComment != null && !parentComment.toString().isEmpty()) {
-                        dataParentComment = JSONObject.parseObject(JSONObject.toJSONString(parentComment));
+                    // 是否点赞
+                    CommentLike commentLike = new CommentLike();
+                    Integer isLike = 0;
+                    if (id != null && !id.equals(0) && user != null) {
+                        commentLike.setCid(_comments.getId());
+                        commentLike.setUid(user.getUid());
+                        List<CommentLike> commentLikeList = commentlikeService.selectList(commentLike);
+                        if (commentLikeList.size() > 0) isLike = 1;
                     }
-                    dataParentComment.put("userInfo", dataParentUser);
-                    data.put("parentComment", dataParentComment);
-                }
-                // 查询用户信息完成
-                // 查询子评论
-                Comments subComments = new Comments();
-                subComments.setAll(_comments.getId());
-                PageList<Comments> subCommentsPageList = service.selectPage(subComments, 1, 2, null, "created desc");
-                List<Comments> subCommentsList = subCommentsPageList.getList();
-                JSONArray subDataList = new JSONArray();
-                // 查询全部数量
-                Integer total = service.total(subComments, null);
-                for (Comments _subComments : subCommentsList) {
-                    Map<String, Object> subData = JSONObject.parseObject(JSONObject.toJSONString(_subComments));
-                    // 查询子评论用户信息
-                    Users subCommentUser = usersService.selectByKey(_subComments.getUid());
-                    Map<String, Object> subDataUser = JSONObject.parseObject(JSONObject.toJSONString(subCommentUser));
-                    // 移除敏感信息
-                    subDataUser.remove("password");
-                    subDataUser.remove("address");
-                    // 格式化用户信息
-                    opt = subCommentUser.getOpt() != null && !subCommentUser.getOpt().isEmpty() ? JSON.parseObject(subCommentUser.getOpt()) : null;
-                    head_picture = subCommentUser.getHead_picture() != null && !subCommentUser.getHead_picture().isEmpty() ? JSON.parseArray(subCommentUser.getHead_picture()) : null;
 
-                    // 处理头像框
-                    if (head_picture != null && opt != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
-                        opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
-                    }
-                    images = _subComments.getImages() != null && !_subComments.toString().isEmpty() ? JSONArray.parseArray(_subComments.getImages()) : null;
 
-                    //加入文章信息
-                    Map<String, Object> subArticleData = new HashMap<>();
+                    // 格式化images 数组
+                    List images = new JSONArray();
+                    images = _comments.getImages() != null && !_comments.toString().isEmpty() ? JSONArray.parseArray(_comments.getImages()) : null;
+                    data.put("images", images);
+                    // 获取等级
+                    dataUser.put("level", baseFull.getLevel(commentUser.getExperience()).get(0));
+                    // 加入文章信息
+                    Map<String, Object> articleData = new HashMap<>();
                     if (article == null || article.toString().isEmpty()) {
-                        subArticleData.put("title", "文章已删除");
-                        subArticleData.put("id", 0);
-                        subArticleData.put("authorId", 0);
+                        articleData.put("title", "文章已删除");
+                        articleData.put("id", 0);
+                        articleData.put("authorId", 0);
                     } else {
-                        subArticleData = JSONObject.parseObject(JSONObject.toJSONString(article));
+                        articleData = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
                         // 获取文章中的images 如果article的images存在 则优先使用images
                         images = article.getImages() != null ? JSONArray.parseArray(article.getImages()) : baseFull.getImageSrc(article.getText());
-                        subArticleData.put("images", images);
+                        articleData.put("images", images);
                     }
 
 
-                    // 添加用户信息
-                    subData.put("userInfo", subDataUser);
-                    subData.put("article", subArticleData); // 将文章信息添加到子评论数据中
-                    subDataList.add(subData);
+                    // 加入信息
+                    dataUser.put("opt", opt);
+                    dataUser.put("head_picture", head_picture);
+                    data.put("article", articleData);
+                    data.put("isLike", isLike);
+                    data.put("userInfo", dataUser);
+                    // 查询一次父评论的信息
+                    if (_comments.getParent() != null && !_comments.getParent().equals(0) && !_comments.getParent().toString().isEmpty()) {
+                        Comments parentComment = service.selectByKey(_comments.getParent());
+                        Users parentUser = new Users();
+                        if (parentComment != null && !parentComment.toString().isEmpty()) {
+                            parentUser = usersService.selectByKey(parentComment.getUid());
+                        }
+
+                        Map<String, Object> dataParentUser = JSONObject.parseObject(JSONObject.toJSONString(parentUser));
+
+                        // 格式化数据
+                        opt = parentUser.getOpt() != null && !parentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(parentUser.getOpt()) : null;
+                        head_picture = parentUser.getHead_picture() != null && !parentUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(parentUser.getHead_picture()) : null;
+
+                        // 处理头像框
+                        if (head_picture != null && opt != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
+                            opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
+                        }
+
+                        // 移除信息
+                        dataParentUser.remove("address");
+                        dataParentUser.remove("password");
+                        // 加入信息
+                        dataParentUser.put("opt", opt);
+                        dataParentUser.put("head_picture", head_picture);
+                        Map<String, Object> dataParentComment = new HashMap<>();
+                        if (parentComment != null && !parentComment.toString().isEmpty()) {
+                            dataParentComment = JSONObject.parseObject(JSONObject.toJSONString(parentComment));
+                        }
+                        dataParentComment.put("userInfo", dataParentUser);
+                        data.put("parentComment", dataParentComment);
+                    }
+                    // 查询用户信息完成
+                    // 查询子评论
+                    Comments subComments = new Comments();
+                    subComments.setAll(_comments.getId());
+                    PageList<Comments> subCommentsPageList = service.selectPage(subComments, 1, 2, null, "created desc");
+                    List<Comments> subCommentsList = subCommentsPageList.getList();
+                    JSONArray subDataList = new JSONArray();
+                    // 查询全部数量
+                    Integer total = service.total(subComments, null);
+                    for (Comments _subComments : subCommentsList) {
+                        Map<String, Object> subData = JSONObject.parseObject(JSONObject.toJSONString(_subComments));
+                        // 查询子评论用户信息
+                        Users subCommentUser = usersService.selectByKey(_subComments.getUid());
+                        Map<String, Object> subDataUser = JSONObject.parseObject(JSONObject.toJSONString(subCommentUser));
+                        // 移除敏感信息
+                        subDataUser.remove("password");
+                        subDataUser.remove("address");
+                        // 格式化用户信息
+                        opt = subCommentUser.getOpt() != null && !subCommentUser.getOpt().isEmpty() ? JSON.parseObject(subCommentUser.getOpt()) : null;
+                        head_picture = subCommentUser.getHead_picture() != null && !subCommentUser.getHead_picture().isEmpty() ? JSON.parseArray(subCommentUser.getHead_picture()) : null;
+
+                        // 处理头像框
+                        if (head_picture != null && opt != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
+                            opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
+                        }
+                        images = _subComments.getImages() != null && !_subComments.toString().isEmpty() ? JSONArray.parseArray(_subComments.getImages()) : null;
+
+                        //加入文章信息
+                        Map<String, Object> subArticleData = new HashMap<>();
+                        if (article == null || article.toString().isEmpty()) {
+                            subArticleData.put("title", "文章已删除");
+                            subArticleData.put("id", 0);
+                            subArticleData.put("authorId", 0);
+                        } else {
+                            subArticleData = JSONObject.parseObject(JSONObject.toJSONString(article));
+                            // 获取文章中的images 如果article的images存在 则优先使用images
+                            images = article.getImages() != null ? JSONArray.parseArray(article.getImages()) : baseFull.getImageSrc(article.getText());
+                            subArticleData.put("images", images);
+                        }
+
+
+                        // 添加用户信息
+                        subData.put("userInfo", subDataUser);
+                        subData.put("article", subArticleData); // 将文章信息添加到子评论数据中
+                        subDataList.add(subData);
+                    }
+                    // 将子评论列表添加到父评论数据中
+                    Map<String, Object> subDataObject = new HashMap<>();
+                    subDataObject.put("data", subDataList);
+                    subDataObject.put("count", total);
+                    data.put("subComments", subDataObject);
+                    dataList.add(data);
                 }
-                // 将子评论列表添加到父评论数据中
-                Map<String, Object> subDataObject = new HashMap<>();
-                subDataObject.put("data", subDataList);
-                subDataObject.put("count", total);
-                data.put("subComments", subDataObject);
-                dataList.add(data);
             }
             Map<String, Object> data = new HashMap<>();
             data.put("page", page);
