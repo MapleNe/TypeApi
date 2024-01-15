@@ -2,11 +2,19 @@ package com.TypeApi.common;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
-
+import org.springframework.beans.factory.annotation.Value;
 import java.util.Calendar;
 import java.util.Map;
 
 public class JWT {
+    @Value("${token.secret:CHIKATA}")
+    private static String secret_key;
+
+    @Value("${token.issue:CHIKATA}")
+    private static String issue;
+
+    @Value("${token.exp:7}")
+    private static Integer exp;
     /**
      * 生成token  header.payload.singature
      */
@@ -16,7 +24,7 @@ public class JWT {
 
         Calendar instance = Calendar.getInstance();
         // 默认7天过期
-        instance.add(Calendar.DATE, 7);
+        instance.add(Calendar.DATE, exp);
 
         //创建jwt builder
         JWTCreator.Builder builder = com.auth0.jwt.JWT.create();
@@ -25,9 +33,9 @@ public class JWT {
         map.forEach((k, v) -> {
             builder.withClaim(k, v);
         });
-        builder.withClaim("iss",SING);
+        builder.withClaim("iss",issue);
         String token = builder.withExpiresAt(instance.getTime())  //指定令牌过期时间
-                .sign(Algorithm.HMAC256(SING));  // sign
+                .sign(Algorithm.HMAC256(secret_key));  // sign
         return token;
     }
 
@@ -40,10 +48,10 @@ public class JWT {
 
     /**
      * 获取token信息方法
-     */
+
     public static DecodedJWT getTokenInfo(String token){
         DecodedJWT verify = com.auth0.jwt.JWT.require(Algorithm.HMAC256(SING)).build().verify(token);
         return verify;
-    }
+    }*/
 }
 

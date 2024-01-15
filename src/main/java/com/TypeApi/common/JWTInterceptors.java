@@ -23,23 +23,16 @@ public class JWTInterceptors implements HandlerInterceptor {
             // 验证令牌
             JWT.verify(token);
             return true;  // 放行请求
-
         } catch (SignatureVerificationException e) {
-            e.printStackTrace();
             map.put("msg","无效签名！");
             map.put("code",402);
-
         }catch (TokenExpiredException e){
-            e.printStackTrace();
             map.put("msg","token过期");
             map.put("code",401);
         }catch (AlgorithmMismatchException e){
-            e.printStackTrace();
             map.put("msg","算法不一致");
             map.put("code",403);
-
         }catch (Exception e){
-            e.printStackTrace();
             map.put("msg","token无效！");
             map.put("code",404);
 
@@ -49,6 +42,6 @@ public class JWTInterceptors implements HandlerInterceptor {
         String json = new ObjectMapper().writeValueAsString(map);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().println(json);
-        return false;
+        return  false;
     }
 }
