@@ -29,6 +29,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -2129,6 +2132,65 @@ public class UsersController {
             inboxService.insert(inbox);
             service.update(user);
             return Result.getResultJson(200, "赠送成功", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
+    @RequestMapping("/sign")
+    @ResponseBody
+    public String sign(HttpServletRequest request) {
+        try {
+            Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
+            // 获取当前日期
+            LocalDate today = LocalDate.now();
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = service.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
+
+            if (redisHelp.getRedis("signed_" + user.getName().toString(), redisTemplate)!=null)
+                return Result.getResultJson(200, "今天已签到", null);
+
+            // 如果用户还没签到，计算距离今天结束还有多少秒
+            LocalDateTime endOfToday = LocalDateTime.of(today, LocalTime.MAX);
+            Duration durationUntilEndOfDay = Duration.between(LocalDateTime.now(), endOfToday);
+            long secondsUntilEndOfDay = durationUntilEndOfDay.getSeconds();
+
+            // 写入redis
+            redisHelp.setRedis("signed_" + user.getName().toString(), "1", (int) secondsUntilEndOfDay, redisTemplate);
+
+            // 给用户添加积分和经验
+            user.setAssets(user.getAssets() + apiconfig.getClock());
+            user.setExperience(user.getExperience() + apiconfig.getClockExp());
+            service.update(user);
+            //timestamp
+            long timestamp = System.currentTimeMillis() / 1000;
+            // 写入pay
+            Paylog paylog = new Paylog();
+            paylog.setUid(user.getUid());
+            paylog.setCreated((int) timestamp);
+            paylog.setPaytype("sign");
+            paylog.setSubject("签到奖励");
+            paylog.setTotalAmount(String.valueOf(apiconfig.getClock()));
+
+            // 写入log
+            Userlog userlog = new Userlog();
+            userlog.setUid(user.getUid());
+            userlog.setNum(apiconfig.getClockExp());
+            userlog.setToid(user.getUid());
+            userlog.setCreated((int) timestamp);
+            userlog.setType("signExp");
+
+            paylogService.insert(paylog);
+            userlogService.insert(userlog);
+
+            return Result.getResultJson(200, "签到成功，积分+" + apiconfig.getClock() + "经验+" + apiconfig.getClockExp(), null);
+
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);

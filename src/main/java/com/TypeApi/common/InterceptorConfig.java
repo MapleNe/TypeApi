@@ -37,6 +37,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
                 .addPathPatterns("/user/banList")
                 .addPathPatterns("/user/clean")
                 .addPathPatterns("/user/giveVip")
+                .addPathPatterns("/user/sign")
                 .addPathPatterns("/article/articleAdd")
                 .addPathPatterns("/article/update")
                 .addPathPatterns("/article/delete")

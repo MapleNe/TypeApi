@@ -8,17 +8,16 @@ import java.util.Map;
 
 public class JWT {
     @Value("${token.secret:CHIKATA}")
-    private static String secret_key;
+    private static final String secret_key = "ABCDEFGHIJKLMN123456789114514";
 
     @Value("${token.issue:CHIKATA}")
-    private static String issue;
+    private static final String issue = "CHIKATA";
 
     @Value("${token.exp:7}")
-    private static Integer exp;
+    private static final Integer exp = 7;
     /**
      * 生成token  header.payload.singature
      */
-    private static final String SING = "CHIKATA";
 
     public static String getToken(Map<String, String> map) {
 
@@ -43,7 +42,7 @@ public class JWT {
      * 验证token  合法性
      */
     public static DecodedJWT verify(String token) {
-        return com.auth0.jwt.JWT.require(Algorithm.HMAC256(SING)).build().verify(token);
+        return com.auth0.jwt.JWT.require(Algorithm.HMAC256(secret_key)).build().verify(token);
     }
 
     /**
