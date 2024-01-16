@@ -1317,8 +1317,9 @@ public class ArticleController {
                 if (article.getImages() != null && !article.getImages().toString().isEmpty()) {
                     images = JSONArray.parseArray(article.getImages());
                 } else {
-                    images = JSONArray.parseArray(baseFull.getImageSrc(article.getText()).toString());
+                    images = baseFull.getImageSrc(article.getText());
                 }
+                data.put("opt",opt);
 
                 // 查询作者
                 Users articleUser = usersService.selectByKey(article.getAuthorId());
@@ -1327,7 +1328,7 @@ public class ArticleController {
                 // 格式化作者json数据
                 JSONArray head_picture = new JSONArray();
                 opt = articleUser.getOpt() != null && !articleUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(articleUser.getOpt()) : null;
-                head_picture = articleUser.getHead_picture() != null && !articleUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(articleUser.getHead_picture()) : null;
+                head_picture = articleUser.getHead_picture() != null && opt!=null && !articleUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(articleUser.getHead_picture()) : null;
 
                 // 处理头像框
                 if (head_picture != null && opt != null && !head_picture.toString().isEmpty() && head_picture.contains(opt.get("head_picture"))) {
