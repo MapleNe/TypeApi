@@ -163,7 +163,7 @@ public class UsersController {
                 JSONArray head_pircture = new JSONArray();
                 JSONObject address = new JSONObject();
                 opt = user.getOpt() != null && !user.getOpt().toString().isEmpty() ? JSONObject.parseObject(user.getOpt().toString()) : null;
-                head_pircture = user.getHead_picture() != null &&opt!=null && !user.getOpt().toString().isEmpty() ? JSONArray.parseArray(user.getHead_picture().toString()) : null;
+                head_pircture = user.getHead_picture() != null && opt != null && !user.getOpt().toString().isEmpty() ? JSONArray.parseArray(user.getHead_picture().toString()) : null;
                 address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress().toString()) : null;
                 // 处理头像框
                 if (head_pircture != null && head_pircture.contains(opt.get("head_picture"))) {
@@ -285,6 +285,7 @@ public class UsersController {
             Integer isFollow = 0;
             Integer fromFollow = 0;
             Integer related = 0;
+            Integer isVip = 0;
             Users user = new Users();
             Users own = new Users();
             if (id != null && !id.equals(0)) {
@@ -319,6 +320,8 @@ public class UsersController {
             if (head_picture != null && opt != null && head_picture.contains(opt.get("head_picture"))) {
                 opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink());
             }
+            // 处理会员
+            if (user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
             // 加入数据
             data.put("address", address);
@@ -326,6 +329,7 @@ public class UsersController {
             data.put("head_picture", head_picture);
             data.put("isFollow", isFollow);
             data.put("related", related);
+            data.put("isVip", isVip);
             // 移除敏感数据
             data.remove("password");
             if (!own.getUid().equals(user.getUid()) &&
@@ -2152,7 +2156,7 @@ public class UsersController {
                 if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             }
 
-            if (redisHelp.getRedis("signed_" + user.getName().toString(), redisTemplate)!=null)
+            if (redisHelp.getRedis("signed_" + user.getName().toString(), redisTemplate) != null)
                 return Result.getResultJson(200, "今天已签到", null);
             // 获取当前日期
             LocalDate today = LocalDate.now();
