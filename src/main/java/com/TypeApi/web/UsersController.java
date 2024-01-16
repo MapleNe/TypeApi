@@ -163,7 +163,7 @@ public class UsersController {
                 JSONArray head_pircture = new JSONArray();
                 JSONObject address = new JSONObject();
                 opt = user.getOpt() != null && !user.getOpt().toString().isEmpty() ? JSONObject.parseObject(user.getOpt().toString()) : null;
-                head_pircture = user.getHead_picture() != null && !user.getOpt().toString().isEmpty() ? JSONArray.parseArray(user.getHead_picture().toString()) : null;
+                head_pircture = user.getHead_picture() != null &&opt!=null && !user.getOpt().toString().isEmpty() ? JSONArray.parseArray(user.getHead_picture().toString()) : null;
                 address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress().toString()) : null;
                 // 处理头像框
                 if (head_pircture != null && head_pircture.contains(opt.get("head_picture"))) {
@@ -1407,7 +1407,7 @@ public class UsersController {
     @RequestMapping(value = "/charge")
     @ResponseBody
     public String charge(@RequestParam(value = "num") Integer num,
-                         @RequestParam(value = "type") String type,
+                         @RequestParam(value = "type") Integer type,
                          @RequestParam(value = "id") Integer id,
                          HttpServletRequest request) {
         try {

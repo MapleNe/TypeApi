@@ -76,7 +76,7 @@ public class HeadpictureController {
                 if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             }
             Long timeStamp = System.currentTimeMillis() / 1000;
-            if (!permission(request.getHeader("Authorization")) && user.getVip() < timeStamp)
+            if (!permission(request.getHeader("Authorization")) || user.getVip() < timeStamp)
                 return Result.getResultJson(201, "该功能会员可用", null);
 
             // 写入数据
