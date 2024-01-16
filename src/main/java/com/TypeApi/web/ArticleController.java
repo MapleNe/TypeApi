@@ -1340,6 +1340,7 @@ public class ArticleController {
                 dataArticleUser.remove("password");
                 data.put("authorInfo", dataArticleUser);
                 data.put("images", images);
+                data.put("text",baseFull.toStrByChinese(article.getText()));
                 data.remove("password");
 
                 dataList.add(data);
