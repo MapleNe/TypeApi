@@ -96,11 +96,13 @@ public class ChatController {
             opt = receiverUser.getOpt() != null && !receiverUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(receiverUser.getOpt()) : null;
             head_picture = receiverUser.getHead_picture() != null && !receiverUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(receiverUser.getHead_picture()) : null;
             // 处理头像框
-            if (head_picture != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
+            if (head_picture != null && opt != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
                 opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
             }
             data.put("opt", opt);
             data.remove("head_picture");
+            data.remove("password");
+            data.remove("mail");
             data.remove("address");
             JSONArray dataList = new JSONArray();
             for (ChatMsg _chatMsg : chatMsgList) {
