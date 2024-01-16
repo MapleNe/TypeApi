@@ -317,7 +317,7 @@ public class UsersController {
             address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress()) : null;
             head_picture = user.getHead_picture() != null && !user.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(user.getHead_picture()) : null;
             // 处理是否拥有头像框
-            if (head_picture != null && opt != null && head_picture.contains(opt.get("head_picture"))) {
+            if (head_picture != null && opt != null) {
                 opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink());
             }
             // 处理会员
@@ -1869,7 +1869,7 @@ public class UsersController {
                     head_picture = fanUser.getHead_picture() != null && !fanUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(fanUser.getHead_picture()) : null;
 
                     // 处理头像框问题
-                    if (head_picture != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
+                    if (head_picture != null && !head_picture.isEmpty()) {
                         opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
                     }
 
@@ -1893,7 +1893,7 @@ public class UsersController {
                     head_picture = fanUser.getHead_picture() != null && !fanUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(fanUser.getHead_picture()) : null;
 
                     // 处理头像框问题
-                    if (head_picture != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
+                    if (head_picture != null && !head_picture.isEmpty()) {
                         opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
                     }
 

@@ -79,7 +79,7 @@ public class HeadpictureController {
             if (!permission(request.getHeader("Authorization")) && user.getVip() < timeStamp)
                 return Result.getResultJson(201, "该功能会员可用", null);
 
-            // 写入数据
+            // 写入数据 type 0是私人 1 是公开
             Headpicture headpicture = new Headpicture();
             headpicture.setStatus(1);
             headpicture.setLink(link);
@@ -152,8 +152,12 @@ public class HeadpictureController {
                 headpicture.setType(null);
                 headpicture.setPermission(null);
                 headpicture.setStatus(null);
+                headpicture.setType(null);
             }
-            if (self != null && self.equals(1)) headpicture.setCreator(user.getUid());
+            if (self != null && self.equals(1)){
+                headpicture.setCreator(user.getUid());
+                headpicture.setType(0);
+            }
             PageList<Headpicture> headpicturePageList = service.selectPage(headpicture, page, limit, order);
             List<Headpicture> headpictureList = headpicturePageList.getList();
 

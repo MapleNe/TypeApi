@@ -250,7 +250,7 @@ public class ArticleController {
             // 获取头像框
             JSONArray head_picture = new JSONArray();
             head_picture = info.getHead_picture() != null && !info.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(info.getHead_picture()) : null;
-            if (head_picture != null && authorOpt != null && head_picture.contains(authorOpt.get("head_picture"))) {
+            if (head_picture != null && authorOpt != null) {
                 authorOpt.put("head_picture", headpictureService.selectByKey(authorOpt.get("head_picture")).getLink().toString());
             }
             // 是否VIP
@@ -419,7 +419,7 @@ public class ArticleController {
                 // 获取头像框
                 JSONArray head_picture = new JSONArray();
                 head_picture = info.getHead_picture() != null && !info.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(info.getHead_picture()) : null;
-                if (head_picture != null && authorOpt != null && head_picture.contains(authorOpt.get("head_picture"))) {
+                if (head_picture != null && authorOpt != null) {
                     authorOpt.put("head_picture", headpictureService.selectByKey(authorOpt.get("head_picture")).getLink().toString());
                 }
                 // 是否VIP
@@ -1148,7 +1148,7 @@ public class ArticleController {
                 // 获取头像框
                 JSONArray head_picture = new JSONArray();
                 head_picture = info.getHead_picture() != null && !info.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(info.getHead_picture()) : null;
-                if (head_picture != null && authorOpt != null && head_picture.contains(authorOpt.get("head_picture"))) {
+                if (head_picture != null && authorOpt != null) {
                     authorOpt.put("head_picture", headpictureService.selectByKey(authorOpt.get("head_picture")).getLink().toString());
                 }
                 // 是否VIP
@@ -1331,7 +1331,7 @@ public class ArticleController {
                 head_picture = articleUser.getHead_picture() != null && opt!=null && !articleUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(articleUser.getHead_picture()) : null;
 
                 // 处理头像框
-                if (head_picture != null && opt != null && !head_picture.toString().isEmpty() && head_picture.contains(opt.get("head_picture"))) {
+                if (head_picture != null && opt != null && !head_picture.toString().isEmpty()) {
                     opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
                 }
                 dataArticleUser.put("opt", opt);

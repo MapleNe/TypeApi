@@ -147,7 +147,7 @@ public class CommentsController {
                         head_picture = commentUser.getHead_picture() != null && !commentUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(commentUser.getHead_picture()) : null;
 
                         // 处理头像框
-                        if (head_picture != null && opt != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
+                        if (head_picture != null && opt != null && !head_picture.isEmpty()) {
                             opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
                         }
                         // 加入信息
@@ -205,7 +205,7 @@ public class CommentsController {
                         head_picture = parentUser.getHead_picture() != null && !parentUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(parentUser.getHead_picture()) : null;
 
                         // 处理头像框
-                        if (head_picture != null && opt != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
+                        if (head_picture != null && opt != null && !head_picture.isEmpty()) {
                             opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
                         }
 
@@ -244,7 +244,7 @@ public class CommentsController {
                         head_picture = subCommentUser.getHead_picture() != null && !subCommentUser.getHead_picture().isEmpty() ? JSON.parseArray(subCommentUser.getHead_picture()) : null;
 
                         // 处理头像框
-                        if (head_picture != null && opt != null && !head_picture.isEmpty() && head_picture.contains(opt.get("head_picture"))) {
+                        if (head_picture != null && opt != null && !head_picture.isEmpty()) {
                             opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
                         }
                         images = _subComments.getImages() != null && !_subComments.toString().isEmpty() ? JSONArray.parseArray(_subComments.getImages()) : null;
