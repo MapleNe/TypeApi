@@ -21,7 +21,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -547,8 +550,29 @@ public class ArticleController {
             if (apiconfig.getContentAuditlevel().equals(2)) {
                 if (!permission) article.setStatus("waiting");
             }
-            Integer articleId = service.insert(article);
+
+            // 判断redis是否有缓存
+            String redisKey = "articleAdd_" + user.getName().toString();
+            String redisValue = redisHelp.getRedis(redisKey, redisTemplate);
+            int tempNum;
+            if (redisValue != null) {
+                tempNum = Integer.parseInt(redisValue);
+            } else {
+                tempNum = 0;
+            }
+            tempNum++;
+            if (tempNum < 3) {
+                user.setExperience(user.getExperience() + apiconfig.getPostExp());
+                usersService.update(user);
+            }
+
+            LocalDateTime endOfToday = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+            Duration durationUntilEndOfDay = Duration.between(LocalDateTime.now(), endOfToday);
+            long secondsUntilEndOfDay = durationUntilEndOfDay.getSeconds();
+            redisHelp.setRedis(redisKey, String.valueOf(tempNum), (int) secondsUntilEndOfDay, redisTemplate);
+
             // 写入Tag和分类
+            Integer articleId = service.insert(article);
             if (articleId == null) {
                 return Result.getResultJson(201, "发布失败", null);
             }
@@ -829,15 +853,14 @@ public class ArticleController {
 
             // 购买 减除购买者的资产
             user.setAssets(user.getAssets() - article.getPrice());
-            Integer price = article.getPrice();
-            if (vip) {
-                if (article.getDiscount() < 1) {
-                    price = (int) (price * article.getDiscount());
-                } else {
-                    price = (int) (price * Float.parseFloat(apiconfig.getVipDiscount()));
-                }
-                user.setAssets(user.getAssets() - price);
+            int price = article.getPrice(); // 获取文章原价
+            if (vip && article.getDiscount() < 1) {
+                price = (int) (price * article.getDiscount()); // 计算折扣后的价格
+            } else if (vip) {
+                price = (int) (price * Float.parseFloat(apiconfig.getVipDiscount())); // 计算 VIP 折扣后的价格
             }
+
+            user.setAssets(user.getAssets() - price); // 减去购买价格
             //生成订单号
             // 将时间戳转换成日期对象
             Date date = new Date(timeStamp * 1000L);
@@ -871,7 +894,7 @@ public class ArticleController {
 
             // 更新作者资产
             Users articleUser = usersService.selectByKey(article.getAuthorId());
-            articleUser.setAssets(articleUser.getAssets() + price);
+            articleUser.setAssets(articleUser.getAssets() + (int) Math.round(0.8 * price));
             usersService.update(articleUser);
 
             return Result.getResultJson(200, "购买成功", null);
@@ -1125,7 +1148,7 @@ public class ArticleController {
                 // 获取头像框
                 JSONArray head_picture = new JSONArray();
                 head_picture = info.getHead_picture() != null && !info.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(info.getHead_picture()) : null;
-                if (head_picture != null && authorOpt!=null && head_picture.contains(authorOpt.get("head_picture"))) {
+                if (head_picture != null && authorOpt != null && head_picture.contains(authorOpt.get("head_picture"))) {
                     authorOpt.put("head_picture", headpictureService.selectByKey(authorOpt.get("head_picture")).getLink().toString());
                 }
                 // 是否VIP

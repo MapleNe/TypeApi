@@ -2143,8 +2143,7 @@ public class UsersController {
     public String sign(HttpServletRequest request) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
-            // 获取当前日期
-            LocalDate today = LocalDate.now();
+
             String token = request.getHeader("Authorization");
             Users user = new Users();
             if (token != null && !token.isEmpty()) {
@@ -2155,7 +2154,8 @@ public class UsersController {
 
             if (redisHelp.getRedis("signed_" + user.getName().toString(), redisTemplate)!=null)
                 return Result.getResultJson(200, "今天已签到", null);
-
+            // 获取当前日期
+            LocalDate today = LocalDate.now();
             // 如果用户还没签到，计算距离今天结束还有多少秒
             LocalDateTime endOfToday = LocalDateTime.of(today, LocalTime.MAX);
             Duration durationUntilEndOfDay = Duration.between(LocalDateTime.now(), endOfToday);

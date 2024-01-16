@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 /**
@@ -123,7 +127,7 @@ public class CommentsController {
 
             JSONArray dataList = new JSONArray();
             for (Comments _comments : commentsList) {
-                if(_comments!=null && !_comments.toString().isEmpty()){
+                if (_comments != null && !_comments.toString().isEmpty()) {
                     // 获取文章信息
                     Article article = contentsService.selectByKey(id != null ? id : _comments.getCid());
                     Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(_comments));
@@ -133,7 +137,7 @@ public class CommentsController {
                     Map<String, Object> dataUser = JSONObject.parseObject(JSONObject.toJSONString(commentUser));
                     JSONObject opt = new JSONObject();
                     JSONArray head_picture = new JSONArray();
-                    if(commentUser!=null && !commentUser.toString().isEmpty()){
+                    if (commentUser != null && !commentUser.toString().isEmpty()) {
                         //移除信息
                         dataUser.remove("password");
                         dataUser.remove("address");
@@ -303,7 +307,6 @@ public class CommentsController {
             String token = request.getHeader("Authorization");
             Long timeStamp = System.currentTimeMillis() / 1000;
             Users user = new Users();
-
             if (token != null && !token.isEmpty()) {
                 DecodedJWT verify = JWT.verify(token);
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
@@ -357,12 +360,41 @@ public class CommentsController {
             if (apiconfig.getIsPush().equals(1)) {
                 pushService.sendPushMsg(articleUser.getClientId(), "有新的评论", text, "payload", "system");
             }
+            String redisKey = "comments_" + user.getName().toString();
+            String redisValue = redisHelp.getRedis(redisKey, redisTemplate);
+            int tempNum;
+            if (redisValue != null) {
+                tempNum = Integer.parseInt(redisValue);
+            } else {
+                tempNum = 0; // 第一次评论时，评论次数为 0
+            }
+
+            // 如果评论次数小于 3，则增加经验值
+            if (tempNum < 3) {
+                user.setExperience(user.getExperience() + apiconfig.getReviewExp());
+                usersService.update(user);
+            }
+
+            // 更新评论次数并设置过期时间
+            tempNum++; // 增加评论次数
+            LocalDateTime endOfToday = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+            Duration durationUntilEndOfDay = Duration.between(LocalDateTime.now(), endOfToday);
+            long secondsUntilEndOfDay = durationUntilEndOfDay.getSeconds();
+            redisHelp.setRedis(redisKey, String.valueOf(tempNum), (int) secondsUntilEndOfDay, redisTemplate);
             return Result.getResultJson(200, "评论成功", null);
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);
         }
 
+    }
+
+//    测试
+
+    @RequestMapping("/test")
+    @ResponseBody
+    public String test(HttpServletRequest request, @RequestParam(value = "name") String name) {
+        return redisHelp.getRedis("comments_" + name, redisTemplate);
     }
 
     /***
