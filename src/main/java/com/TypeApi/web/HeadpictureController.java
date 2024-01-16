@@ -147,6 +147,7 @@ public class HeadpictureController {
             // 如果传入id且是管理员才能查看用户的列表 否则就只能查询 type为0 permission为0的数据 且查询自己
             Headpicture headpicture = new Headpicture();
             headpicture.setStatus(1);
+            headpicture.setType(1);
             if (permission(request.getHeader("Authorization"))) {
                 headpicture.setType(null);
                 headpicture.setPermission(null);
