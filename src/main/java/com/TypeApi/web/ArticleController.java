@@ -247,14 +247,9 @@ public class ArticleController {
             Integer nextLevel = (Integer) result.get(1);
             JSONObject authorOpt = new JSONObject();
             authorOpt = info.getOpt() != null && !info.getOpt().toString().isEmpty() ? JSONObject.parseObject(info.getOpt().toString()) : null;
-            // 获取头像框
-            JSONArray head_picture = new JSONArray();
-            head_picture = info.getHead_picture() != null && !info.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(info.getHead_picture()) : null;
-            if (head_picture != null && authorOpt != null) {
-                authorOpt.put("head_picture", headpictureService.selectByKey(authorOpt.get("head_picture")).getLink().toString());
-            }
-            // 是否VIP
 
+            // 是否VIP
+            Integer isVip = info.getVip() > System.currentTimeMillis() / 1000 ? 1 : 0;
             // 获取关注
             Fan fan = new Fan();
             fan.setUid(uid);
@@ -266,6 +261,7 @@ public class ArticleController {
             authorInfo.put("level", level);
             authorInfo.put("nextLevel", nextLevel);
             authorInfo.put("opt", authorOpt);
+            authorInfo.put("isVip", isVip);
             // 移除敏感信息
             authorInfo.remove("address");
             authorInfo.remove("assets");
@@ -416,12 +412,6 @@ public class ArticleController {
                 Integer nextLevel = (Integer) result.get(1);
                 JSONObject authorOpt = new JSONObject();
                 authorOpt = info.getOpt() != null && !info.getOpt().toString().isEmpty() ? JSONObject.parseObject(info.getOpt().toString()) : null;
-                // 获取头像框
-                JSONArray head_picture = new JSONArray();
-                head_picture = info.getHead_picture() != null && !info.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(info.getHead_picture()) : null;
-                if (head_picture != null && authorOpt != null) {
-                    authorOpt.put("head_picture", headpictureService.selectByKey(authorOpt.get("head_picture")).getLink().toString());
-                }
                 // 是否VIP
                 Integer isVip = 0;
                 if (info.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
@@ -1145,12 +1135,6 @@ public class ArticleController {
                 Integer nextLevel = (Integer) result.get(1);
                 JSONObject authorOpt = new JSONObject();
                 authorOpt = info.getOpt() != null && !info.getOpt().toString().isEmpty() ? JSONObject.parseObject(info.getOpt().toString()) : null;
-                // 获取头像框
-                JSONArray head_picture = new JSONArray();
-                head_picture = info.getHead_picture() != null && !info.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(info.getHead_picture()) : null;
-                if (head_picture != null && authorOpt != null) {
-                    authorOpt.put("head_picture", headpictureService.selectByKey(authorOpt.get("head_picture")).getLink().toString());
-                }
                 // 是否VIP
                 Integer isVip = 0;
                 if (info.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
@@ -1319,7 +1303,7 @@ public class ArticleController {
                 } else {
                     images = baseFull.getImageSrc(article.getText());
                 }
-                data.put("opt",opt);
+                data.put("opt", opt);
 
                 // 查询作者
                 Users articleUser = usersService.selectByKey(article.getAuthorId());
@@ -1328,19 +1312,13 @@ public class ArticleController {
                 // 格式化作者json数据
                 JSONArray head_picture = new JSONArray();
                 opt = articleUser.getOpt() != null && !articleUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(articleUser.getOpt()) : null;
-                head_picture = articleUser.getHead_picture() != null && opt!=null && !articleUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(articleUser.getHead_picture()) : null;
-
-                // 处理头像框
-                if (head_picture != null && opt != null && !head_picture.toString().isEmpty()) {
-                    opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
-                }
                 dataArticleUser.put("opt", opt);
                 dataArticleUser.remove("head_picture");
                 dataArticleUser.remove("address");
                 dataArticleUser.remove("password");
                 data.put("authorInfo", dataArticleUser);
                 data.put("images", images);
-                data.put("text",baseFull.toStrByChinese(article.getText()));
+                data.put("text", baseFull.toStrByChinese(article.getText()));
                 data.remove("password");
 
                 dataList.add(data);

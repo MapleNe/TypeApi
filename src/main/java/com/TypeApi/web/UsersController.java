@@ -163,13 +163,8 @@ public class UsersController {
                 JSONArray head_pircture = new JSONArray();
                 JSONObject address = new JSONObject();
                 opt = user.getOpt() != null && !user.getOpt().toString().isEmpty() ? JSONObject.parseObject(user.getOpt().toString()) : null;
-                head_pircture = user.getHead_picture() != null && opt != null && !user.getOpt().toString().isEmpty() ? JSONArray.parseArray(user.getHead_picture().toString()) : null;
                 address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress().toString()) : null;
                 // 处理头像框
-                if (head_pircture != null && head_pircture.contains(opt.get("head_picture"))) {
-                    opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
-                }
-
                 // 加入其他数据等级等
                 List result = baseFull.getLevel(user.getExperience());
                 Integer level = (Integer) result.get(0);
@@ -179,7 +174,6 @@ public class UsersController {
                 // 加入数据
                 data.put("address", address);
                 data.put("opt", opt);
-                data.put("head_picture", head_pircture);
                 data.put("level", level);
                 data.put("nextLevel", nextLevel);
                 // 移除铭感数据
@@ -312,21 +306,15 @@ public class UsersController {
             // 处理opt、地址以及头像框
             JSONObject opt = new JSONObject();
             JSONObject address = new JSONObject();
-            JSONArray head_picture = new JSONArray();
             opt = user.getOpt() != null && !user.getOpt().toString().isEmpty() ? JSONObject.parseObject(user.getOpt()) : null;
             address = user.getAddress() != null && !user.getAddress().toString().isEmpty() ? JSONObject.parseObject(user.getAddress()) : null;
-            head_picture = user.getHead_picture() != null && !user.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(user.getHead_picture()) : null;
-            // 处理是否拥有头像框
-            if (head_picture != null && opt != null) {
-                opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink());
-            }
+
             // 处理会员
             if (user.getVip() > System.currentTimeMillis() / 1000) isVip = 1;
             Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(user), Map.class);
             // 加入数据
             data.put("address", address);
             data.put("opt", opt);
-            data.put("head_picture", head_picture);
             data.put("isFollow", isFollow);
             data.put("related", related);
             data.put("isVip", isVip);
@@ -1118,7 +1106,6 @@ public class UsersController {
                          @RequestParam(value = "mail", required = false) String mail,
                          @RequestParam(value = "code", required = false) String code,
                          @RequestParam(value = "password", required = false) String password,
-                         @RequestParam(value = "opt", required = false) String opt,
                          HttpServletRequest request) {
         try {
             Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
@@ -1137,7 +1124,6 @@ public class UsersController {
                 // 加密密码
                 user.setPassword(phpass.HashPassword(password));
             }
-            if (opt != null && !opt.isEmpty()) user.setOpt(opt);
             if (mail != null && !mail.isEmpty()) {
                 if (!baseFull.isEmail(mail)) return Result.getResultJson(201, "邮箱格式错误", null);
                 Users query = new Users();
@@ -1180,7 +1166,6 @@ public class UsersController {
             return false;
         }
     }
-
     /***
      * 管理员修改用户
      */
@@ -1860,24 +1845,16 @@ public class UsersController {
                 Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(_fan), Map.class);
                 // 查询用户信息 被关注人信息
                 JSONObject opt = new JSONObject();
-                JSONArray head_picture = new JSONArray();
                 if (type.equals(0)) {
                     Users fanUser = service.selectByKey(_fan.getTouid());
                     Map<String, Object> dataUser = JSONObject.parseObject(JSONObject.toJSONString(fanUser), Map.class);
                     // 格式化用户信息
                     opt = fanUser.getOpt() != null && !fanUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(fanUser.getOpt()) : null;
-                    head_picture = fanUser.getHead_picture() != null && !fanUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(fanUser.getHead_picture()) : null;
-
-                    // 处理头像框问题
-                    if (head_picture != null && !head_picture.isEmpty()) {
-                        opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
-                    }
 
                     dataUser.remove("password");
                     dataUser.remove("address");
                     dataUser.remove("mail");
                     // 替换信息
-                    dataUser.put("head_picture", head_picture);
                     dataUser.put("opt", opt);
                     dataList.add(dataUser);
                 }
@@ -1890,15 +1867,8 @@ public class UsersController {
                     dataUser.remove("address");
                     dataUser.remove("mail");
                     opt = fanUser.getOpt() != null && !fanUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(fanUser.getOpt()) : null;
-                    head_picture = fanUser.getHead_picture() != null && !fanUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(fanUser.getHead_picture()) : null;
-
-                    // 处理头像框问题
-                    if (head_picture != null && !head_picture.isEmpty()) {
-                        opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
-                    }
 
                     // 替换信息
-                    dataUser.put("head_picture", head_picture);
                     dataUser.put("opt", opt);
                     dataList.add(dataUser);
                 }

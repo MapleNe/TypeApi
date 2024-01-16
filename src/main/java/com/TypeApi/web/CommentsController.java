@@ -136,23 +136,15 @@ public class CommentsController {
                     Users commentUser = usersService.selectByKey(_comments.getUid());
                     Map<String, Object> dataUser = JSONObject.parseObject(JSONObject.toJSONString(commentUser));
                     JSONObject opt = new JSONObject();
-                    JSONArray head_picture = new JSONArray();
                     if (commentUser != null && !commentUser.toString().isEmpty()) {
                         //移除信息
                         dataUser.remove("password");
                         dataUser.remove("address");
                         // 格式化信息
-
                         opt = commentUser.getOpt() != null && !commentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(commentUser.getOpt()) : null;
-                        head_picture = commentUser.getHead_picture() != null && !commentUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(commentUser.getHead_picture()) : null;
 
-                        // 处理头像框
-                        if (head_picture != null && opt != null && !head_picture.isEmpty()) {
-                            opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
-                        }
                         // 加入信息
                         dataUser.put("opt", opt);
-                        dataUser.put("head_picture", head_picture);
                         // 获取等级
                         dataUser.put("level", baseFull.getLevel(commentUser.getExperience()).get(0));
                     }
@@ -202,19 +194,12 @@ public class CommentsController {
 
                         // 格式化数据
                         opt = parentUser.getOpt() != null && !parentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(parentUser.getOpt()) : null;
-                        head_picture = parentUser.getHead_picture() != null && !parentUser.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(parentUser.getHead_picture()) : null;
-
-                        // 处理头像框
-                        if (head_picture != null && opt != null && !head_picture.isEmpty()) {
-                            opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
-                        }
 
                         // 移除信息
                         dataParentUser.remove("address");
                         dataParentUser.remove("password");
                         // 加入信息
                         dataParentUser.put("opt", opt);
-                        dataParentUser.put("head_picture", head_picture);
                         Map<String, Object> dataParentComment = new HashMap<>();
                         if (parentComment != null && !parentComment.toString().isEmpty()) {
                             dataParentComment = JSONObject.parseObject(JSONObject.toJSONString(parentComment));
@@ -241,12 +226,6 @@ public class CommentsController {
                         subDataUser.remove("address");
                         // 格式化用户信息
                         opt = subCommentUser.getOpt() != null && !subCommentUser.getOpt().isEmpty() ? JSON.parseObject(subCommentUser.getOpt()) : null;
-                        head_picture = subCommentUser.getHead_picture() != null && !subCommentUser.getHead_picture().isEmpty() ? JSON.parseArray(subCommentUser.getHead_picture()) : null;
-
-                        // 处理头像框
-                        if (head_picture != null && opt != null && !head_picture.isEmpty()) {
-                            opt.put("head_picture", headpictureService.selectByKey(opt.get("head_picture")).getLink().toString());
-                        }
                         images = _subComments.getImages() != null && !_subComments.toString().isEmpty() ? JSONArray.parseArray(_subComments.getImages()) : null;
 
                         //加入文章信息

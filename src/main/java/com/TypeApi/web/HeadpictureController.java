@@ -154,7 +154,7 @@ public class HeadpictureController {
                 headpicture.setStatus(null);
                 headpicture.setType(null);
             }
-            if (self != null && self.equals(1)){
+            if (self != null && self.equals(1)) {
                 headpicture.setCreator(user.getUid());
                 headpicture.setType(0);
             }
@@ -169,6 +169,51 @@ public class HeadpictureController {
             data.put("total", service.total(headpicture));
 
             return Result.getResultJson(200, "获取成功", data);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
+    // 设置头像框
+    @RequestMapping(value = "/set")
+    @ResponseBody
+    public String set(HttpServletRequest request,
+                      @RequestParam(value = "id") Integer id) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            Boolean permission = permission(token);
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
+            // 检查传入id是否存在
+            Headpicture headpicture = service.selectByKey(id);
+            if (headpicture == null || headpicture.toString().isEmpty())
+                return Result.getResultJson(201, "头像框不存在", null);
+
+            JSONArray head_picture = user.getHead_picture() != null ? JSONArray.parseArray(user.getHead_picture()) : null;
+            JSONObject opt = user.getOpt() != null ? JSONObject.parseObject(user.getOpt()) : null;
+            // 先判断头像框权限
+            if (headpicture != null && headpicture.getPermission() != null && headpicture.getPermission().equals(0)) {
+                if (head_picture != null && head_picture.contains(headpicture.getId())) {
+                    opt.put("head_picture", headpicture.getLink().toString());
+                } else {
+                    return Result.getResultJson(201, "你没有获得这个头像框", null);
+                }
+            }
+
+            if (headpicture.getPermission().equals(1)) {
+                opt.put("head_picture", headpicture.getLink().toString());
+            }
+            //设置用户opt
+            user.setOpt(opt.toString());
+            usersService.update(user);
+
+            return Result.getResultJson(200, "设置成功", null);
 
         } catch (Exception e) {
             e.printStackTrace();
