@@ -148,12 +148,9 @@ public class HeadpictureController {
             Headpicture headpicture = new Headpicture();
             headpicture.setStatus(1);
             if (permission(request.getHeader("Authorization"))) {
-                headpicture.setType(0);
-                headpicture.setPermission(0);
+                headpicture.setType(null);
+                headpicture.setPermission(null);
                 headpicture.setStatus(null);
-                if (id != null && !id.equals(0) && !id.equals("")) {
-                    headpicture.setCreator(id);
-                }
             }
             if (self != null && self.equals(1)) headpicture.setCreator(user.getUid());
             PageList<Headpicture> headpicturePageList = service.selectPage(headpicture, page, limit, order);
