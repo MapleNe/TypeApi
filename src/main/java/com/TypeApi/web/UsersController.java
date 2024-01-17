@@ -1596,17 +1596,6 @@ public class UsersController {
             if (type.equals("comment")) {
                 for (Inbox _inbox : inboxList) {
                     Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(_inbox), Map.class);
-                    Article article = contentsService.selectByKey(_inbox.getValue());
-                    // 如果不存在的话
-                    Map<String, Object> articleData = new HashMap<>();
-                    if (article != null && !article.toString().isEmpty()) {
-                        articleData.put("title", article.getTitle());
-                        articleData.put("authorId", article.getAuthorId());
-                        articleData.put("id", article.getCid());
-                    } else {
-                        articleData.put("title", "文章已被删除");
-                        articleData.put("id", 0);
-                    }
                     // 查询发送方信息
                     Users sender = service.selectByKey(_inbox.getUid());
                     Map<String, Object> dataSender = JSONObject.parseObject(JSONObject.toJSONString(sender));
@@ -1622,6 +1611,7 @@ public class UsersController {
                     // 查询回复的评论
                     Comments reply = commentsService.selectByKey(_inbox.getValue());
                     Map<String, Object> dataReply = JSONObject.parseObject(JSONObject.toJSONString(reply));
+                    Map<String, Object> articleData = new HashMap<>();
                     if (reply != null && !reply.toString().isEmpty()) {
                         JSONArray images = new JSONArray();
                         images = reply.getImages() != null && !reply.getImages().toString().isEmpty() ? JSONArray.parseArray(reply.getImages()) : null;
@@ -1637,9 +1627,21 @@ public class UsersController {
                             dataReplyUser.remove("head_picture");
                             dataReplyUser.remove("mail");
                         }
+
+                        Article article = contentsService.selectByKey(reply.getCid());
+                        // 如果不存在的话
+
+                        if (article != null && !article.toString().isEmpty()) {
+                            articleData.put("title", article.getTitle());
+                            articleData.put("authorId", article.getAuthorId());
+                            articleData.put("id", article.getCid());
+                        } else {
+                            articleData.put("title", "文章已被删除");
+                            articleData.put("id", 0);
+                            articleData.put("authorId", 0);
+                        }
                         dataReply.put("userInfo", dataReplyUser);
                     }
-                    System.out.println(dataReply + "回复信息");
                     data.put("reply", dataReply);
                     data.put("userInfo", dataSender);
                     data.put("article", articleData);

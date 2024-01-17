@@ -35,7 +35,7 @@
     </sql>
 
     <!-- 插入数据 -->
-    <insert id="insert" parameterType="com.TypeApi.entity.Comments">
+    <insert id="insert" parameterType="com.TypeApi.entity.Comments" keyProperty="id" useGeneratedKeys="true">
         INSERT INTO ${prefix}_comments
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test ='null != id'>

@@ -298,20 +298,21 @@ public class CommentsController {
             Users articleUser = usersService.selectByKey(article.getAuthorId());
 
             Inbox inbox = new Inbox();
-            inbox.setText("你的文章[" + article.getTitle() + "]有新的评论");
+            inbox.setText(article.getTitle());
+            inbox.setTouid(article.getAuthorId());
+
             if (article == null || article.toString().isEmpty()) return Result.getResultJson(201, "文章不存在", null);
             Comments comments = new Comments();
             if (all != null && !all.toString().equals("")) comments.setAll(all);
-            if (parent != null && !parent.toString().equals("")) {
+            if (parent != null && !parent.toString().equals("") && !parent.equals(0)) {
                 comments.setParent(parent);
                 Comments parentComments = service.selectByKey(parent);
                 if (parentComments != null && !parentComments.toString().isEmpty()) {
                     //查询父评论的用户
                     Users parentUser = usersService.selectByKey(parentComments.getUid());
-                    inbox.setTouid(parentComments.getUid());
-                    inbox.setText(parentComments.getText());
+                    inbox.setTouid(parentUser.getUid());
+                    inbox.setText(text);
                     inbox.setValue(parentComments.getId());
-                    inbox.setTouid(parent != null && !parent.equals(0) ? parentUser.getUid() : article.getAuthorId());
                     // push发送
                     if (apiconfig.getIsPush().equals(1)) {
                         pushService.sendPushMsg(parentUser.getClientId(), "有新的评论", text, "payload", "system");
@@ -330,9 +331,11 @@ public class CommentsController {
             service.insert(comments);
             // 给用户发消息
             inbox.setCreated(Math.toIntExact(timeStamp));
-            inbox.setValue(article.getCid());
             inbox.setType("comment");
             inbox.setUid(user.getUid());
+            if(parent==null || parent.equals(0)){
+                inbox.setValue(comments.getId());
+            }
             inbox.setIsread(0);
             inboxService.insert(inbox);
             // push发送
