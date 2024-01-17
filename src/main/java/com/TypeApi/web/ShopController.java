@@ -224,10 +224,8 @@ public class ShopController {
             shop.setPrice(price);
             shop.setNum(num);
             shop.setSpecs(specs);
-
             service.insert(shop);
             return Result.getResultJson(200, permission ? "添加成功" : "请等待审核", null);
-
         } catch (Exception e) {
             e.printStackTrace();
             return Result.getResultJson(400, "接口异常", null);
