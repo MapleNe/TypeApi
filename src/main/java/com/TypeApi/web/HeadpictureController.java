@@ -197,6 +197,7 @@ public class HeadpictureController {
 
             JSONArray head_picture = user.getHead_picture() != null ? JSONArray.parseArray(user.getHead_picture()) : null;
             JSONObject opt = user.getOpt() != null ? JSONObject.parseObject(user.getOpt()) : null;
+            if(opt==null)opt = new JSONObject();
             // 先判断头像框权限
             if (headpicture != null && headpicture.getPermission() != null && headpicture.getPermission().equals(0)) {
                 if (head_picture != null && head_picture.contains(headpicture.getId())) {
@@ -205,7 +206,6 @@ public class HeadpictureController {
                     return Result.getResultJson(201, "你没有获得这个头像框", null);
                 }
             }
-
             if (headpicture.getPermission().equals(1)) {
                 opt.put("head_picture", headpicture.getLink().toString());
             }
