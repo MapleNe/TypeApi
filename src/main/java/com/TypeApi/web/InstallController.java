@@ -778,13 +778,23 @@ public class InstallController {
                     "  `name` varchar(255) DEFAULT NULL COMMENT '分类名称'," +
                     "  `pic` varchar(400) DEFAULT NULL COMMENT '分类缩略图'," +
                     "  `intro` varchar(400) DEFAULT NULL COMMENT '分类简介'," +
-                    "  `orderKey` int(11) DEFAULT '0' COMMENT '分类排序'," +
+                    "  `created` INT DEFAULT 0 COMMENT '创建时间'," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COMMENT='商品分类表';");
             text += "商品分类表创建完成。";
         } else {
             text += "商品分类表已存在，无需安装。";
         }
+
+        //查询商品分类模块是否存在created字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_shoptype' and column_name = 'created';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_shoptype ADD `created` INT unsigned DEFAULT 0 COMMENT '创建时间'");
+            text += "商品分类模块，字段created添加完成。";
+        } else {
+            text += "商品分类模块，字段created已经存在，无需添加。";
+        }
+
 
         //安装评论点赞表
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_commentLike';", Integer.class);

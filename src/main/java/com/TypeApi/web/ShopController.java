@@ -85,12 +85,12 @@ public class ShopController {
      */
     @RequestMapping(value = "/list")
     @ResponseBody
-    public String shopList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                           @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
-                           @RequestParam(value = "params", required = false) String params,
-                           @RequestParam(value = "searchKey", required = false) String searchKey,
-                           @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
-                           HttpServletRequest request) {
+    public String list(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                       @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
+                       @RequestParam(value = "params", required = false) String params,
+                       @RequestParam(value = "searchKey", required = false) String searchKey,
+                       @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
+                       HttpServletRequest request) {
         try {
             String token = request.getHeader("Authorization");
             Users user = new Users();
@@ -102,7 +102,7 @@ public class ShopController {
             // 查询商品
             Shop shop = new Shop();
             if (params != null && !params.isEmpty())
-                shop = JSONObject.parseObject(JSONObject.toJSONString(params), Shop.class);
+                shop = JSONObject.parseObject(params, Shop.class);
 
             PageList<Shop> shopPageList = service.selectPage(shop, page, limit, searchKey, order);
             List<Shop> shopList = shopPageList.getList();
@@ -982,10 +982,11 @@ public class ShopController {
     @ResponseBody
     public String typeList(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
                            @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
+                           @RequestParam(value = "order",required = false,defaultValue = "created desc") String order,
                            HttpServletRequest request) {
         try {
             Shoptype query = new Shoptype();
-            PageList<Shoptype> shoptypePageList = shoptypeService.selectPage(query, page, limit, null, null);
+            PageList<Shoptype> shoptypePageList = shoptypeService.selectPage(query, page, limit, null,order);
             List<Shoptype> shoptypeList = shoptypePageList.getList();
             Map<String, Object> data = new HashMap<>();
             data.put("page", page);
