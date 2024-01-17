@@ -524,8 +524,8 @@ public class ShopController {
                 query = JSONObject.parseObject(params).toJavaObject(Order.class);
                 // query设置bossid和userid无效 只能在token获取
             }
-            if (type.equals(1)) query.setBoss_id(Integer.parseInt(userInfo.get("uid").toString()));
-            else query.setUser_id(Integer.parseInt(userInfo.get("uid").toString()));
+            if (type.equals(1)) query.setBoss_id(user.getUid());
+            else query.setUser_id(user.getUid());
             PageList<Order> orderList = orderService.selectPage(query, page, limit, searchKey, order);
             List<Order> list = orderList.getList();
             JSONArray arrayList = new JSONArray();
