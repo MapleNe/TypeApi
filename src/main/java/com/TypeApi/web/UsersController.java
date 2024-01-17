@@ -1687,6 +1687,7 @@ public class UsersController {
             data.put("comments", comments);
             data.put("system", systems);
             data.put("finances", finances);
+            data.put("total",comments+systems+finances);
             return Result.getResultJson(200, "获取成功", data);
         } catch (Exception e) {
             e.printStackTrace();
