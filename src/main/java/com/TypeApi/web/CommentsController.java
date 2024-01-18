@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.TypeApi.entity.*;
 import com.TypeApi.service.*;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import net.dreamlu.mica.xss.core.XssCleanIgnore;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -274,6 +275,7 @@ public class CommentsController {
      * 添加评论
      */
     @RequestMapping(value = "/add")
+    @XssCleanIgnore
     @ResponseBody
     public String add(@RequestParam(value = "id") Integer id,
                       @RequestParam(value = "parent", required = false, defaultValue = "0") Integer parent,
@@ -291,6 +293,15 @@ public class CommentsController {
                 user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
                 if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             }
+
+            // 定义一个变量来获取替换掉的内容
+            String nonText = null;
+            Boolean permission = permission(token);
+
+            if (text != null) {
+                nonText = text.replaceAll("style=\"[^\"]*\"", ""); // 使用正则表达式匹配并替换带有 style 属性的部分
+            }
+
             Article article = contentsService.selectByKey(id);
             Integer commentsNum = article.getCommentsNum() + 1;
             article.setCommentsNum(commentsNum);
@@ -311,7 +322,7 @@ public class CommentsController {
                     //查询父评论的用户
                     Users parentUser = usersService.selectByKey(parentComments.getUid());
                     inbox.setTouid(parentUser.getUid());
-                    inbox.setText(text);
+                    inbox.setText(nonText);
                     inbox.setValue(parentComments.getId());
                     // push发送
                     if (apiconfig.getIsPush().equals(1)) {
@@ -322,7 +333,7 @@ public class CommentsController {
             if (images != null && !images.toString().isEmpty()) comments.setAll(parent);
 
             if (text == null || text.isEmpty()) return Result.getResultJson(201, "请输入评论", null);
-            comments.setText(text);
+            comments.setText(user.getVip() < timeStamp && !permission ? nonText : text);
             comments.setIp(baseFull.getIpAddr(request));
             comments.setCreated(Math.toIntExact(timeStamp));
             comments.setCid(article.getCid());
@@ -333,7 +344,7 @@ public class CommentsController {
             inbox.setCreated(Math.toIntExact(timeStamp));
             inbox.setType("comment");
             inbox.setUid(user.getUid());
-            if(parent==null || parent.equals(0)){
+            if (parent == null || parent.equals(0)) {
                 inbox.setValue(comments.getId());
             }
             inbox.setIsread(0);
