@@ -5,26 +5,24 @@
 
     <resultMap id="BaseResultMap" type="com.TypeApi.entity.Chat" >
         <result column="id" property="id" />
-        <result column="uid" property="uid" />
-        <result column="toid" property="toid" />
+        <result column="sender_id" property="sender_id" />
+        <result column="receiver_id" property="receiver_id" />
         <result column="created" property="created" />
         <result column="lastTime" property="lastTime" />
         <result column="type" property="type" />
         <result column="name" property="name" />
-        <result column="pic" property="pic" />
-        <result column="ban" property="ban" />
+        <result column="avatar" property="avatar" />
     </resultMap>
 
     <sql id="Base_Column_List">
         `id`,
-        `uid`,
-        `toid`,
+        `sender_id`,
+        `receiver_id`,
         `created`,
         `lastTime`,
         `type`,
         `name`,
-        `pic`,
-        `ban`
+        `avatar`
     </sql>
 
     <!-- 插入数据 -->
@@ -34,11 +32,11 @@
             <if test ='null != id'>
                 `id`,
             </if>
-            <if test ='null != uid'>
-                `uid`,
+            <if test ='null != sender_id'>
+                `sender_id`,
             </if>
-            <if test ='null != toid'>
-                `toid`,
+            <if test ='null != receiver_id'>
+                `receiver_id`,
             </if>
             <if test ='null != created'>
                 `created`,
@@ -52,22 +50,20 @@
             <if test ='null != name'>
                 `name`,
             </if>
-            <if test ='null != pic'>
-                `pic`,
+            <if test ='null != avatar'>
+                `avatar`
             </if>
-            <if test ='null != ban'>
-                `ban`
-            </if>
+
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test ='null != id'>
                 #{id},
             </if>
-            <if test ='null != uid'>
-                #{uid},
+            <if test ='null != sender_id'>
+                #{sender_id},
             </if>
-            <if test ='null != toid'>
-                #{toid},
+            <if test ='null != receiver_id'>
+                #{receiver_id},
             </if>
             <if test ='null != created'>
                 #{created},
@@ -81,11 +77,8 @@
             <if test ='null != name'>
                 #{name},
             </if>
-            <if test ='null != pic'>
-                #{pic},
-            </if>
-            <if test ='null != ban'>
-                #{ban}
+            <if test ='null != avatar'>
+                #{avatar}
             </if>
         </trim>
     </insert>
@@ -96,14 +89,13 @@
         <foreach collection="list" item="curr" index="index" separator=",">
             (
             #{curr.id},
-            #{curr.uid},
-            #{curr.toid},
+            #{curr.sender_id},
+            #{curr.receiver_id},
             #{curr.created},
             #{curr.lastTime},
             #{curr.type},
             #{curr.name},
-            #{curr.pic},
-            #{curr.ban}
+            #{curr.avatar}
             )
         </foreach>
     </insert>
@@ -112,14 +104,13 @@
     <update id="update" parameterType="com.TypeApi.entity.Chat">
         UPDATE ${prefix}_chat
         <set>
-            <if test ='null != uid'>`uid` = #{uid},</if>
-            <if test ='null != toid'>`toid` = #{toid},</if>
+            <if test ='null != sender_id'>`sender_id` = #{sender_id},</if>
+            <if test ='null != receiver_id'>`receiver_id` = #{receiver_id},</if>
             <if test ='null != created'>`created` = #{created},</if>
             <if test ='null != lastTime'>`lastTime` = #{lastTime},</if>
             <if test ='null != type'>`type` = #{type},</if>
             <if test ='null != name'>`name` = #{name},</if>
-            <if test ='null != pic'>`pic` = #{pic},</if>
-            <if test ='null != ban'>`ban` = #{ban}</if>
+            <if test ='null != avatar'>`avatar` = #{avatar}</if>
         </set>
         WHERE `id` = #{id}
     </update>
@@ -153,11 +144,11 @@
             <if test ='null != id'>
                 and `id` = #{id}
             </if>
-            <if test ='null != uid'>
-                and `uid` = #{uid}
+            <if test ='null != sender_id'>
+                and `sender_id` = #{sender_id}
             </if>
-            <if test ='null != toid'>
-                and `toid` = #{toid}
+            <if test ='null != receiver_id'>
+                and `receiver_id` = #{receiver_id}
             </if>
             <if test ='null != created'>
                 and `created` = #{created}
@@ -180,11 +171,11 @@
             <if test ='null != chat.id'>
                 and `id` = #{chat.id}
             </if>
-            <if test ='null != chat.uid'>
-                and (`uid` = #{chat.uid} or `toid` = #{chat.uid})
+            <if test ='null != chat.sender_id'>
+                and (`sender_id` = #{chat.sender_id} or `receiver_id` = #{chat.sender_id})
             </if>
-            <if test ='null != chat.toid'>
-                and (`toid` = #{chat.toid} or `uid` = #{chat.toid})
+            <if test ='null != chat.receiver_id'>
+                and (`receiver_id` = #{chat.receiver_id} or `sender_id` = #{chat.receiver_id})
             </if>
             <if test ='null != chat.created'>
                 and `created` = #{chat.created}
@@ -200,7 +191,7 @@
             </if>
         </where>
         <if test ='"" != order'>
-            order by ${order} desc
+            order by ${order}
         </if>
         limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
     </select>
@@ -212,11 +203,11 @@
             <if test ='null != id'>
                 and `id` = #{id}
             </if>
-            <if test ='null != uid'>
-                and `uid` = #{uid}
+            <if test ='null != sender_id'>
+                and `sender_id` = #{sender_id}
             </if>
-            <if test ='null != toid'>
-                and `toid` = #{toid}
+            <if test ='null != receiver_id'>
+                and `receiver_id` = #{receiver_id}
             </if>
             <if test ='null != created'>
                 and `created` = #{created}

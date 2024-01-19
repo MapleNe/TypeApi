@@ -261,6 +261,12 @@
             <artifactId>lombok</artifactId>
             <version>1.16.20</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.auth0/java-jwt -->
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>3.14.0</version>
+        </dependency>
     </dependencies>
 
     <build>

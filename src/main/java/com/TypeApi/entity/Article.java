@@ -152,5 +152,10 @@ public class Article implements Serializable {
      */
     private Float discount;
 
+    /**
+     * discount 折扣
+     */
+    private Integer marks;
+
 
 }

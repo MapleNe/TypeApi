@@ -12,10 +12,10 @@ public class Comments implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * coid  
+    /***
+     * id
      */
-    private Integer coid;
+    private Integer id;
 
     /**
      * cid  
@@ -23,62 +23,27 @@ public class Comments implements Serializable {
     private Integer cid;
 
     /**
-     * created  
+     * uid
      */
-    private Integer created;
+    private Integer uid;
 
     /**
-     * author  
-     */
-    private String author;
-
-    /**
-     * authorId  
-     */
-    private Integer authorId;
-
-    /**
-     * ownerId  
-     */
-    private Integer ownerId;
-
-    /**
-     * mail  
-     */
-    private String mail;
-
-    /**
-     * url  
-     */
-    private String url;
-
-    /**
-     * ip  
-     */
-    private String ip;
-
-    /**
-     * agent  
-     */
-    private String agent;
-
-    /**
-     * text  
+     * text
      */
     private String text;
 
     /**
-     * type  
+     * images
      */
-    private String type;
+    private String images;
 
     /**
-     * status  
+     * ip
      */
-    private String status;
+    private String ip;
 
     /**
-     * parent  
+     * parent
      */
     private Integer parent;
 
@@ -88,19 +53,23 @@ public class Comments implements Serializable {
     private Integer likes;
 
     /**
-     * images
+     * all
      */
-    private String images;
+    private Integer all;
 
     /**
-     * opt
+     * type
      */
-    private String opt;
+    private Integer type;
 
     /**
-     * images
+     * created
      */
-    private Integer allparent;
+    private Integer created;
 
+    /**
+     * created
+     */
+    private Integer modified;
 
 }

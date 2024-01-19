@@ -18,19 +18,9 @@ public class App implements Serializable {
     private Integer id;
 
     /**
-     * key  链接密钥
-     */
-    private String keyKey;
-
-    /**
      * name  应用名称
      */
     private String name;
-
-    /**
-     * type  应用类型（web或App）
-     */
-    private String type;
 
     /**
      * logo  logo图标地址
@@ -96,16 +86,6 @@ public class App implements Serializable {
      * adpid  广告联盟ID
      */
     private String adpid;
-
-    /**
-     * field1  预留字段1
-     */
-    private String field1;
-
-    /**
-     * field2  预留字段2
-     */
-    private String field2;
 
     /**
      * silence  静默更新

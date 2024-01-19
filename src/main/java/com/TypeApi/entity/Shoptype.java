@@ -38,7 +38,7 @@ public class Shoptype implements Serializable {
     private String intro;
 
     /**
-     * orderKey  分类排序
+     * created  创建时间
      */
-    private Integer orderKey;
+    private Integer created;
 }

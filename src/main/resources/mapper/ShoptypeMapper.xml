@@ -9,7 +9,7 @@
         <result column="name" property="name" />
         <result column="pic" property="pic" />
         <result column="intro" property="intro" />
-        <result column="orderKey" property="orderKey" />
+        <result column="created" property="created" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -18,7 +18,7 @@
         `name`,
         `pic`,
         `intro`,
-        `orderKey`
+        `created`
     </sql>
 
     <!-- 插入数据 -->
@@ -40,8 +40,8 @@
             <if test ='null != intro'>
                 `intro`,
             </if>
-            <if test ='null != orderKey'>
-                `orderKey`
+            <if test ='null != created'>
+                `created`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -60,8 +60,8 @@
             <if test ='null != intro'>
                 #{intro},
             </if>
-            <if test ='null != orderKey'>
-                #{orderKey}
+            <if test ='null != created'>
+                #{created}
             </if>
         </trim>
     </insert>
@@ -76,7 +76,7 @@
             #{curr.name},
             #{curr.pic},
             #{curr.intro},
-            #{curr.orderKey}
+            #{curr.created}
             )
         </foreach>
     </insert>
@@ -89,7 +89,7 @@
             <if test ='null != name'>`name` = #{name},</if>
             <if test ='null != pic'>`pic` = #{pic},</if>
             <if test ='null != intro'>`intro` = #{intro},</if>
-            <if test ='null != orderKey'>`orderKey` = #{orderKey}</if>
+            <if test ='null != created'>`created` = #{created}</if>
         </set>
         WHERE `id` = #{id}
     </update>
@@ -135,9 +135,6 @@
             <if test ='null != intro'>
                 and `intro` = #{intro}
             </if>
-            <if test ='null != orderKey'>
-                and `orderKey` = #{orderKey}
-            </if>
         </where>
     </select>
 
@@ -161,15 +158,12 @@
             <if test ='null != shoptype.intro'>
                 and `intro` = #{shoptype.intro}
             </if>
-            <if test ='null != shoptype.orderKey'>
-                and `orderKey` = #{shoptype.orderKey}
-            </if>
             <if test ='null != searchKey'>
                 and CONCAT(IFNULL(`name`, '')) LIKE CONCAT('%', #{searchKey}, '%')
             </if>
         </where>
-        <if test ='"" != order'>
-            order by `${order}` desc
+        <if test="order != null and order != ''">
+            order by ${order}
         </if>
         limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
     </select>
@@ -193,8 +187,8 @@
             <if test ='null != intro'>
                 and `intro` = #{intro}
             </if>
-            <if test ='null != orderKey'>
-                and `orderKey` = #{orderKey}
+            <if test ='null != created'>
+                and `created` = #{created}
             </if>
         </where>
     </select>

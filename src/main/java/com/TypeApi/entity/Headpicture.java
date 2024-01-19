@@ -41,7 +41,7 @@ public class Headpicture implements Serializable {
     /***
      * String permission
      ***/
-    private String permission;
+    private Integer permission;
 
     /***
      * Integer creator

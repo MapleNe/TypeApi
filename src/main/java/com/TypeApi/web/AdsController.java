@@ -27,7 +27,7 @@ import java.util.Map;
  * @date 2022/09/06
  */
 @Controller
-@RequestMapping(value = "/typechoAds")
+@RequestMapping(value = "/ads")
 public class AdsController {
 
     @Autowired

@@ -100,7 +100,7 @@ public class UserStatus {
                 name = user.getScreenName();
             }
             userJson.put("name", name);
-            userJson.put("groupKey", user.getGroupKey());
+            userJson.put("groupKey", user.getGroup());
             userJson.put("uid", user.getUid());
 
 

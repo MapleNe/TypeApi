@@ -3,7 +3,9 @@ package com.TypeApi.web;
 import com.TypeApi.common.PHPass;
 import com.TypeApi.common.RedisHelp;
 import com.TypeApi.common.ResultAll;
+import com.TypeApi.entity.App;
 import com.TypeApi.entity.Users;
+import com.TypeApi.service.AppService;
 import com.TypeApi.service.UsersService;
 import com.alibaba.fastjson.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,9 @@ public class InstallController {
 
     @Autowired
     private UsersService usersService;
+
+    @Autowired
+    private AppService appService;
 
     @Value("${mybatis.configuration.variables.prefix}")
     private String prefix;
@@ -82,7 +87,7 @@ public class InstallController {
      */
     @RequestMapping(value = "/databaseInstall")
     @ResponseBody
-    public String databaseInstall(@RequestParam(value = "webkey", required = false, defaultValue = "") String webkey, @RequestParam(value = "username", required = false) String username, @RequestParam(value = "password", required = false) String password,@RequestParam(value = "email", required = false) String email) {
+    public String databaseInstall(@RequestParam(value = "webkey", required = false, defaultValue = "") String webkey, @RequestParam(value = "username", required = false) String username, @RequestParam(value = "password", required = false) String password, @RequestParam(value = "email", required = false) String email) {
         if (!webkey.equals(this.key)) {
             return Result.getResultJson(0, "请输入正确的访问KEY。如果忘记，可在服务器/opt/application.properties中查看", null);
         }
@@ -136,7 +141,7 @@ public class InstallController {
             user.setName(username);
             user.setPassword(passwd);
             user.setCreated(Integer.parseInt(userTime));
-            user.setGroupKey("administrator");
+            user.setGroup("administrator");
             user.setMail(email);
             usersService.insert(user);
             text += "管理员" + username + "添加完成。";
@@ -146,8 +151,6 @@ public class InstallController {
                     "  `cid` int(10) unsigned NOT NULL AUTO_INCREMENT," +
                     "  `title` varchar(200) DEFAULT NULL," +
                     "  `slug` varchar(200) DEFAULT NULL," +
-                    "  `created` int(10) unsigned DEFAULT '0'," +
-                    "  `modified` int(10) unsigned DEFAULT '0'," +
                     "  `text` longtext," +
                     "  `order` int(10) unsigned DEFAULT '0'," +
                     "  `authorId` int(10) unsigned DEFAULT '0'," +
@@ -159,11 +162,16 @@ public class InstallController {
                     "  `allowComment` char(1) DEFAULT '0'," +
                     "  `price` int(10) DEFAULT '0'," +
                     "  `discount` float(2) DEFAULT '1'," +
-                    "  `allowPing` char(1) DEFAULT '0'," +
+                    "  `allowPing` INT DEFAULT 0," +
+                    "  `likes` INT DEFAULT 0," +
+                    "  `marks` INT DEFAULT 0," +
                     "  `images` longtext," +
+                    "  `videos` longtext," +
                     "  `opt` longtext," +
                     "  `allowFeed` char(1) DEFAULT '0'," +
                     "  `parent` int(10) unsigned DEFAULT '0'," +
+                    "  `created` int(10) unsigned DEFAULT '0'," +
+                    "  `modified` int(10) unsigned DEFAULT '0'," +
                     "  PRIMARY KEY (`cid`)," +
                     "  UNIQUE KEY `slug` (`slug`)," +
                     "  KEY `created` (`created`)" +
@@ -171,39 +179,23 @@ public class InstallController {
             text += "内容表创建完成。";
             //安装评论表
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_comments` (" +
-                    "  `coid` int(10) unsigned NOT NULL AUTO_INCREMENT," +
-                    "  `cid` int(10) unsigned DEFAULT '0'," +
-                    "  `created` int(10) unsigned DEFAULT '0'," +
-                    "  `author` varchar(200) DEFAULT NULL," +
-                    "  `authorId` int(10) unsigned DEFAULT '0'," +
-                    "  `ownerId` int(10) unsigned DEFAULT '0'," +
-                    "  `mail` varchar(200) DEFAULT NULL," +
-                    "  `url` varchar(200) DEFAULT NULL," +
-                    "  `ip` varchar(64) DEFAULT NULL," +
-                    "  `agent` varchar(200) DEFAULT NULL," +
-                    "  `text` text," +
-                    "  `type` varchar(16) DEFAULT 'comment'," +
-                    "  `status` varchar(16) DEFAULT 'approved'," +
-                    "  `allparent` int(10)," +
-                    "  `parent` int(10) unsigned DEFAULT '0'," +
-                    "  PRIMARY KEY (`coid`)," +
+                    "  `id` INT NOT NULL AUTO_INCREMENT," +
+                    "  `cid` INT NOT NULL COMMENT '文章id'," +
+                    "  `uid` INT NOT NULL COMMENT '用户id'," +
+                    "  `text` TEXT COMMENT '内容'," +
+                    "  `images` TEXT COMMENT '图片列表'," +
+                    "  `ip` TEXT COMMENT 'ip'," +
+                    "  `parent` INT DEFAULT 0 COMMENT '父评论id'," +
+                    "  `likes` INT DEFAULT 0 COMMENT '点赞数量'," +
+                    "  `all` INT DEFAULT 0 COMMENT '所有评论的父id'," +
+                    "  `type` INT NOT NULL DEFAULT 0 COMMENT '评论的类型'," +
+                    "  `created` INT COMMENT '创建时间'," +
+                    "  `modified` INT COMMENT '修改时间'," +
+                    "  PRIMARY KEY (`id`)," +
                     "  KEY `cid` (`cid`)," +
                     "  KEY `created` (`created`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8;");
             text += "评论表创建完成。";
-            //自定义字段表
-            jdbcTemplate.execute("CREATE TABLE `" + prefix + "_fields` (" +
-                    "  `cid` int(10) unsigned NOT NULL," +
-                    "  `name` varchar(200) NOT NULL," +
-                    "  `type` varchar(8) DEFAULT 'str'," +
-                    "  `str_value` text," +
-                    "  `int_value` int(10) DEFAULT '0'," +
-                    "  `float_value` float DEFAULT '0'," +
-                    "  PRIMARY KEY (`cid`,`name`)," +
-                    "  KEY `int_value` (`int_value`)," +
-                    "  KEY `float_value` (`float_value`)" +
-                    ") ENGINE=MyISAM DEFAULT CHARSET=utf8;");
-            text += "自定义字段表创建完成。";
             //分类标签表
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_metas` (" +
                     "  `mid` int(10) unsigned NOT NULL AUTO_INCREMENT," +
@@ -215,6 +207,7 @@ public class InstallController {
                     "  `count` int(10) unsigned DEFAULT '0'," +
                     "  `order` int(10) unsigned DEFAULT '0'," +
                     "  `iswaterfall` int DEFAULT '0'," +
+                    "  `isrecommend` int DEFAULT '0'," +
                     "  `parent` int(10) unsigned DEFAULT '0'," +
                     "  PRIMARY KEY (`mid`)," +
                     "  KEY `slug` (`slug`)" +
@@ -270,8 +263,6 @@ public class InstallController {
         }
         //每次安装和升级都删除配置缓存
         redisHelp.delete(dataprefix + "_" + "config", redisTemplate);
-        //修改请求头
-        jdbcTemplate.execute("ALTER TABLE " + prefix + "_comments MODIFY agent varchar(520);");
         //查询文章表是否存在views字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'views';", Integer.class);
         if (i == 0) {
@@ -281,6 +272,17 @@ public class InstallController {
         } else {
             text += "内容模块，字段views已经存在，无需添加。";
         }
+
+        //查询文章表是否存在videos字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'videos';", Integer.class);
+        if (i == 0) {
+            //新增字段
+            jdbcTemplate.execute("alter table " + prefix + "_contents ADD videos longtext;");
+            text += "内容模块，字段videos添加完成。";
+        } else {
+            text += "内容模块，字段videos已经存在，无需添加。";
+        }
+
         //查询文章表是否存在likes字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'likes';", Integer.class);
         if (i == 0) {
@@ -298,10 +300,19 @@ public class InstallController {
         } else {
             text += "内容模块，字段price已经存在，无需添加。";
         }
+
         //查询文章表是否存在 discount 字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'discount';", Integer.class);
         if (i == 0) {
             jdbcTemplate.execute("alter table " + prefix + "_contents ADD discount float(2) DEFAULT 1;");
+            text += "内容模块，字段discount添加完成。";
+        } else {
+            text += "内容模块，字段discount已经存在，无需添加。";
+        }
+        //查询文章表是否存在 marks 字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'marks';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_contents ADD marks INT DEFAULT 0;");
             text += "内容模块，字段discount添加完成。";
         } else {
             text += "内容模块，字段discount已经存在，无需添加。";
@@ -532,16 +543,6 @@ public class InstallController {
         } else {
             text += "评论模块，字段opt已经存在，无需添加。";
         }
-
-        // 查询评论表是否存在allparent字段
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_comments' and column_name = 'allparent';", Integer.class);
-        if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_comments ADD allparent int(10) COMMENT '所有评论的父级';");
-            text += "评论模块，字段allparent添加完成。";
-        } else {
-            text += "评论模块，字段allparent已经存在，无需添加。";
-        }
-
 
         //查询分类标签表是否存在imgurl字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_metas' and column_name = 'imgurl';", Integer.class);
@@ -792,13 +793,39 @@ public class InstallController {
                     "  `name` varchar(255) DEFAULT NULL COMMENT '分类名称'," +
                     "  `pic` varchar(400) DEFAULT NULL COMMENT '分类缩略图'," +
                     "  `intro` varchar(400) DEFAULT NULL COMMENT '分类简介'," +
-                    "  `orderKey` int(11) DEFAULT '0' COMMENT '分类排序'," +
+                    "  `created` INT DEFAULT 0 COMMENT '创建时间'," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COMMENT='商品分类表';");
             text += "商品分类表创建完成。";
         } else {
             text += "商品分类表已存在，无需安装。";
         }
+
+        //查询商品分类模块是否存在created字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_shoptype' and column_name = 'created';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_shoptype ADD `created` INT unsigned DEFAULT 0 COMMENT '创建时间'");
+            text += "商品分类模块，字段created添加完成。";
+        } else {
+            text += "商品分类模块，字段created已经存在，无需添加。";
+        }
+
+
+        //安装评论点赞表
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_commentLike';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("CREATE TABLE `" + prefix + "_commentLike` (" +
+                    "  `id` INT NOT NULL AUTO_INCREMENT," +
+                    "  `cid` INT UNSIGNED NOT NULL COMMENT '评论id'," +
+                    "  `uid` INT NOT NULL COMMENT '用户id'," +
+                    "  `created` INT  COMMENT '创建时间'," +
+                    "  PRIMARY KEY (`id`)" +
+                    ") ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COMMENT='点赞记录表';");
+            text += "评论点赞表创建完成。";
+        } else {
+            text += "评论点赞表已存在，无需安装。";
+        }
+
         //判断充值记录表是否存在
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_paylog';", Integer.class);
         if (i == 0) {
@@ -1400,9 +1427,9 @@ public class InstallController {
         if (i == 0) {
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_fan` (" +
                     "  `id` int(11) NOT NULL AUTO_INCREMENT," +
-                    "  `created` int(10) unsigned DEFAULT '0' COMMENT '关注时间'," +
                     "  `uid` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '关注人'," +
                     "  `touid` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '被关注人'," +
+                    "  `created` int(10) unsigned DEFAULT '0' COMMENT '关注时间'," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='关注表（全局内容）';");
             text += "关注模块创建完成。";
@@ -1434,13 +1461,14 @@ public class InstallController {
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_chat';", Integer.class);
         if (i == 0) {
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_chat` (" +
-                    "  `id` int(11) NOT NULL AUTO_INCREMENT," +
-                    "  `chatid` varchar(255) DEFAULT NULL COMMENT '聊天室id（加密值）'," +
-                    "  `uid` int(11) DEFAULT '0' COMMENT '创建者'," +
-                    "  `toid` int(11) DEFAULT '0' COMMENT '也是创建者（和上一个字段共同判断私聊）'," +
+                    "  `id` INT NOT NULL AUTO_INCREMENT," +
+                    "  `sender_id` INT NOT NULL COMMENT '发送人'," +
+                    "  `receiver_id` INT NOT NULL  COMMENT '接收人'," +
+                    "  `type` INT unsigned DEFAULT '0' COMMENT '0是私聊，1是群聊'," +
+                    "  `name` varchar(255) COMMENT '名称，用户名或者群聊名'," +
+                    "  `avatar` text COMMENT '头像'," +
                     "  `created` int(10) unsigned DEFAULT '0' COMMENT '创建时间'," +
                     "  `lastTime` int(10) unsigned DEFAULT '0' COMMENT '最后聊天时间'," +
-                    "  `type` int(2) unsigned DEFAULT '0' COMMENT '0是私聊，1是群聊'," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='聊天室表';");
             text += "聊天室模块创建完成。";
@@ -1456,32 +1484,24 @@ public class InstallController {
             text += "聊天室模块，字段name已经存在，无需添加。";
         }
         //查询聊天室模块是否存在pic字段
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_chat' and column_name = 'pic';", Integer.class);
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_chat' and column_name = 'avatar';", Integer.class);
         if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_chat ADD `pic` varchar(400) DEFAULT NULL COMMENT '图片地址（群聊）'");
+            jdbcTemplate.execute("alter table " + prefix + "_chat ADD `avatar` text COMMENT '头像'");
             text += "聊天室模块，字段pic添加完成。";
         } else {
             text += "聊天室模块，字段pic已经存在，无需添加。";
         }
-        //查询聊天室模块是否存在ban字段
-        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_chat' and column_name = 'ban';", Integer.class);
-        if (i == 0) {
-            jdbcTemplate.execute("alter table " + prefix + "_chat ADD `ban` int(11) unsigned DEFAULT '0' COMMENT '屏蔽和全体禁言，存操作人id'");
-            text += "聊天室模块，字段pic添加完成。";
-        } else {
-            text += "聊天室模块，字段pic已经存在，无需添加。";
-        }
+
         //聊天记录模块
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_chat_msg';", Integer.class);
         if (i == 0) {
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_chat_msg` (" +
-                    "  `id` int(11) NOT NULL AUTO_INCREMENT," +
-                    "  `uid` int(11) DEFAULT '0' COMMENT '发送人'," +
-                    "  `cid` int(11) DEFAULT '0' COMMENT '聊天室'," +
+                    "  `id` int NOT NULL AUTO_INCREMENT," +
+                    "  `sender_id` int DEFAULT '0' COMMENT '发送人'," +
+                    "  `receiver_id` int DEFAULT '0' COMMENT '接收人'," +
                     "  `text` text CHARACTER SET utf8mb4 COMMENT '消息内容'," +
-                    "  `created` int(10) unsigned DEFAULT '0' COMMENT '发送时间'," +
-                    "  `type` int(2) unsigned DEFAULT '0' COMMENT '0文字消息，1图片消息，3视频消息，4系统提示'," +
-                    "  `url` varchar(400) DEFAULT NULL COMMENT '为链接时的url'," +
+                    "  `type` int COMMENT '类型0私聊1群聊'," +
+                    "  `created` int unsigned DEFAULT '0' COMMENT '发送时间'," +
                     "  PRIMARY KEY (`id`)" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='聊天消息';");
             text += "聊天记录模块创建完成。";
@@ -1530,11 +1550,11 @@ public class InstallController {
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_headpicture` (" +
                     "  `id` int(11) NOT NULL AUTO_INCREMENT," +
                     "  `name` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT '名称'," +
-                    "  `link` varchar(255) DEFAULT NULL COMMENT '链接'," +
-                    "  `type` int(10) DEFAULT 0 COMMENT '类型'," +
-                    "  `status` int(10) DEFAULT 1 COMMENT '状态'," +
-                    "  `permission` int(10) DEFAULT 0 COMMENT '权限'," +
-                    "  `creator` int(10) DEFAULT 0 COMMENT '创建人ID'," +
+                    "  `link` text  COMMENT '链接'," +
+                    "  `type` INT DEFAULT 0 COMMENT '类型'," +
+                    "  `status` INT DEFAULT 1 COMMENT '状态'," +
+                    "  `permission` INT DEFAULT 0 COMMENT '权限'," +
+                    "  `creator` INT DEFAULT 0 COMMENT '创建人ID'," +
                     "  PRIMARY KEY (`id`)\n" +
                     ") ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COMMENT='头像框表';");
             text += "头像框模块创建完成。";
@@ -1556,9 +1576,7 @@ public class InstallController {
         if (i == 0) {
             jdbcTemplate.execute("CREATE TABLE `" + prefix + "_app` (" +
                     "  `id` int(11) NOT NULL AUTO_INCREMENT," +
-                    "  `key` varchar(255) DEFAULT NULL COMMENT '链接密钥'," +
                     "  `name` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT '应用名称'," +
-                    "  `type` varchar(255) CHARACTER SET utf8 DEFAULT 'app' COMMENT '应用类型（web或App）'," +
                     "  `logo` varchar(500) CHARACTER SET utf8 DEFAULT NULL COMMENT 'logo图标地址'," +
                     "  `keywords` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT 'web专属，SEO关键词'," +
                     "  `description` varchar(255) DEFAULT NULL COMMENT '应用简介'," +
@@ -1571,8 +1589,6 @@ public class InstallController {
                     "  `versionIntro` varchar(400) DEFAULT NULL COMMENT '版本简介'," +
                     "  `androidUrl` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '安卓下载地址'," +
                     "  `iosUrl` varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT 'ios下载地址'," +
-                    "  `field1` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '预留字段1'," +
-                    "  `field2` varchar(400) CHARACTER SET utf8 DEFAULT NULL COMMENT '预留字段2'," +
                     "  `silence` int  DEFAULT 0 COMMENT '静默更新'," +
                     "  `forceUpdate` int  DEFAULT 0 COMMENT '强制更新'," +
                     "  `issue` int  DEFAULT 1 COMMENT '发布/发行'," +
@@ -1629,9 +1645,16 @@ public class InstallController {
             text += "应用表，字段adpid已经存在，无需添加。";
         }
         text += " ------ 执行结束，安装执行完成";
-
+        // 再执行一次初始化app
+        App app  =new App();
+        Integer total = appService.total(app);
+        if (total < 1) {
+            app.setName("应用名称");
+            app.setCurrencyName("积分");
+            appService.insert(app);
+        }
         redisHelp.setRedis(this.dataprefix + "_" + "isInstall", "1", 60, redisTemplate);
-        return Result.getResultJson(1,text,null);
+        return Result.getResultJson(1, text, null);
     }
 
     /***
@@ -1651,6 +1674,7 @@ public class InstallController {
                 return Result.getResultJson(0, "你的操作太频繁了", null);
             }
             jdbcTemplate.execute("alter table `" + prefix + "_contents`  MODIFY COLUMN `text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+            jdbcTemplate.execute("alter table `" + prefix + "_contents`  MODIFY COLUMN `title` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
             jdbcTemplate.execute("alter table `" + prefix + "_shop`  MODIFY COLUMN `text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
             jdbcTemplate.execute("alter table `" + prefix + "_shop`  MODIFY COLUMN `value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
             jdbcTemplate.execute("alter table `" + prefix + "_inbox`  MODIFY COLUMN `text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");

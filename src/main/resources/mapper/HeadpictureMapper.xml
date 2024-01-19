@@ -106,7 +106,7 @@
     <!-- 删除 -->
     <delete id="delete">
         DELETE FROM ${prefix}_headpicture
-        WHERE `mid` = #{key}
+        WHERE `id` = #{key}
     </delete>
 
     <!-- 批量删除 -->

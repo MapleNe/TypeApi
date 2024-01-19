@@ -6,6 +6,8 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.TypeApi.entity.*;
 import com.TypeApi.service.*;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import net.dreamlu.mica.xss.core.XssCleanIgnore;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +20,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 /**
@@ -46,6 +52,9 @@ public class CommentsController {
 
     @Autowired
     private CategoryService metasService;
+
+    @Autowired
+    private CommentlikeService commentlikeService;
 
     @Autowired
     private RelationshipsService relationshipsService;
@@ -83,1049 +92,432 @@ public class CommentsController {
     baseFull baseFull = new baseFull();
     EditFile editFile = new EditFile();
 
+
     /***
-     * 查询评论
-     * @param searchParams Bean对象JSON字符串
-     * @param page         页码
-     * @param limit        每页显示数量
+     * 评论列表
+     *
      */
-    @RequestMapping(value = "/commentsList")
+    @RequestMapping(value = "/list")
     @ResponseBody
-    public String commentsList(@RequestParam(value = "searchParams", required = false) String searchParams,
-                               @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-                               @RequestParam(value = "searchKey", required = false, defaultValue = "") String searchKey,
-                               @RequestParam(value = "order", required = false, defaultValue = "created") String order,
-                               @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
-                               @RequestParam(value = "token", required = false, defaultValue = "") String token) {
-        Comments query = new Comments();
-        Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-        if (limit > 50) {
-            limit = 50;
-        }
-        String sqlParams = "null";
-        Integer uid = 0;
-        Integer total = 0;
-        if (StringUtils.isNotBlank(searchParams)) {
-            JSONObject object = JSON.parseObject(searchParams);
-            //如果不是管理员，则只查询开放状态评论
-            if (uStatus != 0 && token != "") {
-                Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-                String group = map.get("group").toString();
-                if (!group.equals("administrator")) {
-                    object.put("status", "approved");
-                    //如果是登陆状态，那么查询回复我的评论
-                    String aid = redisHelp.getValue(this.dataprefix + "_" + "userInfo" + token, "uid", redisTemplate).toString();
-                    uid = Integer.parseInt(aid);
-                    object.put("ownerId", uid);
-                }
-            }
-            query = object.toJavaObject(Comments.class);
-            Map paramsJson = JSONObject.parseObject(JSONObject.toJSONString(query), Map.class);
-            sqlParams = paramsJson.toString();
-
-        }
-        total = service.total(query, searchKey);
-        List jsonList = new ArrayList();
-        List cacheList = redisHelp.getList(this.dataprefix + "_" + "searchParams_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams + "_" + uid + "_" + order, redisTemplate);
-        if (uStatus != 0) {
-            cacheList = redisHelp.getList(this.dataprefix + "_" + "searchParams_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams + "_" + order, redisTemplate);
-        }
-
+    public String list(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                       @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
+                       @RequestParam(value = "id", required = false) Integer id,
+                       @RequestParam(value = "parent", required = false) Integer parent,
+                       @RequestParam(value = "all", required = false) Integer all,
+                       @RequestParam(value = "params", required = false) String params,
+                       @RequestParam(value = "searchKey", required = false) String searchKey,
+                       @RequestParam(value = "order", required = false, defaultValue = "created desc") String order,
+                       HttpServletRequest request) {
         try {
-            if (cacheList.size() > 0) {
-                jsonList = cacheList;
-            } else {
-                Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-                PageList<Comments> pageList = service.selectPage(query, page, limit, searchKey, order);
-                List<Comments> list = pageList.getList();
-                if (list.size() < 1) {
-                    JSONObject noData = new JSONObject();
-                    noData.put("code", 1);
-                    noData.put("msg", "");
-                    noData.put("data", new ArrayList());
-                    noData.put("count", 0);
-                    return noData.toString();
-                }
-                for (int i = 0; i < list.size(); i++) {
-                    Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+            }
+            Comments comments = new Comments();
+            if (params != null && !params.isEmpty()) {
+                comments = JSONObject.parseObject(params, Comments.class);
+            }
+            comments.setCid(id);
+            comments.setParent(parent);
+            comments.setAll(all);
+            PageList<Comments> commentsPageList = service.selectPage(comments, page, limit, searchKey, order);
+            List<Comments> commentsList = commentsPageList.getList();
 
-                    Comments comments = list.get(i);
-                    Integer cid = comments.getCid();
 
-                    // 格式化图片列表为数组
-                    JSONArray images = JSONObject.parseArray(comments.getImages());
-                    if (images instanceof Object) {
-                        images = JSONObject.parseArray(comments.getImages());
-                    } else {
-                        images = null;
+            JSONArray dataList = new JSONArray();
+            for (Comments _comments : commentsList) {
+                if (_comments != null && !_comments.toString().isEmpty()) {
+                    // 获取文章信息
+                    Article article = contentsService.selectByKey(id != null ? id : _comments.getCid());
+                    Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(_comments));
+
+                    // 查询用户信息
+                    Users commentUser = usersService.selectByKey(_comments.getUid());
+                    Map<String, Object> dataUser = JSONObject.parseObject(JSONObject.toJSONString(commentUser));
+                    JSONObject opt = new JSONObject();
+                    if (commentUser != null && !commentUser.toString().isEmpty()) {
+                        //移除信息
+                        dataUser.remove("password");
+                        dataUser.remove("address");
+                        // 格式化信息
+                        opt = commentUser.getOpt() != null && !commentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(commentUser.getOpt()) : null;
+
+                        // 加入信息
+                        dataUser.put("opt", opt);
+                        // 获取等级
+                        dataUser.put("level", baseFull.getLevel(commentUser.getExperience()).get(0));
                     }
 
-                    //如果存在上级评论
-                    Map<String, Object> parentComments = new HashMap<String, Object>();
-                    if (Integer.parseInt(json.get("parent").toString()) > 0) {
-                        String coid = json.get("parent").toString();
-                        Comments parent = service.selectByKey(coid);
-                        if (parent != null) {
-                            if (parent.getStatus().equals("approved")) {
-                                // 获取用户等级
-                                Users userInfo = usersService.selectByKey(parent.getAuthorId());
+                    // 是否点赞
+                    CommentLike commentLike = new CommentLike();
+                    Integer isLike = 0;
+                    if (id != null && !id.equals(0) && user != null) {
+                        commentLike.setCid(_comments.getId());
+                        commentLike.setUid(user.getUid());
+                        List<CommentLike> commentLikeList = commentlikeService.selectList(commentLike);
+                        if (commentLikeList.size() > 0) isLike = 1;
+                    }
 
-                                List<Integer> levelAndExp = baseFull.getLevel(userInfo.getExperience());
 
-                                Integer level = levelAndExp.get(0);
-                                Integer nextExp = levelAndExp.get(1);
+                    // 格式化images 数组
+                    List images = new JSONArray();
+                    images = _comments.getImages() != null && !_comments.toString().isEmpty() ? JSONArray.parseArray(_comments.getImages()) : null;
+                    data.put("images", images);
+                    // 加入文章信息
+                    Map<String, Object> articleData = new HashMap<>();
+                    if (article == null || article.toString().isEmpty()) {
+                        articleData.put("title", "文章已删除");
+                        articleData.put("id", 0);
+                        articleData.put("authorId", 0);
+                    } else {
+                        articleData = JSONObject.parseObject(JSONObject.toJSONString(article), Map.class);
+                        // 获取文章中的images 如果article的images存在 则优先使用images
+                        images = article.getImages() != null ? JSONArray.parseArray(article.getImages()) : baseFull.getImageSrc(article.getText());
+                        articleData.put("images", images);
+                    }
 
-                                parentComments.put("author", parent.getAuthor());
-                                parentComments.put("authorId", parent.getAuthorId().toString());
-                                parentComments.put("level", level);
-                                parentComments.put("nextExp", nextExp);
-                                parentComments.put("experience", userInfo.getExperience());
-                                parentComments.put("text", parent.getText());
-                                parentComments.put("created", JSONObject.toJSONString(parent.getCreated()));
 
-                            } else {
-                                parentComments.put("text", "该评论已被删除");
-                            }
+                    // 加入信息
+                    data.put("article", articleData);
+                    data.put("isLike", isLike);
+                    data.put("userInfo", dataUser);
+                    // 查询一次父评论的信息
+                    if (_comments.getParent() != null && !_comments.getParent().equals(0) && !_comments.getParent().toString().isEmpty()) {
+                        Comments parentComment = service.selectByKey(_comments.getParent());
+                        Users parentUser = new Users();
+                        if (parentComment != null && !parentComment.toString().isEmpty()) {
+                            parentUser = usersService.selectByKey(parentComment.getUid());
+                        }
+
+                        Map<String, Object> dataParentUser = JSONObject.parseObject(JSONObject.toJSONString(parentUser));
+
+                        // 格式化数据
+                        opt = parentUser.getOpt() != null && !parentUser.getOpt().toString().isEmpty() ? JSONObject.parseObject(parentUser.getOpt()) : null;
+
+                        // 移除信息
+                        dataParentUser.remove("address");
+                        dataParentUser.remove("password");
+                        // 加入信息
+                        dataParentUser.put("opt", opt);
+                        Map<String, Object> dataParentComment = new HashMap<>();
+                        if (parentComment != null && !parentComment.toString().isEmpty()) {
+                            dataParentComment = JSONObject.parseObject(JSONObject.toJSONString(parentComment));
+                        }
+                        dataParentComment.put("userInfo", dataParentUser);
+                        data.put("parentComment", dataParentComment);
+                    }
+                    // 查询用户信息完成
+                    // 查询子评论
+                    Comments subComments = new Comments();
+                    subComments.setAll(_comments.getId());
+                    PageList<Comments> subCommentsPageList = service.selectPage(subComments, 1, 2, null, "created desc");
+                    List<Comments> subCommentsList = subCommentsPageList.getList();
+                    JSONArray subDataList = new JSONArray();
+                    // 查询全部数量
+                    Integer total = service.total(subComments, null);
+                    for (Comments _subComments : subCommentsList) {
+                        Map<String, Object> subData = JSONObject.parseObject(JSONObject.toJSONString(_subComments));
+                        // 查询子评论用户信息
+                        Users subCommentUser = usersService.selectByKey(_subComments.getUid());
+                        Map<String, Object> subDataUser = JSONObject.parseObject(JSONObject.toJSONString(subCommentUser));
+                        // 移除敏感信息
+                        subDataUser.remove("password");
+                        subDataUser.remove("address");
+                        // 格式化用户信息
+                        opt = subCommentUser.getOpt() != null && !subCommentUser.getOpt().isEmpty() ? JSON.parseObject(subCommentUser.getOpt()) : null;
+                        images = _subComments.getImages() != null && !_subComments.toString().isEmpty() ? JSONArray.parseArray(_subComments.getImages()) : null;
+
+                        //加入文章信息
+                        Map<String, Object> subArticleData = new HashMap<>();
+                        if (article == null || article.toString().isEmpty()) {
+                            subArticleData.put("title", "文章已删除");
+                            subArticleData.put("id", 0);
+                            subArticleData.put("authorId", 0);
                         } else {
-                            parentComments.put("text", "该评论已被删除");
+                            subArticleData = JSONObject.parseObject(JSONObject.toJSONString(article));
+                            // 获取文章中的images 如果article的images存在 则优先使用images
+                            images = article.getImages() != null ? JSONArray.parseArray(article.getImages()) : baseFull.getImageSrc(article.getText());
+                            subArticleData.put("images", images);
                         }
 
+
+                        // 添加用户信息
+                        subData.put("userInfo", subDataUser);
+                        subData.put("article", subArticleData); // 将文章信息添加到子评论数据中
+                        subDataList.add(subData);
                     }
-
-                    List<Map<String, Object>> sonCommentsList = new ArrayList<>();
-                    Comments selectParams = new Comments();
-                    selectParams.setAllparent(comments.getCoid());
-                    selectParams.setStatus("approved");
-                    PageList<Comments> pList = service.selectPage(selectParams, page, limit, searchKey, "created desc");
-                    List<Comments> commentsList = pList.getList();
-                    Integer count = service.total(selectParams, searchKey);
-
-                    if (commentsList.size() > 0) {
-                        for (int s = 0; s < commentsList.size(); s++) {
-                            Comments comment = commentsList.get(s);
-                            Map<String, Object> sonComment = new HashMap<>();
-                            Users userInfo = new Users();
-                            userInfo = usersService.selectByKey(comment.getAuthorId());
-                            // 获取用户等级
-                            List<Integer> levelAndExp = baseFull.getLevel(userInfo.getExperience());
-
-                            Integer level = levelAndExp.get(0);
-                            Integer nextExp = levelAndExp.get(1);
-
-                            sonComment.put("author", comment.getAuthor());
-                            sonComment.put("authorId", String.valueOf(comment.getAuthorId()));
-                            sonComment.put("avatar", userInfo.getAvatar());
-                            sonComment.put("level", level);
-                            sonComment.put("nextExp", nextExp);
-                            sonComment.put("text", comment.getText());
-                            sonComment.put("created", String.valueOf(comment.getCreated()));
-                            sonCommentsList.add(sonComment);
-                        }
-                    }
-
-                    // 构建最终的结果格式
-                    Map<String, Object> son = new HashMap<>();
-
-                    son.put("count", count);
-                    son.put("data", sonCommentsList);
-
-                    //获取用户等级和自定义头衔
-                    Integer userid = comments.getAuthorId();
-                    String avatar = apiconfig.getWebinfoAvatar() + "null";
-                    if (userid.equals(0)) {
-                        String mail = json.get("mail").toString();
-
-                        if (mail.indexOf("@qq.com") != -1) {
-                            String qq = mail.replace("@qq.com", "");
-                            avatar = "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640";
-                        } else {
-                            avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), mail);
-                        }
-                        json.put("lv", 0);
-                        json.put("customize", "");
-                        json.put("avatar", avatar);
-                        json.put("author", comments.getAuthor());
-                    } else {
-                        Comments usercomments = new Comments();
-                        usercomments.setAuthorId(userid);
-                        Integer lv = service.total(usercomments, null);
-                        Users userinfo = usersService.selectByKey(userid);
-                        if (userinfo != null) {
-                            String name = userinfo.getName();
-                            if (userinfo.getScreenName() != null && userinfo.getScreenName() != "") {
-                                name = userinfo.getScreenName();
-                            }
-
-                            if (userinfo.getAvatar() != null && userinfo.getAvatar() != "") {
-                                avatar = userinfo.getAvatar();
-                            } else {
-                                if (userinfo.getMail() != null && userinfo.getMail() != "") {
-                                    String mail = userinfo.getMail();
-
-                                    if (mail.indexOf("@qq.com") != -1) {
-                                        String qq = mail.replace("@qq.com", "");
-                                        avatar = "https://q1.qlogo.cn/g?b=qq&nk=" + qq + "&s=640";
-                                    } else {
-                                        avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), userinfo.getMail());
-                                    }
-                                    //avatar = baseFull.getAvatar(apiconfig.getWebinfoAvatar(), author.getMail());
-                                }
-                            }
-                            // 格式化对象
-                            JSONObject opt = null;
-                            if (userinfo.getOpt() != null && userinfo.getOpt() != "") {
-                                opt = JSONObject.parseObject(userinfo.getOpt());
-                                Integer headId = Integer.parseInt(opt.get("head_picture").toString());
-                                // 查询opt中head_picture的数据 并替换
-                                Headpicture head_picture = headpictureService.selectByKey(headId);
-                                if (head_picture != null) {
-                                    opt.put("head_picture", head_picture.getLink().toString());
-                                }
-
-                            }
-                            // 获取用户等级
-                            List <Integer> levelAndExp = baseFull.getLevel(userinfo.getExperience());
-                            Integer level = levelAndExp.get(0);
-                            Integer nextExp = levelAndExp.get(1);
-
-                            json.put("avatar", avatar);
-                            json.put("author", name);
-                            json.put("opt", opt);
-                            json.put("images", images);
-                            json.put("mail", userinfo.getMail());
-                            json.put("lv", baseFull.getLv(lv));
-                            json.put("customize", userinfo.getCustomize());
-                            json.put("level", level);
-                            json.put("nextExp",nextExp);
-                            json.put("experience", userinfo.getExperience());
-                            //判断是否为VIP
-                            json.put("isvip", 0);
-                            json.put("vip", userinfo.getVip());
-
-                            Long date = System.currentTimeMillis();
-                            String curTime = String.valueOf(date).substring(0, 10);
-                            Integer viptime = userinfo.getVip();
-                            if (viptime > Integer.parseInt(curTime)) {
-                                json.put("isvip", 1);
-                            }
-                            if (viptime.equals(1)) {
-                                //永久VIP
-                                json.put("isvip", 2);
-                            }
-                        }
-                    }
-                    json.put("parentComments", parentComments);
-                    json.put("sonComments", son);
-                    Article contentsInfo = contentsService.selectByKey(cid);
-                    if (contentsInfo != null) {
-                        json.put("contenTitle", contentsInfo.getTitle());
-                        //加入文章数据
-                        Map contentsJson = new HashMap();
-                        contentsJson.put("cid", contentsInfo.getCid());
-                        contentsJson.put("slug", contentsInfo.getSlug());
-                        contentsJson.put("title", contentsInfo.getTitle());
-                        contentsJson.put("type", contentsInfo.getType());
-                        contentsJson.put("authorId", contentsInfo.getAuthorId());
-                        List<Relationships> relationships = relationshipsService.selectByKey(cid);
-                        if (relationships.size() > 0) {
-                            Relationships rinfo = relationships.get(0);
-                            Integer mid = rinfo.getMid();
-                            Category cmetas = metasService.selectByKey(mid);
-                            if (cmetas != null) {
-                                List category = new ArrayList();
-                                Map metasInfo = JSONObject.parseObject(JSONObject.toJSONString(cmetas), Map.class);
-                                category.add(metasInfo);
-                                contentsJson.put("category", category);
-                            }
-                        }
-
-
-                        json.put("contentsInfo", contentsJson);
-                    } else {
-                        json.put("contenTitle", "文章已删除");
-                    }
-
-                    jsonList.add(json);
-
-
-                }
-                if (uStatus != 0) {
-                    redisHelp.delete(this.dataprefix + "_" + "contensList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams + "_" + uid + "_" + order, redisTemplate);
-                    redisHelp.setList(this.dataprefix + "_" + "contensList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams + "_" + uid + "_" + order, jsonList, this.CommentCache, redisTemplate);
-                } else {
-                    redisHelp.delete(this.dataprefix + "_" + "contensList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams + "_" + order, redisTemplate);
-                    redisHelp.setList(this.dataprefix + "_" + "contensList_" + page + "_" + limit + "_" + searchKey + "_" + sqlParams + "_" + order, jsonList, this.CommentCache, redisTemplate);
+                    // 将子评论列表添加到父评论数据中
+                    Map<String, Object> subDataObject = new HashMap<>();
+                    subDataObject.put("data", subDataList);
+                    subDataObject.put("count", total);
+                    data.put("subComments", subDataObject);
+                    dataList.add(data);
                 }
             }
+            Map<String, Object> data = new HashMap<>();
+            data.put("page", page);
+            data.put("limit", limit);
+            data.put("data", dataList);
+            data.put("count", dataList.size());
+            data.put("total", service.total(comments, searchKey));
+            return Result.getResultJson(200, "获取成功", data);
+
         } catch (Exception e) {
             e.printStackTrace();
-            if (cacheList.size() > 0) {
-                jsonList = cacheList;
-            }
+            return Result.getResultJson(400, "接口异常", null);
         }
-
-
-        JSONObject response = new JSONObject();
-        response.put("code", 1);
-        response.put("msg", "");
-        response.put("data", null != jsonList ? jsonList : new JSONArray());
-        response.put("count", jsonList.size());
-        response.put("total", total);
-        return response.toString();
     }
 
 
     /***
      * 添加评论
-     * @param params Bean对象JSON字符串
      */
-    @RequestMapping(value = "/commentsAdd")
+    @RequestMapping(value = "/add")
+    @XssCleanIgnore
     @ResponseBody
-    public String commentsAdd(@RequestParam(value = "params", required = false) String params,
-                              @RequestParam(value = "token", required = false) String token,
-                              @RequestParam(value = "text", required = false) String text,
-                              HttpServletRequest request) {
+    public String add(@RequestParam(value = "id") Integer id,
+                      @RequestParam(value = "parent", required = false, defaultValue = "0") Integer parent,
+                      @RequestParam(value = "all", required = false, defaultValue = "0") Integer all,
+                      @RequestParam(value = "text") String text,
+                      @RequestParam(value = "images", required = false) String images,
+                      HttpServletRequest request) {
         try {
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-            Map jsonToMap = null;
-
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-            }
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer logUid = Integer.parseInt(map.get("uid").toString());
-            //登录情况下，刷数据攻击拦截
-            Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-            if (apiconfig.getBanRobots().equals(1)) {
-                String isSilence = redisHelp.getRedis(this.dataprefix + "_" + logUid + "_silence", redisTemplate);
-                if (isSilence != null) {
-                    return Result.getResultJson(0, "你的操作太频繁了，请稍后再试", null);
-                }
-                String isRepeated = redisHelp.getRedis(this.dataprefix + "_" + logUid + "_isRepeated", redisTemplate);
-                if (isRepeated == null) {
-                    redisHelp.setRedis(this.dataprefix + "_" + logUid + "_isRepeated", "1", 2, redisTemplate);
-                } else {
-                    Integer frequency = Integer.parseInt(isRepeated) + 1;
-                    if (frequency == 3) {
-                        securityService.safetyMessage("用户ID：" + logUid + "，在评论发布接口疑似存在攻击行为，请及时确认处理。", "system");
-                        redisHelp.setRedis(this.dataprefix + "_" + logUid + "_silence", "1", apiconfig.getSilenceTime(), redisTemplate);
-                        return Result.getResultJson(0, "你的请求存在恶意行为，15分钟内禁止操作！", null);
-                    } else {
-                        redisHelp.setRedis(this.dataprefix + "_" + logUid + "_isRepeated", frequency.toString(), 3, redisTemplate);
-                    }
-                    return Result.getResultJson(0, "你的操作太频繁了", null);
-                }
+            Apiconfig apiconfig = UStatus.getConfig(dataprefix, apiconfigService, redisTemplate);
+            String token = request.getHeader("Authorization");
+            Long timeStamp = System.currentTimeMillis() / 1000;
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             }
 
-            //攻击拦截结束
-            Integer cuid = Integer.parseInt(map.get("uid").toString());
-            Long date = System.currentTimeMillis();
-            String created = String.valueOf(date).substring(0, 10);
-            String cstatus = "approved";
+            // 定义一个变量来获取替换掉的内容
+            String nonText = null;
+            Boolean permission = permission(token);
 
-            String title = apiconfig.getWebinfoTitle();
-
-            Comments insert = null;
-            String agent = request.getHeader("User-Agent");
-            //部分机型在uniapp打包下长度大于200
-            if (agent.length() > 200) {
-                String[] arr = agent.split("uni-app");
-                agent = arr[0];
+            if (text != null) {
+                nonText = text.replaceAll("style=\"[^\"]*\"", ""); // 使用正则表达式匹配并替换带有 style 属性的部分
             }
-            String ip = baseFull.getIpAddr(request);
-            if (StringUtils.isNotBlank(params)) {
-                jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
-                Integer isEmail = apiconfig.getIsEmail();
-                Integer isPush = apiconfig.getIsPush();
 
-                //获取发布者信息
+            Article article = contentsService.selectByKey(id);
+            Integer commentsNum = article.getCommentsNum() + 1;
+            article.setCommentsNum(commentsNum);
+            contentsService.update(article);
+            Users articleUser = usersService.selectByKey(article.getAuthorId());
 
-                //获取评论发布者信息和填写其它不可定义的值
+            Inbox inbox = new Inbox();
+            inbox.setText(article.getTitle());
+            inbox.setTouid(article.getAuthorId());
 
-                //支持两种模式提交评论内容
-                if (text == null) {
-                    text = jsonToMap.get("text").toString();
-                }
-                jsonToMap.put("authorId", map.get("uid").toString());
-
-                Users user = usersService.selectByKey(map.get("uid").toString());
-                String postName = "";
-                if (user.getScreenName() == null) {
-                    jsonToMap.put("author", user.getName());
-                    postName = user.getName();
-                } else {
-                    jsonToMap.put("author", user.getScreenName());
-                    postName = user.getScreenName();
-                }
-
-                if (text.length() < 4) {
-                    return Result.getResultJson(0, "评论长度过短", null);
-                } else {
-                    if (text.length() > 1500) {
-                        return Result.getResultJson(0, "超出最大评论长度", null);
+            if (article == null || article.toString().isEmpty()) return Result.getResultJson(201, "文章不存在", null);
+            Comments comments = new Comments();
+            if (all != null && !all.toString().equals("")) comments.setAll(all);
+            if (parent != null && !parent.toString().equals("") && !parent.equals(0)) {
+                comments.setParent(parent);
+                Comments parentComments = service.selectByKey(parent);
+                if (parentComments != null && !parentComments.toString().isEmpty()) {
+                    //查询父评论的用户
+                    Users parentUser = usersService.selectByKey(parentComments.getUid());
+                    inbox.setTouid(parentUser.getUid());
+                    inbox.setText(nonText);
+                    inbox.setValue(parentComments.getId());
+                    // push发送
+                    if (apiconfig.getIsPush().equals(1)) {
+                        pushService.sendPushMsg(parentUser.getClientId(), "有新的评论", text, "payload", "system");
                     }
                 }
-                if (map.get("url") != null) {
-                    jsonToMap.put("url", user.getUrl());
-                }
-                if (isEmail > 0) {
-                    if (user.getMail() != null && user.getMail() != "") {
-                        jsonToMap.put("mail", user.getMail());
-                    } else {
-                        return Result.getResultJson(0, "请先绑定邮箱！", null);
-                    }
-                }
-                //是否开启代码拦截
-                if (apiconfig.getDisableCode().equals(1)) {
+            }
+            if (images != null && !images.toString().isEmpty()) comments.setAll(parent);
 
-                    if (baseFull.haveCode(text).equals(1)) {
-                        return Result.getResultJson(0, "你的内容包含敏感代码，请修改后重试！", null);
-                    }
-                }
-                //根据cid获取文章作者信息
-                String cid = jsonToMap.get("cid").toString();
-                Article contents = contentsService.selectByKey(cid);
-                if (contents == null) {
-                    //文章不存在，代表评论已经失效，直接删除
-                    return Result.getResultJson(0, "文章已被删除！", null);
-                }
-                jsonToMap.put("text", text);
-                jsonToMap.put("ownerId", contents.getAuthorId());
-                jsonToMap.put("created", created);
-                jsonToMap.put("type", "comment");
-                jsonToMap.put("agent", agent);
-                jsonToMap.put("ip", ip);
-                //下面这个属性控制评论状态，判断是否已经有评论过审，有则直接通过审核，没有则默认审核状态
-                Integer auditlevel = apiconfig.getAuditlevel();
-                //为2违禁词匹配审核
-                String forbidden = apiconfig.getForbidden();
-                if (auditlevel.equals(0)) {
-                    //为0不审核
-                    cstatus = "approved";
-                } else if (auditlevel.equals(1)) {
-                    //为1第一次评论审核
-                    Comments ucomment = new Comments();
-                    ucomment.setAuthorId(Integer.parseInt(map.get("uid").toString()));
-                    ucomment.setStatus("approved");
-                    List<Comments> ucommentList = service.selectList(ucomment);
-                    if (ucommentList.size() > 0) {
-                        cstatus = "approved";
-                    } else {
-                        cstatus = "waiting";
-                    }
-                } else if (auditlevel.equals(2)) {
+            if (text == null || text.isEmpty()) return Result.getResultJson(201, "请输入评论", null);
+            comments.setText(user.getVip() < timeStamp && !permission ? nonText : text);
+            comments.setIp(baseFull.getIpAddr(request));
+            comments.setCreated(Math.toIntExact(timeStamp));
+            comments.setCid(article.getCid());
+            comments.setUid(user.getUid());
 
-                    Integer isForbidden = baseFull.getForbidden(forbidden, text);
-                    if (isForbidden.equals(0)) {
-                        cstatus = "approved";
-                    } else {
-                        cstatus = "waiting";
-                    }
-
-                } else if (auditlevel.equals(3)) {
-                    //为2违禁词匹配拦截
-
-                    Integer isForbidden = baseFull.getForbidden(forbidden, text);
-                    if (isForbidden.equals(0)) {
-                        return Result.getResultJson(0, "存在违规内容，评论发布失败", null);
-                    } else {
-                        cstatus = "approved";
-                    }
-                } else {
-                    cstatus = "waiting";
-                }
-
-                if (cstatus.equals("approved")) {
-                    //如果评论是发布状态，就给文章作者发送消息
-                    //给回复者发送信息
-                    Integer parent = 0;
-                    if (jsonToMap.get("parent") != null) {
-                        parent = Integer.parseInt(jsonToMap.get("parent").toString());
-                    }
-                    if (parent > 0) {
-                        Comments pComments = service.selectByKey(parent);
-                        if (apiconfig.getIsEmail().equals(2)) {
-                            if (pComments.getMail() != null) {
-                                String pemail = pComments.getMail();
-                                try {
-                                    MailService.send("您的评论有了新的回复！", "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title></title>" +
-                                                    "<meta charset=\"utf-8\" /><style>*{padding:0px;margin:0px;box-sizing:border-box;}html{box-sizing:border-box;}body{font-size:15px;background:#fff}.main{margin:20px auto;max-width:500px;border:solid 1px #2299dd;overflow:hidden;}.main h1{display:block;width:100%;background:#2299dd;font-size:18px;color:#fff;text-align:center;padding:15px;}.text{padding:30px;}.text p{margin:10px 0px;line-height:25px;}.text p span{color:#2299dd;font-weight:bold;font-size:22px;margin-left:5px;}</style></head>" +
-                                                    "<body><div class=\"main\"><h1>文章评论</h1>" +
-                                                    "<div class=\"text\"><p>您的评论有了新的回复：</p><p>”" + postName + "：" + jsonToMap.get("text") + "“</p>" +
-                                                    "<p>可前往<a href=\"" + apiconfig.getWebinfoUrl() + "\">" + title + "</a>查看详情</p>" +
-                                                    "</div></div></body></html>",
-                                            new String[]{pemail}, new String[]{});
-                                } catch (Exception e) {
-                                    System.err.println("邮箱发信配置错误");
-                                    e.printStackTrace();
-                                }
-
-                            }
-                        }
-                        //发送消息通知
-                        Inbox inbox = new Inbox();
-                        inbox.setUid(logUid);
-                        inbox.setTouid(pComments.getAuthorId());
-                        inbox.setType("comment");
-                        inbox.setText(text);
-                        inbox.setValue(Integer.parseInt(cid));
-                        inbox.setCreated(Integer.parseInt(created));
-                        inboxService.insert(inbox);
-                        if (isPush.equals(1)) {
-                            Users parentUser = usersService.selectByKey(pComments.getAuthorId());
-                            if (parentUser.getClientId() != null) {
-                                try {
-                                    pushService.sendPushMsg(parentUser.getClientId(), title, "你有新的回复消息！", "payload", "comment:" + Integer.parseInt(cid));
-                                } catch (Exception e) {
-                                    System.err.println("通知发送失败");
-                                    e.printStackTrace();
-                                }
-
-                            }
-                        }
-
-                    } else {
-                        if (!contents.getAuthorId().equals(0)) {
-                            Users author = usersService.selectByKey(contents.getAuthorId());
-                            Integer uid = author.getUid();
-                            if (!cuid.equals(contents.getAuthorId())) {
-                                if (apiconfig.getIsEmail().equals(2)) {
-                                    if (author.getMail() != null) {
-                                        String email = author.getMail();
-                                        try {
-                                            MailService.send("您的文章有新的评论", "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title></title>" +
-                                                            "<meta charset=\"utf-8\" /><style>*{padding:0px;margin:0px;box-sizing:border-box;}html{box-sizing:border-box;}body{font-size:15px;background:#fff}.main{margin:20px auto;max-width:500px;border:solid 1px #2299dd;overflow:hidden;}.main h1{display:block;width:100%;background:#2299dd;font-size:18px;color:#fff;text-align:center;padding:15px;}.text{padding:30px;}.text p{margin:10px 0px;line-height:25px;}.text p span{color:#2299dd;font-weight:bold;font-size:22px;margin-left:5px;}</style></head>" +
-                                                            "<body><div class=\"main\"><h1>文章评论</h1>" +
-                                                            "<div class=\"text\"><p>用户 " + uid + "，你的文章有新的评论：</p><p>”" + postName + "：" + jsonToMap.get("text") + "“</p>" +
-                                                            "<p>可前往<a href=\"" + apiconfig.getWebinfoUrl() + "\">" + title + "</a>查看详情</p>" +
-                                                            "</div></div></body></html>",
-                                                    new String[]{email}, new String[]{});
-                                        } catch (Exception e) {
-                                            System.err.println("邮箱发信配置错误");
-                                            e.printStackTrace();
-                                        }
-
-                                    }
-                                }
-                                //发送消息通知
-                                Inbox inbox = new Inbox();
-                                inbox.setUid(logUid);
-                                inbox.setTouid(uid);
-                                inbox.setType("comment");
-                                inbox.setValue(Integer.parseInt(cid));
-                                inbox.setText(text);
-                                inbox.setCreated(Integer.parseInt(created));
-                                inboxService.insert(inbox);
-                                if (isPush.equals(1)) {
-                                    if (author.getClientId() != null) {
-                                        try {
-                                            pushService.sendPushMsg(author.getClientId(), title, "你的文章有新评论！", "payload", "comment:" + Integer.parseInt(cid));
-                                        } catch (Exception e) {
-                                            System.err.println("通知发送失败");
-                                            e.printStackTrace();
-                                        }
-
-                                    }
-                                }
-                            }
-                        }
-
-
-                    }
-
-                }
-
-                insert = JSON.parseObject(JSON.toJSONString(jsonToMap), Comments.class);
-
+            service.insert(comments);
+            // 给用户发消息
+            inbox.setCreated(Math.toIntExact(timeStamp));
+            inbox.setType("comment");
+            inbox.setUid(user.getUid());
+            if (parent == null || parent.equals(0)) {
+                inbox.setValue(comments.getId());
+            }
+            inbox.setIsread(0);
+            inboxService.insert(inbox);
+            // push发送
+            if (apiconfig.getIsPush().equals(1)) {
+                pushService.sendPushMsg(articleUser.getClientId(), "有新的评论", text, "payload", "system");
+            }
+            String redisKey = "comments_" + user.getName().toString();
+            String redisValue = redisHelp.getRedis(redisKey, redisTemplate);
+            int tempNum;
+            if (redisValue != null) {
+                tempNum = Integer.parseInt(redisValue);
             } else {
-                return Result.getResultJson(0, "参数不正确", null);
+                tempNum = 0; // 第一次评论时，评论次数为 0
             }
-            insert.setStatus(cstatus);
-            int rows = service.insert(insert);
-            //更新文章评论数量
-            Comments suminfo = new Comments();
-            suminfo.setCid(insert.getCid());
-            Integer cnum = service.total(suminfo, null);
-            Article c = new Article();
-            c.setCid(insert.getCid());
-            c.setCommentsNum(cnum);
-            c.setReplyTime(Integer.parseInt(created));
-            contentsService.update(c);
-            String addtext = "";
-            if (cstatus.equals("waiting")) {
-                addtext = "，将在审核通过后显示！";
-            } else {
-                //如果无需审核，则立即增加经验
-                Integer reviewExp = apiconfig.getReviewExp();
 
-                if (reviewExp > 0) {
-                    //生成操作记录
-                    String cur = created + "000";
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-                    String curtime = sdf.format(new Date(Long.parseLong(cur)));
-
-                    Userlog userlog = new Userlog();
-                    userlog.setUid(logUid);
-                    //cid用于存放真实时间
-                    userlog.setCid(Integer.parseInt(curtime));
-                    userlog.setType("reviewExp");
-                    Integer size = userlogService.total(userlog);
-                    //只有前三次评论获得经验
-                    if (size < 3) {
-                        userlog.setNum(reviewExp);
-                        userlog.setCreated(Integer.parseInt(created));
-                        userlogService.insert(userlog);
-                        //修改用户资产
-                        Users oldUser = usersService.selectByKey(logUid);
-                        Integer experience = oldUser.getExperience();
-                        experience = experience + reviewExp;
-                        Users updateUser = new Users();
-                        updateUser.setUid(logUid);
-                        updateUser.setExperience(experience);
-                        usersService.update(updateUser);
-                        addtext = "，获得" + reviewExp + "经验值";
-                    }
-                }
-
+            // 如果评论次数小于 3，则增加经验值
+            if (tempNum < 3) {
+                user.setExperience(user.getExperience() + apiconfig.getReviewExp());
+                usersService.update(user);
             }
-            editFile.setLog("用户" + logUid + "提交发布评论，IP：" + ip);
-            //清理列表reids缓存
-            redisHelp.deleteKeysWithPattern("*" + this.dataprefix + "_commentsList_1*", redisTemplate);
-            JSONObject response = new JSONObject();
-            response.put("code", rows > 0 ? 1 : 0);
-            response.put("data", rows);
-            response.put("msg", rows > 0 ? "发布成功" + addtext : "发布失败");
-            return response.toString();
+
+            // 更新评论次数并设置过期时间
+            tempNum++; // 增加评论次数
+            LocalDateTime endOfToday = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+            Duration durationUntilEndOfDay = Duration.between(LocalDateTime.now(), endOfToday);
+            long secondsUntilEndOfDay = durationUntilEndOfDay.getSeconds();
+            redisHelp.setRedis(redisKey, String.valueOf(tempNum), (int) secondsUntilEndOfDay, redisTemplate);
+            return Result.getResultJson(200, "评论成功", null);
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
+            return Result.getResultJson(400, "接口异常", null);
         }
 
     }
 
-    /***
-     * 编辑
-     */
-    @RequestMapping(value = "/commentsEdit")
-    @ResponseBody
-    public String commentsEdit(@RequestParam(value = "params", required = false) String params,
-                               @RequestParam(value = "token", required = false) String token,
-                               @RequestParam(value = "text", required = false) String text) {
-        try {
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-            }
+//    测试
 
-            //只有管理员允许修改
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            String group = map.get("group").toString();
-            if (!group.equals("administrator") && !group.equals("editor")) {
-                return Result.getResultJson(0, "你没有操作权限", null);
+    @RequestMapping("/test")
+    @ResponseBody
+    public String test(HttpServletRequest request, @RequestParam(value = "name") String name) {
+        return redisHelp.getRedis("comments_" + name, redisTemplate);
+    }
+
+    /***
+     * 删除评论
+     * @param id
+     * @param request
+     * @return
+     */
+    @RequestMapping(value = "/delete")
+    @ResponseBody
+    public String delete(@RequestParam(value = "id") Integer id,
+                         HttpServletRequest request) {
+        try {
+            Boolean permission = permission(request.getHeader("Authorization"));
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
             }
-            Integer logUid = Integer.parseInt(map.get("uid").toString());
-            Map jsonToMap = new HashMap();
-            //String group = (String) redisHelp.getValue("userInfo"+token,"group",redisTemplate);
-            if (StringUtils.isNotBlank(params)) {
-                Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-                jsonToMap = JSONObject.parseObject(JSON.parseObject(params).toString());
-                if (jsonToMap.get("coid") == null) {
-                    return Result.getResultJson(0, "请传入评论id", null);
-                }
-                //支持两种模式提交评论内容
-                if (text == null) {
-                    text = jsonToMap.get("text").toString();
-                }
-                if (text.length() < 1) {
-                    return Result.getResultJson(0, "评论不能为空", null);
-                } else {
-                    if (text.length() > 1500) {
-                        return Result.getResultJson(0, "超出最大评论长度", null);
-                    }
-                }
-                //是否开启代码拦截
-                if (apiconfig.getDisableCode().equals(1)) {
-                    if (baseFull.haveCode(text).equals(1)) {
-                        return Result.getResultJson(0, "你的内容包含敏感代码，请修改后重试！", null);
-                    }
-                }
-                jsonToMap.put("text", text);
-                jsonToMap.remove("parent");
-                jsonToMap.remove("ownerId");
-                jsonToMap.remove("created");
-                jsonToMap.remove("type");
-                jsonToMap.remove("cid");
-                jsonToMap.remove("agent");
-                jsonToMap.remove("ip");
-            }
-            Comments comments = JSON.parseObject(JSON.toJSONString(jsonToMap), Comments.class);
-            Integer rows = service.update(comments);
-            editFile.setLog("用户" + logUid + "修改了评论" + jsonToMap.get("coid"));
-            //清理列表reids缓存
-            redisHelp.deleteKeysWithPattern("*" + this.dataprefix + "_commentsList_1*", redisTemplate);
-            JSONObject response = new JSONObject();
-            response.put("code", rows > 0 ? 1 : 0);
-            response.put("data", rows);
-            response.put("msg", rows > 0 ? "操作成功" : "操作失败");
-            return response.toString();
+            Comments comments = service.selectByKey(id);
+            if (comments == null || comments.toString().isEmpty()) return Result.getResultJson(201, "评论不存在", null);
+            if (!permission || user.getUid().equals(comments.getUid()))
+                return Result.getResultJson(201, "无权限", null);
+
+            service.delete(id);
+
+            return Result.getResultJson(200, "删除成功", null);
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
+            return Result.getResultJson(400, "接口异常", null);
         }
     }
 
     /***
-     * 评论审核
+     *
+     * @param id
+     * @param text
+     * @param request
+     * @return
      */
-    @RequestMapping(value = "/commentsAudit")
+    @RequestMapping(value = "/edit")
     @ResponseBody
-    public String Audit(@RequestParam(value = "key", required = false) String key,
-                        @RequestParam(value = "token", required = false) String token,
-                        @RequestParam(value = "type", required = false) Integer type) {
+    public String edit(@RequestParam(value = "id") Integer id,
+                       @RequestParam(value = "text") String text,
+                       HttpServletRequest request) {
         try {
-            if (type == null) {
-                type = 0;
+            Boolean permission = permission(request.getHeader("Authorization"));
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
             }
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-            }
-            Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-            String title = apiconfig.getWebinfoTitle();
-            //String group = (String) redisHelp.getValue("userInfo"+token,"group",redisTemplate);
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            String group = map.get("group").toString();
-            Integer logUid = Integer.parseInt(map.get("uid").toString());
-            if (!group.equals("administrator") && !group.equals("editor")) {
-                return Result.getResultJson(0, "你没有操作权限", null);
-            }
-            Comments comments = service.selectByKey(key);
-            if (comments == null) {
-                return Result.getResultJson(0, "评论不存在", null);
-            }
-            if (comments.getStatus().equals("approved")) {
-                return Result.getResultJson(0, "该评论已被通过", null);
-            }
-            Integer cUid = comments.getAuthorId();
-            Integer rows = 0;
-            if (type.equals(0)) {
-
-                comments.setStatus("approved");
-                rows = service.update(comments);
-                Integer isPush = apiconfig.getIsPush();
-
-                //给评论者发送邮件
-                Integer uid = comments.getAuthorId();
-                if (comments.getMail() != null) {
-                    String email = comments.getMail();
-                    try {
-                        MailService.send("用户：" + uid + ",您的评论已审核通过", "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title></title><meta charset=\"utf-8\" /><style>*{padding:0px;margin:0px;box-sizing:border-box;}html{box-sizing:border-box;}body{font-size:15px;background:#fff}.main{margin:20px auto;max-width:500px;border:solid 1px #2299dd;overflow:hidden;}.main h1{display:block;width:100%;background:#2299dd;font-size:18px;color:#fff;text-align:center;padding:15px;}.text{padding:30px;}.text p{margin:10px 0px;line-height:25px;}.text p span{color:#2299dd;font-weight:bold;font-size:22px;margin-left:5px;}</style></head><body><div class=\"main\"><h1>商品订单</h1><div class=\"text\"><p>用户 " + uid + "，你的评论已经审核通过！</p><p>可前往<a href=\"" + apiconfig.getWebinfoUrl() + "\">" + apiconfig.getWebinfoTitle() + "</a>查看详情</p></div></div></body></html>",
-                                new String[]{email}, new String[]{});
-                    } catch (Exception e) {
-                        System.err.println("邮箱发信配置错误：" + e);
-                    }
-                }
-                //给相关人员发送评论
-                Users author = usersService.selectByKey(comments.getOwnerId());
-                String postName = comments.getAuthor();
-                String text = comments.getText();
-                Integer authorUid = author.getUid();
-                Integer parent = comments.getParent();
-
-                //给回复者发送信息
-                if (parent > 0) {
-                    Comments pComments = service.selectByKey(parent);
-                    if (apiconfig.getIsEmail().equals(2)) {
-                        if (pComments.getMail() != null) {
-                            String pemail = pComments.getMail();
-                            try {
-                                MailService.send("您的评论有了新的回复！", "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title></title>" +
-                                                "<meta charset=\"utf-8\" /><style>*{padding:0px;margin:0px;box-sizing:border-box;}html{box-sizing:border-box;}body{font-size:15px;background:#fff}.main{margin:20px auto;max-width:500px;border:solid 1px #2299dd;overflow:hidden;}.main h1{display:block;width:100%;background:#2299dd;font-size:18px;color:#fff;text-align:center;padding:15px;}.text{padding:30px;}.text p{margin:10px 0px;line-height:25px;}.text p span{color:#2299dd;font-weight:bold;font-size:22px;margin-left:5px;}</style></head>" +
-                                                "<body><div class=\"main\"><h1>文章评论</h1>" +
-                                                "<div class=\"text\"><p>您的评论有了新的回复：</p><p>”" + postName + "：" + text + "“</p>" +
-                                                "<p>可前往<a href=\"" + apiconfig.getWebinfoUrl() + "\">" + title + "</a>查看详情</p>" +
-                                                "</div></div></body></html>",
-                                        new String[]{pemail}, new String[]{});
-                            } catch (Exception e) {
-                                System.err.println("邮箱发信配置错误");
-                                e.printStackTrace();
-                            }
-
-                        }
-                    }
-                    //发送消息通知
-                    if (!pComments.getAuthorId().equals(0)) {
-                        Long date = System.currentTimeMillis();
-                        String created = String.valueOf(date).substring(0, 10);
-                        Inbox inbox = new Inbox();
-                        inbox.setUid(comments.getAuthorId());
-                        inbox.setTouid(pComments.getAuthorId());
-                        inbox.setType("comment");
-                        inbox.setText(text);
-                        inbox.setValue(pComments.getCid());
-                        inbox.setCreated(Integer.parseInt(created));
-                        inboxService.insert(inbox);
-                        if (isPush.equals(1)) {
-                            Users user = usersService.selectByKey(pComments.getAuthorId());
-                            if (user.getClientId() != null) {
-                                try {
-                                    pushService.sendPushMsg(user.getClientId(), title, "你有新的评论回复！", "payload", "comment:" + pComments.getCid());
-                                } catch (Exception e) {
-                                    System.err.println("通知发送失败");
-                                    e.printStackTrace();
-                                }
-
-                            }
-                        }
-                    }
-
-
-                } else {
-                    //不是作者本人才通知
-                    if (!comments.getAuthorId().equals(author.getUid()) && !comments.getAuthorId().equals(0)) {
-                        if (apiconfig.getIsEmail().equals(2)) {
-                            if (author.getMail() != null) {
-                                String aemail = author.getMail();
-                                try {
-                                    MailService.send("您的文章有新的评论", "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title></title>" +
-                                                    "<meta charset=\"utf-8\" /><style>*{padding:0px;margin:0px;box-sizing:border-box;}html{box-sizing:border-box;}body{font-size:15px;background:#fff}.main{margin:20px auto;max-width:500px;border:solid 1px #2299dd;overflow:hidden;}.main h1{display:block;width:100%;background:#2299dd;font-size:18px;color:#fff;text-align:center;padding:15px;}.text{padding:30px;}.text p{margin:10px 0px;line-height:25px;}.text p span{color:#2299dd;font-weight:bold;font-size:22px;margin-left:5px;}</style></head>" +
-                                                    "<body><div class=\"main\"><h1>文章评论</h1>" +
-                                                    "<div class=\"text\"><p>用户 " + authorUid + "，你的文章有新的评论：</p><p>”" + postName + "：" + text + "“</p>" +
-                                                    "<p>可前往<a href=\"" + apiconfig.getWebinfoUrl() + "\">" + title + "</a>查看详情</p>" +
-                                                    "</div></div></body></html>",
-                                            new String[]{aemail}, new String[]{});
-                                } catch (Exception e) {
-                                    System.err.println("邮箱发信配置错误");
-                                    e.printStackTrace();
-                                }
-
-                            }
-                        }
-                        //发送消息通知
-                        Long date = System.currentTimeMillis();
-                        String created = String.valueOf(date).substring(0, 10);
-                        Inbox inbox = new Inbox();
-                        inbox.setUid(comments.getAuthorId());
-                        inbox.setTouid(authorUid);
-                        inbox.setType("comment");
-                        inbox.setValue(comments.getCid());
-                        inbox.setText(text);
-                        inbox.setCreated(Integer.parseInt(created));
-                        inboxService.insert(inbox);
-                        if (isPush.equals(1)) {
-                            Users user = usersService.selectByKey(uid);
-                            if (user.getClientId() != null) {
-                                try {
-                                    pushService.sendPushMsg(user.getClientId(), title, "你的文章有新评论！", "payload", "comment:" + comments.getCid());
-                                } catch (Exception e) {
-                                    System.err.println("通知发送失败");
-                                    e.printStackTrace();
-                                }
-
-                            }
-                        }
-                    }
-
-                }
-                //如果无需审核，则立即增加经验
-                Integer reviewExp = apiconfig.getReviewExp();
-                if (reviewExp > 0) {
-                    //生成操作记录
-                    if (!cUid.equals(0)) {
-                        Long date = System.currentTimeMillis();
-                        String created = String.valueOf(date).substring(0, 10);
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-                        String curtime = sdf.format(new Date(date));
-
-                        Userlog userlog = new Userlog();
-                        userlog.setUid(cUid);
-                        //cid用于存放真实时间
-                        userlog.setCid(Integer.parseInt(curtime));
-                        userlog.setType("reviewExp");
-                        Integer size = userlogService.total(userlog);
-                        //只有前三次评论获得姜堰
-                        if (size < 3) {
-                            userlog.setNum(reviewExp);
-                            userlog.setCreated(Integer.parseInt(created));
-                            userlogService.insert(userlog);
-                            //修改用户经验
-                            Users oldUser = usersService.selectByKey(cUid);
-                            Integer experience = oldUser.getExperience();
-                            experience = experience + reviewExp;
-                            Users updateUser = new Users();
-                            updateUser.setUid(cUid);
-                            updateUser.setExperience(experience);
-                            usersService.update(updateUser);
-                        }
-                    }
-
-                }
-
-            } else {
-                rows = service.delete(key);
-                if (!cUid.equals(0)) {
-                    //删除后发送消息通知
-                    Long date = System.currentTimeMillis();
-                    String created = String.valueOf(date).substring(0, 10);
-                    Inbox inbox = new Inbox();
-                    inbox.setUid(cUid);
-                    inbox.setTouid(comments.getAuthorId());
-                    inbox.setType("system");
-                    inbox.setText("你的评论【" + comments.getText() + "】未审核通过，已被删除！");
-                    inbox.setCreated(Integer.parseInt(created));
-                    inboxService.insert(inbox);
-                }
-
-
-            }
-            editFile.setLog("管理员" + logUid + "审核了评论" + key);
-            //清理列表reids缓存
-            redisHelp.deleteKeysWithPattern("*" + this.dataprefix + "_commentsList_1*", redisTemplate);
-            JSONObject response = new JSONObject();
-            response.put("code", rows > 0 ? 1 : 0);
-            response.put("data", rows);
-            response.put("msg", rows > 0 ? "操作成功" : "操作失败");
-            return response.toString();
+            Comments comments = service.selectByKey(id);
+            if (comments == null || comments.toString().isEmpty()) return Result.getResultJson(201, "评论不存在", null);
+            if (!permission || user.getUid().equals(comments.getUid()))
+                return Result.getResultJson(201, "无权限", null);
+            comments.setText(text);
+            comments.setModified((int) (System.currentTimeMillis() / 1000));
+            service.update(comments);
+            return Result.getResultJson(200, "修改完成", null);
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
-        }
-    }
-
-    /***
-     * 评论删除
-     */
-    @RequestMapping(value = "/commentsDelete")
-    @ResponseBody
-    public String commentsDelete(@RequestParam(value = "key", required = false) String key, @RequestParam(value = "token", required = false) String token) {
-        try {
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-            }
-
-            //String group = (String) redisHelp.getValue("userInfo"+token,"group",redisTemplate);
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer uid = Integer.parseInt(map.get("uid").toString());
-            // 查询发布者是不是自己，如果是管理员则跳过
-            Apiconfig apiconfig = UStatus.getConfig(this.dataprefix, apiconfigService, redisTemplate);
-            Comments comments = service.selectByKey(key);
-            String group = map.get("group").toString();
-            if (!group.equals("administrator") && !group.equals("editor")) {
-                if (apiconfig.getAllowDelete().equals(0)) {
-                    return Result.getResultJson(0, "系统禁止删除评论", null);
-                }
-                Integer aid = comments.getAuthorId();
-                if (!aid.equals(uid)) {
-                    return Result.getResultJson(0, "你无权进行此操作", null);
-                }
-//                jsonToMap.put("status","0");
-            } else {
-                Integer aid = comments.getAuthorId();
-                //如果管理员不是评论发布者，则发送消息给用户（但不推送通知）
-                if (!aid.equals(uid)) {
-                    Long date = System.currentTimeMillis();
-                    String created = String.valueOf(date).substring(0, 10);
-                    Inbox insert = new Inbox();
-                    insert.setUid(uid);
-                    insert.setTouid(aid);
-                    insert.setType("system");
-                    insert.setText("你的评论【" + comments.getText() + "】已被删除");
-                    insert.setCreated(Integer.parseInt(created));
-                    inboxService.insert(insert);
-                }
-            }
-
-            //删除
-            //更新用户经验
-            Integer deleteExp = apiconfig.getDeleteExp();
-            if (deleteExp > 0) {
-                Users oldUser = usersService.selectByKey(comments.getAuthorId());
-                if (oldUser != null) {
-                    Integer experience = oldUser.getExperience();
-                    experience = experience - deleteExp;
-                    Users updateUser = new Users();
-                    updateUser.setUid(comments.getAuthorId());
-                    updateUser.setExperience(experience);
-                    usersService.update(updateUser);
-                }
-            }
-
-
-            int rows = service.delete(key);
-            //更新文章评论数量
-            Integer cid = comments.getCid();
-            Article contents = new Article();
-            Comments sum = new Comments();
-            sum.setCid(cid);
-            Integer total = service.total(sum, null);
-            contents.setCid(cid);
-            contents.setCommentsNum(total);
-            contentsService.update(contents);
-            editFile.setLog("用户" + uid + "删除了评论" + key);
-            //清理列表reids缓存
-            redisHelp.deleteKeysWithPattern("*" + this.dataprefix + "_commentsList_1*", redisTemplate);
-            JSONObject response = new JSONObject();
-            response.put("code", rows > 0 ? 1 : 0);
-            response.put("data", rows);
-            response.put("msg", rows > 0 ? "操作成功" : "操作失败");
-            return response.toString();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
+            return Result.getResultJson(400, "接口异常", null);
         }
     }
 
     /***
      * 评论点赞
+     * @param id
+     * @param request
+     * @return
      */
-    @RequestMapping(value = "/commentLikes")
+    @RequestMapping(value = "/like")
     @ResponseBody
-    public String commentLikes(@RequestParam(value = "id", required = false) Integer id,
-                               @RequestParam(value = "token", required = false) String token) {
+    public String like(@RequestParam(value = "id") Integer id,
+                       HttpServletRequest request) {
         try {
-            Integer uStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
-            if (uStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
-            }
-
-            Map map = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-            Integer uid = Integer.parseInt(map.get("uid").toString());
-            Long date = System.currentTimeMillis();
-            String userTime = String.valueOf(date).substring(0, 10);
-
-            //生成操作日志
-            Userlog userlog = new Userlog();
-            userlog.setUid(uid);
-            userlog.setCid(id);
-            userlog.setType("commentLike");
-            Integer isLikes = userlogService.total(userlog);
-            if (isLikes > 0) {
-                return Result.getResultJson(0, "你已经点赞过了", null);
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
             }
             Comments comments = service.selectByKey(id);
-            if (comments == null) {
-                return Result.getResultJson(0, "该评论不存在", null);
+            if (comments == null || comments.toString().isEmpty()) return Result.getResultJson(201, "评论不存在", null);
+
+            // 查询是否已经关注过了
+            CommentLike commentLike = new CommentLike();
+            commentLike.setCid(id);
+            commentLike.setUid(user.getUid());
+            List<CommentLike> commentLikeList = commentlikeService.selectList(commentLike);
+            commentLike.setCreated((int) (System.currentTimeMillis() / 1000));
+            // 获取评论
+
+            Integer likes = comments.getLikes() == null ? 0 : comments.getLikes();
+            if (commentLikeList != null && commentLikeList.size() > 0) {
+                // 存在就删除
+                commentlikeService.delete(commentLikeList.get(0).getId());
+                comments.setLikes(likes > 0 ? likes - 1 : 0);
+            } else {
+                comments.setLikes(likes + 1);
+                commentlikeService.insert(commentLike);
             }
-            userlog.setCreated(Integer.parseInt(userTime));
-            userlogService.insert(userlog);
-            Integer likes = comments.getLikes();
-            likes = likes + 1;
-            Comments newComments = new Comments();
-            newComments.setLikes(likes);
-            newComments.setCoid(id);
-            int rows = service.update(newComments);
-            JSONObject response = new JSONObject();
-            response.put("code", rows > 0 ? 1 : 0);
-            response.put("data", rows);
-            response.put("msg", rows > 0 ? "点赞成功" : "点赞失败");
-            return response.toString();
+
+            service.update(comments);
+
+            return Result.getResultJson(200, commentLikeList.size() > 0 ? "已取消点赞" : "点赞成功", null);
+
+
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
+            return Result.getResultJson(400, "接口异常", null);
         }
-
     }
 
 
+    private boolean permission(String token) {
+        if (token != null && !token.isEmpty()) {
+            DecodedJWT verify = JWT.verify(token);
+            Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+            if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
 }

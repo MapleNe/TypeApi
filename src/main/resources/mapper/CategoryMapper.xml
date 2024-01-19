@@ -131,16 +131,16 @@
     <update id="update" parameterType="com.TypeApi.entity.Category">
         UPDATE ${prefix}_metas
         <set>
-            <if test ='null != name'>`name` = #{name},</if>
-            <if test ='null != slug'>`slug` = #{slug},</if>
-            <if test ='null != type'>`type` = #{type},</if>
-            <if test ='null != description'>`description` = #{description},</if>
-            <if test ='null != count'>`count` = #{count},</if>
-            <if test ='null != orderKey'>`order` = #{orderKey},</if>
-            <if test ='null != imgurl'>`imgurl` = #{imgurl},</if>
-            <if test ='null != opt'>`opt` = #{opt},</if>
-            <if test ='null != iswaterfall'>`iswaterfall` = #{iswaterfall},</if>
-            <if test ='null != isrecommend'>`isrecommend` = #{isrecommend}</if>
+            <if test ='name!=null'>`name` = #{name},</if>
+            <if test ='slug!=null'>`slug` = #{slug},</if>
+            <if test ='type!=null'>`type` = #{type},</if>
+            <if test ='description != null '>`description` = #{description},</if>
+            <if test ='count != null'>`count` = #{count},</if>
+            <if test ='orderKey != null'>`order` = #{orderKey},</if>
+            <if test ='imgurl != null'>`imgurl` = #{imgurl},</if>
+            <if test ='opt != null'>`opt` = #{opt},</if>
+            <if test ='iswaterfall != null'>`iswaterfall` = #{iswaterfall},</if>
+            <if test ='isrecommend != null'>`isrecommend` = #{isrecommend}</if>
         </set>
         WHERE `mid` = #{mid}
     </update>

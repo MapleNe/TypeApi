@@ -13,7 +13,7 @@
         <result column="created" property="created" />
         <result column="activated" property="activated" />
         <result column="logged" property="logged" />
-        <result column="group" property="groupKey" />
+        <result column="group" property="group" />
         <result column="authCode" property="authCode" />
         <result column="introduce" property="introduce" />
         <result column="assets" property="assets" />
@@ -93,7 +93,7 @@
             <if test ='null != logged'>
                 `logged`,
             </if>
-            <if test ='null != groupKey'>
+            <if test ='null != group'>
                 `group`,
             </if>
             <if test ='null != authCode'>
@@ -101,6 +101,9 @@
             </if>
             <if test ='null != avatar'>
                 `avatar`,
+            </if>
+            <if test ='null != userBg'>
+                `userBg`,
             </if>
             <if test ='null != clientId'>
                 `clientId`,
@@ -138,14 +141,17 @@
             <if test ='null != logged'>
                 #{logged},
             </if>
-            <if test ='null != groupKey'>
-                #{groupKey},
+            <if test ='null != group'>
+                #{group},
             </if>
             <if test ='null != authCode'>
                 #{authCode},
             </if>
             <if test ='null != avatar'>
                 #{avatar},
+            </if>
+            <if test ='null != userBg'>
+                #{userBg},
             </if>
             <if test ='null != clientId'>
                 #{clientId},
@@ -171,7 +177,8 @@
                 #{curr.created},
                 #{curr.activated},
                 #{curr.logged},
-                #{curr.groupKey},
+                #{curr.group},
+                #{curr.userBg},
                 #{curr.authCode},
                 #{curr.bantime}
             )
@@ -190,7 +197,7 @@
             <if test ='null != created'>`created` = #{created},</if>
             <if test ='null != activated'>`activated` = #{activated},</if>
             <if test ='null != logged'>`logged` = #{logged},</if>
-            <if test ='null != groupKey'>`group` = #{groupKey},</if>
+            <if test ='null != group'>`group` = #{group},</if>
             <if test ='null != authCode'>`authCode` = #{authCode},</if>
             <if test ='null != introduce'>`introduce` = #{introduce},</if>
             <if test ='null != assets'>`assets` = #{assets},</if>
@@ -265,8 +272,8 @@
             <if test ='null != logged'>
                 and `logged` = #{logged}
             </if>
-            <if test ='null != groupKey'>
-                and `group` = #{groupKey}
+            <if test ='null != group'>
+                and `group` = #{group}
             </if>
             <if test ='null != authCode'>
                 and `authCode` = #{authCode}
@@ -307,8 +314,8 @@
             <if test ='null != users.logged'>
                 and `logged` = #{users.logged}
             </if>
-            <if test ='null != users.groupKey'>
-                and `group` = #{users.groupKey}
+            <if test ='null != users.group'>
+                and `group` = #{users.group}
             </if>
             <if test ='null != users.authCode'>
                 and `authCode` = #{users.authCode}
@@ -328,7 +335,7 @@
 
         </where>
         <if test ='"" != order'>
-            order by ${order} desc
+            order by ${order}
         </if>
         limit ${page}, ${pageSize}
     </select>
@@ -364,8 +371,8 @@
             <if test ='null != users.logged'>
                 and `logged` = #{users.logged}
             </if>
-            <if test ='null != users.groupKey'>
-                and `group` = #{users.groupKey}
+            <if test ='null != users.group'>
+                and `group` = #{users.group}
             </if>
             <if test ='null != users.authCode'>
                 and `authCode` = #{users.authCode}

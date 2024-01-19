@@ -18,7 +18,6 @@ public  class RedisHelp {
     }
 
     public void setRedis(String key, String value,Integer time ,RedisTemplate redisTemplate) {
-        //　　
         //关于TimeUnit下面有部分源码截图
         redisTemplate.opsForValue().set(key,value,time, TimeUnit.SECONDS);
 

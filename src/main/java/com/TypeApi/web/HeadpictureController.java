@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.TypeApi.entity.*;
 import com.TypeApi.service.*;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,185 +53,225 @@ public class HeadpictureController {
     HttpClient HttpClient = new HttpClient();
     EditFile editFile = new EditFile();
 
-    @RequestMapping(value = "/headAdd")
+    /***
+     *
+     * @param link 链接
+     * @param name 名称
+     * @param request
+     * @return
+     */
+
+    @RequestMapping(value = "/add")
     @ResponseBody
-    public String headAdd(@RequestParam(value = "params", required = false) String params,
-                          @RequestParam(value = "token", required = true) String token,
+    public String headAdd(@RequestParam(value = "link") String link,
+                          @RequestParam(value = "name", required = false) String name,
                           HttpServletRequest request) {
 
         try {
-            Integer userStatus = UStatus.getStatus(token, this.dataprefix, redisTemplate);
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
+            Long timeStamp = System.currentTimeMillis() / 1000;
+            if (!permission(request.getHeader("Authorization")) && user.getVip() < timeStamp)
+                return Result.getResultJson(201, "该功能会员可用", null);
 
-            // 未登录
-            if (userStatus == 0) {
-                return Result.getResultJson(0, "用户未登录或Token验证失败", null);
+            // 写入数据 type 0是私人 1 是公开
+            Headpicture headpicture = new Headpicture();
+            headpicture.setStatus(1);
+            headpicture.setLink(link);
+            headpicture.setType(0);
+            headpicture.setPermission(1);
+            headpicture.setName("用户头像框");
+            headpicture.setCreator(user.getUid());
+            if (permission(request.getHeader("Authorization"))) {
+                headpicture.setType(1);
+                headpicture.setPermission(0);
+                headpicture.setName(name);
             }
 
-            // 如果已登录
-            Map<Object, Object> userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
 
-            if (userInfo == null) {
-                return Result.getResultJson(0, "用户信息为空", null);
+            service.insert(headpicture);
+
+            // 更新用户的拥有的头像框
+            JSONArray head_picture = new JSONArray();
+            head_picture = user.getHead_picture() != null && !user.getHead_picture().toString().isEmpty() ? JSONArray.parseArray(user.getHead_picture().toString()) : null;
+            if (head_picture == null) {
+                head_picture = new JSONArray();
             }
+            head_picture.add(headpicture.getId());
+            user.setHead_picture(head_picture.toString());
+            usersService.update(user);
 
-            // 判断用户权限
-            if (!hasPermission(userInfo)) {
-                return Result.getResultJson(0, "无权限", null);
-            }
+            Map<String, Object> data = JSONObject.parseObject(JSONObject.toJSONString(headpicture), Map.class);
 
-            // 处理头像信息
-            Headpicture insert = handleHeadPicture(params, userInfo);
+            return Result.getResultJson(200, "添加完成", data);
 
-            insert.setCreator(Integer.parseInt(userInfo.get("uid").toString()));
-
-            insert = JSON.parseObject(JSON.toJSONString(insert), Headpicture.class);
-            Integer code = service.insert(insert);
-            // 给用户添加头像框ID
-            Integer id = insert.getId();
-            Map<String, Object> result = new HashMap();
-            if (id != 0 && id != null) {
-                JSONArray headList = new JSONArray();
-                Users user = usersService.selectByKey(userInfo.get("uid"));
-                if (user != null) {
-                    if (user.getHead_picture() != null && !user.getHead_picture().isEmpty()) {
-                        headList = JSONArray.parseArray(user.getHead_picture());
-                    }
-                }
-                result.put("id", id);
-                headList.add(id);
-                user.setHead_picture(headList.toString());
-                usersService.update(user);
-            }
-
-            return Result.getResultJson(code, code > 0 ? "添加成功" : "添加失败", result);
-
-        } catch (NumberFormatException e) {
-            return Result.getResultJson(0, "数字格式异常：" + e.getMessage(), null);
         } catch (Exception e) {
             e.printStackTrace();
-            return Result.getResultJson(0, "接口请求异常，请联系管理员", null);
+            return Result.getResultJson(400, "接口异常", null);
         }
     }
-
 
     /***
-     * 获取头像框
+     *
+     * @param page
+     * @param limit
+     * @param id
+     * @param self
+     * @param order
+     * @param request
+     * @return
      */
 
-    @RequestMapping(value = "/headList")
+    @RequestMapping(value = "/list")
     @ResponseBody
-    public String headpictureList(
-            @RequestParam(value = "searchParams", required = false) String searchParams,
-            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
-            @RequestParam(value = "limit", required = false, defaultValue = "15") Integer limit,
-            @RequestParam(value = "order", required = false, defaultValue = "permission desc") String order,
-            @RequestParam(value = "token", required = false) String token,
-            @RequestParam(value = "self", required = false) boolean self
-    ) {
-        // 限制 limit 的范围
-        limit = (limit > 50) ? 50 : limit;
+    public String list(@RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+                       @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit,
+                       @RequestParam(value = "id", required = false) Integer id,
+                       @RequestParam(value = "self", required = false) Integer self,
+                       @RequestParam(value = "order", required = false) String order,
+                       HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
 
-        Integer total = 0;
-        List<Map<String, Object>> jsonList = new ArrayList<>();
+            // 如果传入id且是管理员才能查看用户的列表 否则就只能查询 type为0 permission为0的数据 且查询自己
+            Headpicture headpicture = new Headpicture();
+            headpicture.setStatus(1);
+            headpicture.setType(1);
+            if (permission(request.getHeader("Authorization"))) {
+                headpicture.setType(null);
+                headpicture.setPermission(null);
+                headpicture.setStatus(null);
+                headpicture.setType(null);
+            }
+            if (self != null && self.equals(1)) {
+                headpicture.setCreator(user.getUid());
+                headpicture.setType(0);
+            }
+            PageList<Headpicture> headpicturePageList = service.selectPage(headpicture, page, limit, order);
+            List<Headpicture> headpictureList = headpicturePageList.getList();
 
-        if (StringUtils.isNotBlank(searchParams)) {
-            JSONObject object = JSON.parseObject(searchParams);
-            Headpicture query = new Headpicture();
-            query.setStatus(object.getInteger("status"));
-            query.setType(object.getInteger("type"));
-            // 如果传入了token与self就查自己的头像框
-            if (!token.isEmpty() && token != null &&self) {
-                Map<Object, Object> userInfo = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-                if (!userInfo.isEmpty() && userInfo != null) {
-                    query.setCreator(Integer.parseInt(userInfo.get("uid").toString()));
+            Map<String, Object> data = new HashMap<>();
+            data.put("page", page);
+            data.put("limit", limit);
+            data.put("data", headpictureList);
+            data.put("count", headpictureList.size());
+            data.put("total", service.total(headpicture));
+
+            return Result.getResultJson(200, "获取成功", data);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
+    }
+
+    // 设置头像框
+    @RequestMapping(value = "/set")
+    @ResponseBody
+    public String set(HttpServletRequest request,
+                      @RequestParam(value = "id") Integer id) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            Boolean permission = permission(token);
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
+            // 检查传入id是否存在
+            Headpicture headpicture = service.selectByKey(id);
+            if (headpicture == null || headpicture.toString().isEmpty())
+                return Result.getResultJson(201, "头像框不存在", null);
+
+            JSONArray head_picture = user.getHead_picture() != null ? JSONArray.parseArray(user.getHead_picture()) : null;
+            JSONObject opt = user.getOpt() != null ? JSONObject.parseObject(user.getOpt()) : null;
+            if(opt==null)opt = new JSONObject();
+            // 先判断头像框权限
+            if (headpicture != null && headpicture.getPermission() != null && headpicture.getPermission().equals(0)) {
+                if (head_picture != null && head_picture.contains(headpicture.getId())) {
+                    opt.put("head_picture", headpicture.getLink().toString());
+                } else {
+                    return Result.getResultJson(201, "你没有获得这个头像框", null);
                 }
             }
-            total = service.total(query);
-            PageList<Headpicture> Pagelist = service.selectPage(query, page, limit, order);
-            List<Headpicture> list = Pagelist.getList();
-
-            for (Headpicture headpicture : list) {
-                Map<String, Object> json = new HashMap<>();
-                json.put("id", headpicture.getId());
-                json.put("name", headpicture.getName());
-                json.put("link", headpicture.getLink());
-                json.put("type", headpicture.getType());
-                json.put("permission", headpicture.getPermission());
-                // 添加其他属性...
-                Integer isActive = 0;
-                if (!token.isEmpty() && token != null) {
-                    Map<Object, Object> user = redisHelp.getMapValue(this.dataprefix + "_" + "userInfo" + token, redisTemplate);
-                    if (user.get("uid") != null) {
-                        // 获取用户拥有的头像框
-                        Users userInfo = usersService.selectByKey(user.get("uid"));
-                        if (userInfo != null && StringUtils.isNotBlank(userInfo.getHead_picture())) {
-                            List<String> headList = JSONArray.parseArray(userInfo.getHead_picture(), String.class);
-                            if (headList.contains(headpicture.getId().toString())) {
-                                isActive = 1;
-                            }
-                        }
-                    }
-                }
-
-                json.put("isActive", isActive);
-                jsonList.add(json);
+            if (headpicture.getPermission().equals(1)) {
+                opt.put("head_picture", headpicture.getLink().toString());
             }
-        }
+            //设置用户opt
+            user.setOpt(opt.toString());
+            usersService.update(user);
 
-        JSONObject response = new JSONObject();
-        response.put("code", 1);
-        response.put("msg", "");
-        response.put("data", jsonList);
-        response.put("count", jsonList.size());
-        response.put("total", total);
-        return response.toString();
+            return Result.getResultJson(200, "设置成功", null);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
     }
 
+    /***
+     *
+     * @param id
+     * @param request
+     * @return
+     */
+    @RequestMapping(value = "/delete")
+    @ResponseBody
+    public String delete(@RequestParam(value = "id") Integer id,
+                         HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            Users user = new Users();
+            if (token != null && !token.isEmpty()) {
+                DecodedJWT verify = JWT.verify(token);
+                user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+                if (user == null || user.toString().isEmpty()) return Result.getResultJson(201, "用户不存在", null);
+            }
+            // 查询头像框是否存在
+            Headpicture headpicture = service.selectByKey(id);
+            if (headpicture == null || headpicture.toString().isEmpty())
+                return Result.getResultJson(201, "头像框不存在", null);
 
-    // 检查用户权限
-    private boolean hasPermission(Map<Object, Object> userInfo) {
-        Integer viptime = Integer.parseInt(userInfo.get("vip").toString());
-        String permission = userInfo.get("group").toString();
-        Long date = System.currentTimeMillis();
-        String curTime = String.valueOf(date).substring(0, 10);
+            if (!permission(request.getHeader("Authorization")) && !headpicture.getCreator().equals(user.getUid()))
+                return Result.getResultJson(201, "无权限", null);
 
-        return viptime > Integer.parseInt(curTime) || viptime.equals(1) || permission.equals("administrator") || permission.equals("editor");
+            service.delete(headpicture.getId());
+
+            return Result.getResultJson(200, "删除成功", null);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.getResultJson(400, "接口异常", null);
+        }
     }
 
-    // 处理头像信息
-    private Headpicture handleHeadPicture(String params, Map<Object, Object> userInfo) {
-        Map<String, Object> jsonInfo = JSONObject.parseObject(params);
-        // 如果不是 Administrator 或者 editor，只能为私人，不能公开
-
-        if (!isAdministratorOrEditor(userInfo)) {
-            jsonInfo.put("type", 0);
-            jsonInfo.put("permission", 0);
-        }
-
-        // 检查 name 和 link 是否为空
-        if (isNullOrEmpty(jsonInfo.get("name")) || isNullOrEmpty(jsonInfo.get("link"))) {
-            throw new IllegalArgumentException("name或link为空");
-        }
-
-        // ... 其他处理逻辑，如果需要的话 ...
-
-        return JSON.parseObject(JSON.toJSONString(jsonInfo), Headpicture.class);
-    }
 
     // 检查是否是 Administrator 或者 editor
-    private boolean isAdministratorOrEditor(Map<Object, Object> userInfo) {
-        Object groupValue = userInfo.get("group");
-        if (groupValue != null) {
-            String permission = groupValue.toString();
-            return permission.equals("administrator") || permission.equals("editor");
+
+    private boolean permission(String token) {
+        if (token != null && !token.isEmpty()) {
+            DecodedJWT verify = JWT.verify(token);
+            Users user = usersService.selectByKey(Integer.parseInt(verify.getClaim("aud").asString()));
+            if (user.getGroup().equals("administrator") || user.getGroup().equals("editor")) {
+                return true;
+            } else {
+                return false;
+            }
         } else {
-            // 处理空值的情况，这里可以根据实际需求做相应的处理，例如返回false或抛出异常。
             return false;
         }
     }
-
-    // 检查字符串是否为 null 或为空
-    private boolean isNullOrEmpty(Object value) {
-        return value == null || value.toString().isEmpty();
-    }
 }
+

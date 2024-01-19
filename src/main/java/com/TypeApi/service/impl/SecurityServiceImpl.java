@@ -19,7 +19,7 @@ public class SecurityServiceImpl  implements SecurityService {
         //向所有管理员发送警告
         try{
             Users user = new Users();
-            user.setGroupKey("administrator");
+            user.setGroup("administrator");
             List<Users> userList = usersService.selectList(user);
             for (int i = 0; i < userList.size(); i++) {
                 Inbox inbox = new Inbox();

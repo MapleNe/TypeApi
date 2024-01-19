@@ -18,14 +18,14 @@ public class ChatMsg implements Serializable {
     private Integer id;
 
     /**
-     * uid  发送人
+     * sender_id  发送人
      */
-    private Integer uid;
+    private Integer sender_id;
 
     /**
-     * cid  聊天室
+     * receiver_id  接收人
      */
-    private Integer cid;
+    private Integer receiver_id;
 
     /**
      * text  消息内容
@@ -38,12 +38,8 @@ public class ChatMsg implements Serializable {
     private Integer created;
 
     /**
-     * type  0文字消息，1图片消息，3视频消息
+     * type  0是私聊 1是群聊
      */
     private Integer type;
 
-    /**
-     * url  为链接时的url
-     */
-    private String url;
 }

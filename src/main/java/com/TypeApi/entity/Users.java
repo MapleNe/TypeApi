@@ -61,7 +61,7 @@ public class Users implements Serializable {
     /**
      * group  
      */
-    private String groupKey;
+    private String group;
 
     /**
      * authCode  
