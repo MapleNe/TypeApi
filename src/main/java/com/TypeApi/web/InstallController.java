@@ -3,6 +3,7 @@ package com.TypeApi.web;
 import com.TypeApi.common.PHPass;
 import com.TypeApi.common.RedisHelp;
 import com.TypeApi.common.ResultAll;
+import com.TypeApi.entity.App;
 import com.TypeApi.entity.Users;
 import com.TypeApi.service.AppService;
 import com.TypeApi.service.UsersService;
@@ -32,6 +33,9 @@ public class InstallController {
 
     @Autowired
     private UsersService usersService;
+
+    @Autowired
+    private AppService appService;
 
     @Value("${mybatis.configuration.variables.prefix}")
     private String prefix;
@@ -158,7 +162,9 @@ public class InstallController {
                     "  `allowComment` char(1) DEFAULT '0'," +
                     "  `price` int(10) DEFAULT '0'," +
                     "  `discount` float(2) DEFAULT '1'," +
-                    "  `allowPing` char(1) DEFAULT '0'," +
+                    "  `allowPing` INT DEFAULT 0," +
+                    "  `likes` INT DEFAULT 0," +
+                    "  `marks` INT DEFAULT 0," +
                     "  `images` longtext," +
                     "  `videos` longtext," +
                     "  `opt` longtext," +
@@ -294,10 +300,19 @@ public class InstallController {
         } else {
             text += "内容模块，字段price已经存在，无需添加。";
         }
+
         //查询文章表是否存在 discount 字段
         i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'discount';", Integer.class);
         if (i == 0) {
             jdbcTemplate.execute("alter table " + prefix + "_contents ADD discount float(2) DEFAULT 1;");
+            text += "内容模块，字段discount添加完成。";
+        } else {
+            text += "内容模块，字段discount已经存在，无需添加。";
+        }
+        //查询文章表是否存在 marks 字段
+        i = jdbcTemplate.queryForObject("select count(*) from information_schema.columns where table_name = '" + prefix + "_contents' and column_name = 'marks';", Integer.class);
+        if (i == 0) {
+            jdbcTemplate.execute("alter table " + prefix + "_contents ADD marks INT DEFAULT 0;");
             text += "内容模块，字段discount添加完成。";
         } else {
             text += "内容模块，字段discount已经存在，无需添加。";
@@ -1630,7 +1645,14 @@ public class InstallController {
             text += "应用表，字段adpid已经存在，无需添加。";
         }
         text += " ------ 执行结束，安装执行完成";
-
+        // 再执行一次初始化app
+        App app  =new App();
+        Integer total = appService.total(app);
+        if (total < 1) {
+            app.setName("应用名称");
+            app.setCurrencyName("积分");
+            appService.insert(app);
+        }
         redisHelp.setRedis(this.dataprefix + "_" + "isInstall", "1", 60, redisTemplate);
         return Result.getResultJson(1, text, null);
     }

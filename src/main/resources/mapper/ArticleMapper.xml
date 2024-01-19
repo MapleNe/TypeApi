@@ -24,6 +24,7 @@
         <result column="parent" property="parent" />
         <result column="views" property="views" />
         <result column="likes" property="likes" />
+        <result column="marks" property="marks" />
         <result column="price" property="price" />
         <result column="discount" property="discount" />
         <result column="isrecommend" property="isrecommend" />
@@ -55,8 +56,9 @@
         `parent`,
         `views`,
         `likes`,
-         `price`,
-         `discount`,
+        `marks`,
+        `price`,
+        `discount`,
         `isrecommend`,
         `istop`,
         `isswiper`,
@@ -265,6 +267,7 @@
             <if test ='null != parent'>`parent` = #{parent},</if>
             <if test ='null != views'>`views` = #{views},</if>
             <if test ='null != likes'>`likes` = #{likes},</if>
+            <if test ='null != marks'>`marks` = #{marks},</if>
             <if test ='null != isrecommend'>`isrecommend` = #{isrecommend},</if>
             <if test ='null != istop'>`istop` = #{istop},</if>
             <if test ='null != price'>`price` = #{price},</if>
@@ -273,7 +276,6 @@
             <if test ='null != replyTime'>`replyTime` = #{replyTime},</if>
             <if test ='null != opt'>`opt` = #{opt},</if>
             <if test ='null != images'>`images` = #{images}</if>
-
         </set>
         WHERE `cid` = #{cid}
     </update>

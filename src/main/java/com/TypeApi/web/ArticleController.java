@@ -1251,11 +1251,15 @@ public class ArticleController {
             userlog.setUid(user.getUid());
             // 存在就删除
             List<Userlog> userlogList = userlogService.selectList(userlog);
-            if (userlogList.size() > 0) userlogService.delete(userlogList.get(0).getId());
-            else {
+            if (userlogList.size() > 0) {
+                article.setMarks(article.getMarks() > 0 ? article.getMarks() - 1 : 0);
+                userlogService.delete(userlogList.get(0).getId());
+            } else {
+                article.setMarks(article.getMarks() + 1);
                 userlog.setCreated((int) (System.currentTimeMillis() / 1000));
                 userlogService.insert(userlog);
             }
+            service.update(article);
             return Result.getResultJson(200, userlogList.size() > 0 ? "已取消收藏" : "收藏成功", null);
 
         } catch (Exception e) {
